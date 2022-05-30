@@ -1,8 +1,10 @@
 package simple
 
 import (
+	"bytes"
 	"testing"
 
+	"github.com/richardartoul/molecule"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -97,10 +99,10 @@ func TestDecode(t *testing.T) {
 			},
 		},
 	}
-	bytes, err := proto.Marshal(src)
+	marshalledBytes, err := proto.Marshal(src)
 	require.NoError(t, err)
 
-	lazy := NewLogsData(bytes)
+	lazy := NewLogsData(marshalledBytes)
 
 	rl := *lazy.GetResourceLogs()
 	require.Len(t, rl, 1)
@@ -124,14 +126,20 @@ func TestDecode(t *testing.T) {
 	require.Len(t, logRecords, 1)
 
 	logRecord := logRecords[0]
-	assert.EqualValues(t, 123, logRecord.TimeUnixNano)
-	assert.EqualValues(t, 234, logRecord.DroppedAttributesCount)
+	assert.EqualValues(t, 123, logRecord.timeUnixNano)
+	assert.EqualValues(t, 234, logRecord.droppedAttributesCount)
 	attrs = *logRecord.GetAttributes()
 	require.Len(t, attrs, 1)
 
 	kv2 := attrs[0]
 	require.EqualValues(t, "key2", kv2.Key)
 	require.EqualValues(t, "value2", kv2.Value)
+
+	output := bytes.NewBuffer([]byte{})
+	ps := molecule.NewProtoStream(output)
+	lazy.Marshal(ps)
+
+	assert.EqualValues(t, marshalledBytes, output.Bytes())
 }
 
 func BenchmarkGoogleMarshal(b *testing.B) {
@@ -170,6 +178,28 @@ func BenchmarkGoogleUnmarshal(b *testing.B) {
 	}
 }
 
+func countAttrs(lazy *LogsData) int {
+	attrCount := 0
+	rls := *lazy.GetResourceLogs()
+	for _, rl := range rls {
+		resource := *rl.GetResource()
+
+		attrs := *resource.GetAttributes()
+		attrCount += len(attrs)
+
+		sls := *rl.GetScopeLogs()
+		for _, sl := range sls {
+			logRecords := *sl.GetLogRecords()
+
+			for _, logRecord := range logRecords {
+				attrs = *logRecord.GetAttributes()
+				attrCount += len(attrs)
+			}
+		}
+	}
+	return attrCount
+}
+
 func BenchmarkLazyUnmarshal(b *testing.B) {
 	src := createLogsData()
 
@@ -180,25 +210,28 @@ func BenchmarkLazyUnmarshal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		lazy := NewLogsData(bytes)
 
-		// Traverse all data. This is the worst case.
-		attrCount := 0
-		rls := *lazy.GetResourceLogs()
-		for _, rl := range rls {
-			resource := *rl.GetResource()
+		// Traverse all data to get it loaded. This is the worst case.
+		attrCount := countAttrs(lazy)
 
-			attrs := *resource.GetAttributes()
-			attrCount += len(attrs)
-
-			sls := *rl.GetScopeLogs()
-			for _, sl := range sls {
-				logRecords := *sl.GetLogRecords()
-
-				for _, logRecord := range logRecords {
-					attrs = *logRecord.GetAttributes()
-					attrCount += len(attrs)
-				}
-			}
-		}
 		require.EqualValues(b, 2010, attrCount)
+	}
+}
+
+func BenchmarkLazyMarshal(b *testing.B) {
+	src := createLogsData()
+
+	marshalBytes, err := proto.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, marshalBytes)
+
+	lazy := NewLogsData(marshalBytes)
+	countAttrs(lazy)
+
+	for i := 0; i < b.N; i++ {
+		output := bytes.NewBuffer([]byte{})
+		ps := molecule.NewProtoStream(output)
+		err = lazy.Marshal(ps)
+		require.NoError(b, err)
+		require.NotNil(b, output.Bytes())
 	}
 }

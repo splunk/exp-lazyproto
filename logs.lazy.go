@@ -47,6 +47,17 @@ func (m *LogsData) GetResourceLogs() *[]ResourceLogs {
 	return &m.resourceLogs
 }
 
+func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
+	for _, logs := range m.resourceLogs {
+		ps.Embedded(
+			1, func(ps *molecule.ProtoStream) error {
+				return logs.Marshal(ps)
+			},
+		)
+	}
+	return nil
+}
+
 type ResourceLogs struct {
 	bytes     []byte
 	resource  *Resource
@@ -100,6 +111,24 @@ func (m *ResourceLogs) decode() {
 	)
 }
 
+func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
+	if m.resource != nil {
+		ps.Embedded(
+			1, func(ps *molecule.ProtoStream) error {
+				return m.resource.Marshal(ps)
+			},
+		)
+	}
+	for _, logs := range m.scopeLogs {
+		ps.Embedded(
+			2, func(ps *molecule.ProtoStream) error {
+				return logs.Marshal(ps)
+			},
+		)
+	}
+	return nil
+}
+
 type Resource struct {
 	bytes                  []byte
 	attributes             []KeyValue
@@ -144,6 +173,18 @@ func (m *Resource) decode() {
 	)
 }
 
+func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
+	for _, attr := range m.attributes {
+		ps.Embedded(
+			1, func(ps *molecule.ProtoStream) error {
+				return attr.Marshal(ps)
+			},
+		)
+	}
+	ps.Uint32(2, m.DroppedAttributesCount)
+	return nil
+}
+
 type KeyValue struct {
 	bytes []byte
 	Key   string
@@ -174,6 +215,12 @@ func (m *KeyValue) decode() {
 			return true, nil
 		},
 	)
+}
+
+func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
+	ps.String(1, m.Key)
+	ps.String(2, m.Value)
+	return nil
 }
 
 type ScopeLogs struct {
@@ -212,23 +259,35 @@ func (m *ScopeLogs) decode() {
 	)
 }
 
+func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
+	for _, logRecord := range m.logRecords {
+		ps.Embedded(
+			1, func(ps *molecule.ProtoStream) error {
+				return logRecord.Marshal(ps)
+			},
+		)
+	}
+	return nil
+}
+
 type LogRecord struct {
 	bytes                  []byte
-	TimeUnixNano           uint64
+	timeUnixNano           uint64
 	attributes             []KeyValue
-	DroppedAttributesCount uint32
+	droppedAttributesCount uint32
 
-	fieldsDecoded uint64
+	flags uint64
 }
 
 const logRecordAttributesDecoded = 1
+const logRecordModified = 2
 
 func (m *LogRecord) GetAttributes() *[]KeyValue {
-	if m.fieldsDecoded&logRecordAttributesDecoded == 0 {
+	if m.flags&logRecordAttributesDecoded == 0 {
 		for i := range m.attributes {
 			m.attributes[i].decode()
 		}
-		m.fieldsDecoded |= logRecordAttributesDecoded
+		m.flags |= logRecordAttributesDecoded
 	}
 	return &m.attributes
 }
@@ -243,7 +302,7 @@ func (m *LogRecord) decode() {
 				if err != nil {
 					return false, err
 				}
-				m.TimeUnixNano = v
+				m.timeUnixNano = v
 
 			case 2:
 				v, err := value.AsBytesUnsafe()
@@ -257,9 +316,28 @@ func (m *LogRecord) decode() {
 				if err != nil {
 					return false, err
 				}
-				m.DroppedAttributesCount = v
+				m.droppedAttributesCount = v
 			}
 			return true, nil
 		},
 	)
+}
+
+func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
+	//if m.flags&logRecordModified != 0 {
+	ps.Fixed64(1, m.timeUnixNano)
+
+	for _, attr := range m.attributes {
+		ps.Embedded(
+			2, func(ps *molecule.ProtoStream) error {
+				return attr.Marshal(ps)
+			},
+		)
+	}
+
+	ps.Uint32(3, m.droppedAttributesCount)
+	//} else {
+	//	return ps.Raw(m.bytes)
+	//}
+	return nil
 }
