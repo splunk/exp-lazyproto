@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package simple;
+
+option go_package = "examples/simple/google";
+
+message LogsData {
+  repeated ResourceLogs resource_logs = 1;
+}
+
+message ResourceLogs {
+  Resource resource = 1;
+  repeated ScopeLogs scope_logs = 2;
+}
+
+message Resource {
+  repeated KeyValue attributes = 1;
+  uint32 dropped_attributes_count = 2;
+}
+
+message KeyValue {
+  string key =1;
+  string value = 2;
+}
+
+// A collection of Logs produced by a Scope.
+message ScopeLogs {
+  // A list of log records.
+  repeated LogRecord log_records = 1;
+}
+
+message LogRecord {
+  fixed64 time_unix_nano = 1;
+  repeated KeyValue attributes = 2;
+  uint32 dropped_attributes_count = 3;
+}
