@@ -49,11 +49,14 @@ func (m *LogsData) GetResourceLogs() *[]ResourceLogs {
 
 func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
 	for _, logs := range m.resourceLogs {
-		ps.Embedded(
-			1, func(ps *molecule.ProtoStream) error {
-				return logs.Marshal(ps)
-			},
-		)
+		//ps.Embedded(
+		//	1, func() error {
+		//		return logs.Marshal(ps)
+		//	},
+		//)
+		token := ps.BeginEmbedded()
+		logs.Marshal(ps)
+		ps.EndEmbedded(token, 1)
 	}
 	return nil
 }
@@ -113,18 +116,24 @@ func (m *ResourceLogs) decode() {
 
 func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 	if m.resource != nil {
-		ps.Embedded(
-			1, func(ps *molecule.ProtoStream) error {
-				return m.resource.Marshal(ps)
-			},
-		)
+		//ps.Embedded(
+		//	1, func() error {
+		//		return m.resource.Marshal(ps)
+		//	},
+		//)
+		token := ps.BeginEmbedded()
+		m.resource.Marshal(ps)
+		ps.EndEmbedded(token, 1)
 	}
 	for _, logs := range m.scopeLogs {
-		ps.Embedded(
-			2, func(ps *molecule.ProtoStream) error {
-				return logs.Marshal(ps)
-			},
-		)
+		//ps.Embedded(
+		//	2, func() error {
+		//		return logs.Marshal(ps)
+		//	},
+		//)
+		token := ps.BeginEmbedded()
+		logs.Marshal(ps)
+		ps.EndEmbedded(token, 2)
 	}
 	return nil
 }
@@ -173,15 +182,23 @@ func (m *Resource) decode() {
 	)
 }
 
+var resourceAttrKeyPrepared = molecule.PrepareEmbeddedField(1)
+var resourceDroppedKeyPrepared = molecule.PrepareUint32Field(2)
+
 func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 	for _, attr := range m.attributes {
-		ps.Embedded(
-			1, func(ps *molecule.ProtoStream) error {
-				return attr.Marshal(ps)
-			},
-		)
+		//ps.Embedded(
+		//	1, func() error {
+		//		return attr.Marshal(ps)
+		//	},
+		//)
+		token := ps.BeginEmbedded()
+		attr.Marshal(ps)
+		//ps.EndEmbedded(token, 1)
+		ps.EndEmbeddedPrepared(token, resourceAttrKeyPrepared)
 	}
-	ps.Uint32(2, m.DroppedAttributesCount)
+	//ps.Uint32(2, m.DroppedAttributesCount)
+	ps.Uint32Prepared(resourceDroppedKeyPrepared, m.DroppedAttributesCount)
 	return nil
 }
 
@@ -217,9 +234,14 @@ func (m *KeyValue) decode() {
 	)
 }
 
+var keyValuePreparedKey = molecule.PrepareStringField(1)
+var keyValuePreparedValue = molecule.PrepareStringField(2)
+
 func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
-	ps.String(1, m.Key)
-	ps.String(2, m.Value)
+	ps.PreparedString(keyValuePreparedKey, m.Key)
+	ps.PreparedString(keyValuePreparedValue, m.Value)
+	//ps.String(1, m.Key)
+	//ps.String(2, m.Value)
 	return nil
 }
 
@@ -261,11 +283,14 @@ func (m *ScopeLogs) decode() {
 
 func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 	for _, logRecord := range m.logRecords {
-		ps.Embedded(
-			1, func(ps *molecule.ProtoStream) error {
-				return logRecord.Marshal(ps)
-			},
-		)
+		//ps.Embedded(
+		//	1, func() error {
+		//		return logRecord.Marshal(ps)
+		//	},
+		//)
+		token := ps.BeginEmbedded()
+		logRecord.Marshal(ps)
+		ps.EndEmbedded(token, 1)
 	}
 	return nil
 }
@@ -323,19 +348,27 @@ func (m *LogRecord) decode() {
 	)
 }
 
+var logRecordTimePrepared = molecule.PrepareFixed64Field(1)
+var logRecordAttrPrepared = molecule.PrepareEmbeddedField(2)
+var logRecordDroppedPrepared = molecule.PrepareUint32Field(3)
+
 func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 	//if m.flags&logRecordModified != 0 {
-	ps.Fixed64(1, m.timeUnixNano)
+	ps.Fixed64Prepared(logRecordTimePrepared, m.timeUnixNano)
 
 	for _, attr := range m.attributes {
-		ps.Embedded(
-			2, func(ps *molecule.ProtoStream) error {
-				return attr.Marshal(ps)
-			},
-		)
+		//ps.Embedded(
+		//	2, func() error {
+		//		return attr.Marshal(ps)
+		//	},
+		//)
+
+		token := ps.BeginEmbedded()
+		attr.Marshal(ps)
+		ps.EndEmbeddedPrepared(token, logRecordAttrPrepared)
 	}
 
-	ps.Uint32(3, m.droppedAttributesCount)
+	ps.Uint32Prepared(logRecordDroppedPrepared, m.droppedAttributesCount)
 	//} else {
 	//	return ps.Raw(m.bytes)
 	//}

@@ -1,10 +1,10 @@
 package simple
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/richardartoul/molecule"
+	"github.com/richardartoul/molecule/src/protowire"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -135,15 +135,16 @@ func TestDecode(t *testing.T) {
 	require.EqualValues(t, "key2", kv2.Key)
 	require.EqualValues(t, "value2", kv2.Value)
 
-	output := bytes.NewBuffer([]byte{})
-	ps := molecule.NewProtoStream(output)
+	ps := molecule.NewProtoStream()
 	lazy.Marshal(ps)
 
-	assert.EqualValues(t, marshalledBytes, output.Bytes())
+	assert.EqualValues(t, marshalledBytes, ps.BufferBytes())
 }
 
 func BenchmarkGoogleMarshal(b *testing.B) {
 	src := createLogsData()
+
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		bytes, err := proto.Marshal(src)
@@ -158,6 +159,8 @@ func BenchmarkGoogleUnmarshal(b *testing.B) {
 	bytes, err := proto.Marshal(src)
 	require.NoError(b, err)
 	require.NotNil(b, bytes)
+
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		var ld google.LogsData
@@ -200,12 +203,35 @@ func countAttrs(lazy *LogsData) int {
 	return attrCount
 }
 
+func BenchmarkLazyMarshal(b *testing.B) {
+	src := createLogsData()
+
+	marshalBytes, err := proto.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, marshalBytes)
+
+	lazy := NewLogsData(marshalBytes)
+	countAttrs(lazy)
+
+	b.ResetTimer()
+
+	ps := molecule.NewProtoStream()
+	for i := 0; i < b.N; i++ {
+		ps.Reset()
+		err = lazy.Marshal(ps)
+		require.NoError(b, err)
+		require.NotNil(b, ps.BufferBytes())
+	}
+}
+
 func BenchmarkLazyUnmarshal(b *testing.B) {
 	src := createLogsData()
 
 	bytes, err := proto.Marshal(src)
 	require.NoError(b, err)
 	require.NotNil(b, bytes)
+
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		lazy := NewLogsData(bytes)
@@ -217,21 +243,94 @@ func BenchmarkLazyUnmarshal(b *testing.B) {
 	}
 }
 
-func BenchmarkLazyMarshal(b *testing.B) {
-	src := createLogsData()
+func BenchmarkKeyValueMarshal(b *testing.B) {
+	kv := KeyValue{
+		Key:   "key",
+		Value: "val",
+	}
 
-	marshalBytes, err := proto.Marshal(src)
-	require.NoError(b, err)
-	require.NotNil(b, marshalBytes)
-
-	lazy := NewLogsData(marshalBytes)
-	countAttrs(lazy)
-
+	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		output := bytes.NewBuffer([]byte{})
-		ps := molecule.NewProtoStream(output)
-		err = lazy.Marshal(ps)
-		require.NoError(b, err)
-		require.NotNil(b, output.Bytes())
+		ps.Reset()
+		kv.Marshal(ps)
+		//require.Len(b, ps.BufferBytes(), 10)
+	}
+}
+
+func BenchmarkResourceMarshal(b *testing.B) {
+	kv := KeyValue{
+		Key:   "key",
+		Value: "val",
+	}
+	res := Resource{
+		attributes:             []KeyValue{kv},
+		DroppedAttributesCount: 0,
+	}
+
+	ps := molecule.NewProtoStream()
+	for i := 0; i < b.N; i++ {
+		ps.Reset()
+		res.Marshal(ps)
+	}
+}
+
+func BenchmarkLogRecordMarshal(b *testing.B) {
+	kv := KeyValue{
+		Key:   "key",
+		Value: "val",
+	}
+	lr := LogRecord{
+		attributes: []KeyValue{kv},
+	}
+
+	ps := molecule.NewProtoStream()
+	for i := 0; i < b.N; i++ {
+		ps.Reset()
+		lr.Marshal(ps)
+	}
+}
+
+func BenchmarkAppendVarintProtowire(b *testing.B) {
+	bts := make([]byte, 0, b.N*10)
+	value := uint64(123)
+	for i := 0; i < b.N; i++ {
+		bts = protowire.AppendVarint(bts, value)
+	}
+}
+
+//func BenchmarkAppendVarintMolecule(b *testing.B) {
+//	bts := make([]byte, 0, b.N*10)
+//	value := uint64(123)
+//	for i := 0; i < b.N; i++ {
+//		bts = molecule.AppendVarint(bts, value)
+//	}
+//}
+
+func BenchmarkWriteUint32(b *testing.B) {
+	val := uint32(123)
+	ps := molecule.NewProtoStream()
+	for i := 0; i < b.N; i++ {
+		ps.Reset()
+		ps.Uint32(1, val)
+	}
+}
+
+func BenchmarkWriteUint32Prepared(b *testing.B) {
+	val := uint32(123)
+	ps := molecule.NewProtoStream()
+	k := molecule.PrepareUint32Field(1)
+	for i := 0; i < b.N; i++ {
+		ps.Reset()
+		ps.Uint32Prepared(k, val)
+	}
+}
+
+func BenchmarkWriteUint32LongPrepared(b *testing.B) {
+	val := uint32(123)
+	ps := molecule.NewProtoStream()
+	k := molecule.PrepareLongField(1, protowire.VarintType)
+	for i := 0; i < b.N; i++ {
+		ps.Reset()
+		ps.Uint32LongPrepared(k, val)
 	}
 }
