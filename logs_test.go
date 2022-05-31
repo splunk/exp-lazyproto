@@ -119,8 +119,8 @@ func TestDecode(t *testing.T) {
 	require.Len(t, attrs, 1)
 
 	kv1 := attrs[0]
-	require.EqualValues(t, "key1", kv1.Key)
-	require.EqualValues(t, "value1", kv1.Value)
+	require.EqualValues(t, "key1", kv1.key)
+	require.EqualValues(t, "value1", kv1.value)
 
 	sls := *rl[0].GetScopeLogs()
 	require.Len(t, sls, 1)
@@ -136,13 +136,28 @@ func TestDecode(t *testing.T) {
 	require.Len(t, attrs, 1)
 
 	kv2 := attrs[0]
-	require.EqualValues(t, "key2", kv2.Key)
-	require.EqualValues(t, "value2", kv2.Value)
+	require.EqualValues(t, "key2", kv2.key)
+	require.EqualValues(t, "value2", kv2.value)
 
 	ps := molecule.NewProtoStream()
 	lazy.Marshal(ps)
 
 	assert.EqualValues(t, marshalledBytes, ps.BufferBytes())
+}
+
+func TestLazyPassthrough(t *testing.T) {
+	src := createLogsData()
+
+	marshalBytes, err := proto.Marshal(src)
+	require.NoError(t, err)
+	require.NotNil(t, marshalBytes)
+
+	ps := molecule.NewProtoStream()
+	lazy := NewLogsData(marshalBytes)
+	ps.Reset()
+	err = lazy.Marshal(ps)
+	require.NoError(t, err)
+	assert.EqualValues(t, marshalBytes, ps.BufferBytes())
 }
 
 func BenchmarkGoogleMarshal(b *testing.B) {
@@ -185,6 +200,26 @@ func BenchmarkGoogleUnmarshal(b *testing.B) {
 	}
 }
 
+func BenchmarkGooglePasssthrough(b *testing.B) {
+	src := createLogsData()
+
+	bytes, err := proto.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, bytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var ld google.LogsData
+		err := proto.Unmarshal(bytes, &ld)
+		require.NoError(b, err)
+
+		destBytes, err := proto.Marshal(src)
+		require.NoError(b, err)
+		require.NotNil(b, destBytes)
+	}
+}
+
 func countAttrs(lazy *LogsData) int {
 	attrCount := 0
 	rls := *lazy.GetResourceLogs()
@@ -207,7 +242,102 @@ func countAttrs(lazy *LogsData) int {
 	return attrCount
 }
 
-func BenchmarkLazyMarshal(b *testing.B) {
+func touchAll(lazy *LogsData) {
+	rls := *lazy.GetResourceLogs()
+	for _, rl := range rls {
+		resource := *rl.GetResource()
+
+		attrs := *resource.GetAttributes()
+		for i := range attrs {
+			attrs[i].SetKey(attrs[i].Key())
+		}
+
+		sls := *rl.GetScopeLogs()
+		for _, sl := range sls {
+			logRecords := *sl.GetLogRecords()
+
+			for _, logRecord := range logRecords {
+				attrs = *logRecord.GetAttributes()
+				for i := range attrs {
+					attrs[i].SetKey(attrs[i].Key())
+				}
+			}
+		}
+	}
+}
+
+func BenchmarkLazyPassthroughNoReadOrModify(b *testing.B) {
+	// This is the best case scenario for passthrough. We don't read or modify any
+	// data, just unmarshal and marshal it exactly as it is.
+
+	src := createLogsData()
+
+	marshalBytes, err := proto.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, marshalBytes)
+
+	b.ResetTimer()
+
+	ps := molecule.NewProtoStream()
+	for i := 0; i < b.N; i++ {
+		lazy := NewLogsData(marshalBytes)
+		ps.Reset()
+		err = lazy.Marshal(ps)
+		require.NoError(b, err)
+		require.NotNil(b, ps.BufferBytes())
+	}
+}
+
+func BenchmarkLazyPassthroughFullReadNoModify(b *testing.B) {
+	// This is the best case scenario for passthrough. We don't read or modify any
+	// data, just unmarshal and marshal it exactly as it is.
+
+	src := createLogsData()
+
+	marshalBytes, err := proto.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, marshalBytes)
+
+	b.ResetTimer()
+
+	ps := molecule.NewProtoStream()
+	for i := 0; i < b.N; i++ {
+		lazy := NewLogsData(marshalBytes)
+		ps.Reset()
+		err = lazy.Marshal(ps)
+		countAttrs(lazy)
+		require.NoError(b, err)
+		require.NotNil(b, ps.BufferBytes())
+	}
+}
+
+func BenchmarkLazyPassthroughFullModified(b *testing.B) {
+	// This is the worst case scenario. We read of data, so lazy loading has no
+	// performance benefit. We also modify all data, so we have to do full marshaling.
+
+	src := createLogsData()
+
+	marshalBytes, err := proto.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, marshalBytes)
+
+	b.ResetTimer()
+
+	ps := molecule.NewProtoStream()
+	for i := 0; i < b.N; i++ {
+		lazy := NewLogsData(marshalBytes)
+
+		// Touch all attrs
+		touchAll(lazy)
+
+		ps.Reset()
+		err = lazy.Marshal(ps)
+		require.NoError(b, err)
+		require.NotNil(b, ps.BufferBytes())
+	}
+}
+
+func BenchmarkLazyMarshalUnchanged(b *testing.B) {
 	src := createLogsData()
 
 	marshalBytes, err := proto.Marshal(src)
@@ -228,7 +358,29 @@ func BenchmarkLazyMarshal(b *testing.B) {
 	}
 }
 
-func BenchmarkLazyUnmarshal(b *testing.B) {
+func BenchmarkLazyMarshalFullModified(b *testing.B) {
+	src := createLogsData()
+
+	marshalBytes, err := proto.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, marshalBytes)
+
+	lazy := NewLogsData(marshalBytes)
+	countAttrs(lazy)
+	touchAll(lazy)
+
+	b.ResetTimer()
+
+	ps := molecule.NewProtoStream()
+	for i := 0; i < b.N; i++ {
+		ps.Reset()
+		err = lazy.Marshal(ps)
+		require.NoError(b, err)
+		require.NotNil(b, ps.BufferBytes())
+	}
+}
+
+func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
 	src := createLogsData()
 
 	bytes, err := proto.Marshal(src)
@@ -249,8 +401,8 @@ func BenchmarkLazyUnmarshal(b *testing.B) {
 
 func BenchmarkKeyValueMarshal(b *testing.B) {
 	kv := KeyValue{
-		Key:   "key",
-		Value: "val",
+		key:   "key",
+		value: "val",
 	}
 
 	ps := molecule.NewProtoStream()
@@ -263,8 +415,8 @@ func BenchmarkKeyValueMarshal(b *testing.B) {
 
 func BenchmarkResourceMarshal(b *testing.B) {
 	kv := KeyValue{
-		Key:   "key",
-		Value: "val",
+		key:   "key",
+		value: "val",
 	}
 	res := Resource{
 		attributes:             []KeyValue{kv},
@@ -280,8 +432,8 @@ func BenchmarkResourceMarshal(b *testing.B) {
 
 func BenchmarkLogRecordMarshal(b *testing.B) {
 	kv := KeyValue{
-		Key:   "key",
-		Value: "val",
+		key:   "key",
+		value: "val",
 	}
 	lr := LogRecord{
 		attributes: []KeyValue{kv},

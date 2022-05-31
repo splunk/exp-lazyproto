@@ -5,14 +5,20 @@ import (
 	"github.com/richardartoul/molecule/src/codec"
 )
 
-type LogsData struct {
-	bytes        []byte
-	resourceLogs []ResourceLogs
+const flagsMessageModified = 1
 
-	fieldsDecoded uint64
+type ProtoMessage struct {
+	flags  uint64
+	parent *ProtoMessage
 }
 
-const logsDataResourceLogsDecoded = 1
+type LogsData struct {
+	ProtoMessage
+	bytes        []byte
+	resourceLogs []ResourceLogs
+}
+
+const logsDataResourceLogsDecoded = 2
 
 func NewLogsData(bytes []byte) *LogsData {
 	m := &LogsData{bytes: bytes}
@@ -42,7 +48,13 @@ func (m *LogsData) decode() {
 				if err != nil {
 					return false, err
 				}
-				m.resourceLogs = append(m.resourceLogs, ResourceLogs{bytes: v})
+				m.resourceLogs = append(
+					m.resourceLogs,
+					ResourceLogs{
+						bytes:        v,
+						ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+					},
+				)
 			}
 			return true, nil
 		},
@@ -50,54 +62,52 @@ func (m *LogsData) decode() {
 }
 
 func (m *LogsData) GetResourceLogs() *[]ResourceLogs {
-	if m.fieldsDecoded&logsDataResourceLogsDecoded == 0 {
+	if m.flags&logsDataResourceLogsDecoded == 0 {
 		for i := range m.resourceLogs {
 			m.resourceLogs[i].decode()
 		}
-		m.fieldsDecoded |= logsDataResourceLogsDecoded
+		m.flags |= logsDataResourceLogsDecoded
 	}
 	return &m.resourceLogs
 }
 
 func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
-	for _, logs := range m.resourceLogs {
-		//ps.Embedded(
-		//	1, func() error {
-		//		return logs.Marshal(ps)
-		//	},
-		//)
-		token := ps.BeginEmbedded()
-		logs.Marshal(ps)
-		ps.EndEmbedded(token, 1)
+	if m.flags&flagsMessageModified != 0 {
+		for _, logs := range m.resourceLogs {
+			token := ps.BeginEmbedded()
+			logs.Marshal(ps)
+			ps.EndEmbedded(token, 1)
+		}
+	} else {
+		ps.Raw(m.bytes)
 	}
 	return nil
 }
 
 type ResourceLogs struct {
+	ProtoMessage
 	bytes     []byte
 	resource  *Resource
 	scopeLogs []ScopeLogs
-
-	fieldsDecoded uint64
 }
 
-const resourceLogsResourceDecoded = 1
-const resourceLogsScopeLogsDecoded = 2
+const resourceLogsResourceDecoded = 2
+const resourceLogsScopeLogsDecoded = 4
 
 func (m *ResourceLogs) GetResource() **Resource {
-	if m.fieldsDecoded&resourceLogsResourceDecoded == 0 {
+	if m.flags&resourceLogsResourceDecoded == 0 {
 		m.resource.decode()
-		m.fieldsDecoded |= resourceLogsResourceDecoded
+		m.flags |= resourceLogsResourceDecoded
 	}
 	return &m.resource
 }
 
 func (m *ResourceLogs) GetScopeLogs() *[]ScopeLogs {
-	if m.fieldsDecoded&resourceLogsScopeLogsDecoded == 0 {
+	if m.flags&resourceLogsScopeLogsDecoded == 0 {
 		for i := range m.scopeLogs {
 			m.scopeLogs[i].decode()
 		}
-		m.fieldsDecoded |= resourceLogsScopeLogsDecoded
+		m.flags |= resourceLogsScopeLogsDecoded
 	}
 	return &m.scopeLogs
 }
@@ -124,14 +134,22 @@ func (m *ResourceLogs) decode() {
 				if err != nil {
 					return false, err
 				}
-				m.resource = &Resource{bytes: v}
+				m.resource = &Resource{
+					bytes:        v,
+					ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+				}
 
 			case 2:
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
 				}
-				m.scopeLogs = append(m.scopeLogs, ScopeLogs{bytes: v})
+				m.scopeLogs = append(
+					m.scopeLogs, ScopeLogs{
+						bytes:        v,
+						ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+					},
+				)
 			}
 			return true, nil
 		},
@@ -139,45 +157,38 @@ func (m *ResourceLogs) decode() {
 }
 
 func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
-	if m.resource != nil {
-		//ps.Embedded(
-		//	1, func() error {
-		//		return m.resource.Marshal(ps)
-		//	},
-		//)
-		token := ps.BeginEmbedded()
-		m.resource.Marshal(ps)
-		ps.EndEmbedded(token, 1)
-	}
-	for _, logs := range m.scopeLogs {
-		//ps.Embedded(
-		//	2, func() error {
-		//		return logs.Marshal(ps)
-		//	},
-		//)
-		token := ps.BeginEmbedded()
-		logs.Marshal(ps)
-		ps.EndEmbedded(token, 2)
+	if m.flags&flagsMessageModified != 0 {
+		if m.resource != nil {
+			token := ps.BeginEmbedded()
+			m.resource.Marshal(ps)
+			ps.EndEmbedded(token, 1)
+		}
+		for _, logs := range m.scopeLogs {
+			token := ps.BeginEmbedded()
+			logs.Marshal(ps)
+			ps.EndEmbedded(token, 2)
+		}
+	} else {
+		ps.Raw(m.bytes)
 	}
 	return nil
 }
 
 type Resource struct {
+	ProtoMessage
 	bytes                  []byte
 	attributes             []KeyValue
 	DroppedAttributesCount uint32
-
-	fieldsDecoded uint64
 }
 
-const resourceAttributesDecoded = 1
+const resourceAttributesDecoded = 2
 
 func (m *Resource) GetAttributes() *[]KeyValue {
-	if m.fieldsDecoded&resourceAttributesDecoded == 0 {
+	if m.flags&resourceAttributesDecoded == 0 {
 		for i := range m.attributes {
 			m.attributes[i].decode()
 		}
-		m.fieldsDecoded |= resourceAttributesDecoded
+		m.flags |= resourceAttributesDecoded
 	}
 	return &m.attributes
 }
@@ -192,7 +203,12 @@ func (m *Resource) decode() {
 				if err != nil {
 					return false, err
 				}
-				m.attributes = append(m.attributes, KeyValue{bytes: v})
+				m.attributes = append(
+					m.attributes, KeyValue{
+						bytes:        v,
+						ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+					},
+				)
 
 			case 2:
 				v, err := value.AsUint32()
@@ -210,80 +226,34 @@ var resourceAttrKeyPrepared = molecule.PrepareEmbeddedField(1)
 var resourceDroppedKeyPrepared = molecule.PrepareUint32Field(2)
 
 func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
-	for _, attr := range m.attributes {
-		//ps.Embedded(
-		//	1, func() error {
-		//		return attr.Marshal(ps)
-		//	},
-		//)
-		token := ps.BeginEmbedded()
-		attr.Marshal(ps)
-		//ps.EndEmbedded(token, 1)
-		ps.EndEmbeddedPrepared(token, resourceAttrKeyPrepared)
+	if m.flags&flagsMessageModified != 0 {
+		for _, attr := range m.attributes {
+			token := ps.BeginEmbedded()
+			attr.Marshal(ps)
+			//ps.EndEmbedded(token, 1)
+			ps.EndEmbeddedPrepared(token, resourceAttrKeyPrepared)
+		}
+		ps.Uint32Prepared(resourceDroppedKeyPrepared, m.DroppedAttributesCount)
+	} else {
+		ps.Raw(m.bytes)
 	}
-	//ps.Uint32(2, m.DroppedAttributesCount)
-	ps.Uint32Prepared(resourceDroppedKeyPrepared, m.DroppedAttributesCount)
-	return nil
-}
-
-type KeyValue struct {
-	bytes []byte
-	Key   string
-	Value string
-
-	fieldsDecoded uint64
-}
-
-func (m *KeyValue) decode() {
-	buf := codec.NewBuffer(m.bytes)
-	molecule.MessageEach(
-		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
-			switch fieldNum {
-			case 1:
-				v, err := value.AsStringUnsafe()
-				if err != nil {
-					return false, err
-				}
-				m.Key = v
-
-			case 2:
-				v, err := value.AsStringUnsafe()
-				if err != nil {
-					return false, err
-				}
-				m.Value = v
-			}
-			return true, nil
-		},
-	)
-}
-
-var keyValuePreparedKey = molecule.PrepareStringField(1)
-var keyValuePreparedValue = molecule.PrepareStringField(2)
-
-func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
-	ps.PreparedString(keyValuePreparedKey, m.Key)
-	ps.PreparedString(keyValuePreparedValue, m.Value)
-	//ps.String(1, m.Key)
-	//ps.String(2, m.Value)
 	return nil
 }
 
 type ScopeLogs struct {
+	ProtoMessage
 	bytes      []byte
 	logRecords []LogRecord
-
-	fieldsDecoded uint64
 }
 
-const scopeLogsLogRecordsDecoded = 1
+const scopeLogsLogRecordsDecoded = 2
 
 func (m *ScopeLogs) GetLogRecords() *[]LogRecord {
-	if m.fieldsDecoded&scopeLogsLogRecordsDecoded == 0 {
+	if m.flags&scopeLogsLogRecordsDecoded == 0 {
 		for i := range m.logRecords {
 			m.logRecords[i].decode()
 		}
-		m.fieldsDecoded |= scopeLogsLogRecordsDecoded
+		m.flags |= scopeLogsLogRecordsDecoded
 	}
 	return &m.logRecords
 }
@@ -310,7 +280,12 @@ func (m *ScopeLogs) decode() {
 				if err != nil {
 					return false, err
 				}
-				m.logRecords = append(m.logRecords, LogRecord{bytes: v})
+				m.logRecords = append(
+					m.logRecords, LogRecord{
+						bytes:        v,
+						ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+					},
+				)
 			}
 			return true, nil
 		},
@@ -318,30 +293,27 @@ func (m *ScopeLogs) decode() {
 }
 
 func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
-	for _, logRecord := range m.logRecords {
-		//ps.Embedded(
-		//	1, func() error {
-		//		return logRecord.Marshal(ps)
-		//	},
-		//)
-		token := ps.BeginEmbedded()
-		logRecord.Marshal(ps)
-		ps.EndEmbedded(token, 1)
+	if m.flags&flagsMessageModified != 0 {
+		for _, logRecord := range m.logRecords {
+			token := ps.BeginEmbedded()
+			logRecord.Marshal(ps)
+			ps.EndEmbedded(token, 1)
+		}
+	} else {
+		ps.Raw(m.bytes)
 	}
 	return nil
 }
 
 type LogRecord struct {
+	ProtoMessage
 	bytes                  []byte
 	timeUnixNano           uint64
 	attributes             []KeyValue
 	droppedAttributesCount uint32
-
-	flags uint64
 }
 
-const logRecordAttributesDecoded = 1
-const logRecordModified = 2
+const logRecordAttributesDecoded = 2
 
 func (m *LogRecord) GetAttributes() *[]KeyValue {
 	if m.flags&logRecordAttributesDecoded == 0 {
@@ -384,7 +356,12 @@ func (m *LogRecord) decode() {
 				if err != nil {
 					return false, err
 				}
-				m.attributes = append(m.attributes, KeyValue{bytes: v})
+				m.attributes = append(
+					m.attributes, KeyValue{
+						bytes:        v,
+						ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+					},
+				)
 
 			case 3:
 				v, err := value.AsUint32()
@@ -403,24 +380,87 @@ var logRecordAttrPrepared = molecule.PrepareEmbeddedField(2)
 var logRecordDroppedPrepared = molecule.PrepareUint32Field(3)
 
 func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
-	//if m.flags&logRecordModified != 0 {
-	ps.Fixed64Prepared(logRecordTimePrepared, m.timeUnixNano)
+	if m.flags&flagsMessageModified != 0 {
+		ps.Fixed64Prepared(logRecordTimePrepared, m.timeUnixNano)
 
-	for _, attr := range m.attributes {
-		//ps.Embedded(
-		//	2, func() error {
-		//		return attr.Marshal(ps)
-		//	},
-		//)
+		for _, attr := range m.attributes {
+			token := ps.BeginEmbedded()
+			attr.Marshal(ps)
+			ps.EndEmbeddedPrepared(token, logRecordAttrPrepared)
+		}
 
-		token := ps.BeginEmbedded()
-		attr.Marshal(ps)
-		ps.EndEmbeddedPrepared(token, logRecordAttrPrepared)
+		ps.Uint32Prepared(logRecordDroppedPrepared, m.droppedAttributesCount)
+	} else {
+		ps.Raw(m.bytes)
+	}
+	return nil
+}
+
+type KeyValue struct {
+	ProtoMessage
+	bytes []byte
+	key   string
+	value string
+}
+
+func (m *KeyValue) Key() string {
+	return m.key
+}
+
+func (m *KeyValue) SetKey(s string) {
+	m.key = s
+	m.markModified() // TODO: check if this is inlined.
+}
+
+func (m *ProtoMessage) markModified() {
+	if m.flags&flagsMessageModified != 0 {
+		return
 	}
 
-	ps.Uint32Prepared(logRecordDroppedPrepared, m.droppedAttributesCount)
-	//} else {
-	//	return ps.Raw(m.bytes)
-	//}
+	m.flags |= flagsMessageModified
+	parent := m.parent
+	for parent != nil {
+		if parent.flags&flagsMessageModified != 0 {
+			break
+		}
+		parent.flags |= flagsMessageModified
+		parent = parent.parent
+	}
+}
+
+func (m *KeyValue) decode() {
+	buf := codec.NewBuffer(m.bytes)
+	molecule.MessageEach(
+		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
+			switch fieldNum {
+			case 1:
+				v, err := value.AsStringUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.key = v
+
+			case 2:
+				v, err := value.AsStringUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.value = v
+			}
+			return true, nil
+		},
+	)
+}
+
+var keyValuePreparedKey = molecule.PrepareStringField(1)
+var keyValuePreparedValue = molecule.PrepareStringField(2)
+
+func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
+	if m.flags&flagsMessageModified != 0 {
+		ps.PreparedString(keyValuePreparedKey, m.key)
+		ps.PreparedString(keyValuePreparedValue, m.value)
+	} else {
+		ps.Raw(m.bytes)
+	}
 	return nil
 }
