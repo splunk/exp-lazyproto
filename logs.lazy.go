@@ -22,6 +22,18 @@ func NewLogsData(bytes []byte) *LogsData {
 
 func (m *LogsData) decode() {
 	buf := codec.NewBuffer(m.bytes)
+
+	lrCount := 0
+	molecule.MessageFieldNums(
+		buf, func(fieldNum int32) {
+			if fieldNum == 1 {
+				lrCount++
+			}
+		},
+	)
+	m.resourceLogs = make([]ResourceLogs, 0, lrCount)
+
+	buf.Reset(m.bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
@@ -92,6 +104,18 @@ func (m *ResourceLogs) GetScopeLogs() *[]ScopeLogs {
 
 func (m *ResourceLogs) decode() {
 	buf := codec.NewBuffer(m.bytes)
+
+	lrCount := 0
+	molecule.MessageFieldNums(
+		buf, func(fieldNum int32) {
+			if fieldNum == 2 {
+				lrCount++
+			}
+		},
+	)
+	m.scopeLogs = make([]ScopeLogs, 0, lrCount)
+
+	buf.Reset(m.bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
@@ -266,6 +290,18 @@ func (m *ScopeLogs) GetLogRecords() *[]LogRecord {
 
 func (m *ScopeLogs) decode() {
 	buf := codec.NewBuffer(m.bytes)
+
+	lrCount := 0
+	molecule.MessageFieldNums(
+		buf, func(fieldNum int32) {
+			if fieldNum == 1 {
+				lrCount++
+			}
+		},
+	)
+	m.logRecords = make([]LogRecord, 0, lrCount)
+
+	buf.Reset(m.bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
@@ -319,6 +355,20 @@ func (m *LogRecord) GetAttributes() *[]KeyValue {
 
 func (m *LogRecord) decode() {
 	buf := codec.NewBuffer(m.bytes)
+	attrCount := 0
+	molecule.MessageFieldNums(
+		buf, func(fieldNum int32) {
+			if fieldNum == 2 {
+				attrCount++
+			}
+		},
+	)
+	//attrCount, err := molecule.CountFieldsInMessage(buf, 2)
+	//if err != nil {
+	//}
+	m.attributes = make([]KeyValue, 0, attrCount)
+
+	buf.Reset(m.bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
