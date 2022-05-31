@@ -132,10 +132,10 @@ func TestDecode(t *testing.T) {
 	logRecord := logRecords[0]
 	assert.EqualValues(t, 123, logRecord.timeUnixNano)
 	assert.EqualValues(t, 234, logRecord.droppedAttributesCount)
-	attrs = *logRecord.GetAttributes()
+	attrs2 := *logRecord.GetAttributes()
 	require.Len(t, attrs, 1)
 
-	kv2 := attrs[0]
+	kv2 := attrs2[0]
 	require.EqualValues(t, "key2", kv2.key)
 	require.EqualValues(t, "value2", kv2.value)
 
@@ -234,8 +234,8 @@ func countAttrs(lazy *LogsData) int {
 			logRecords := *sl.GetLogRecords()
 
 			for _, logRecord := range logRecords {
-				attrs = *logRecord.GetAttributes()
-				attrCount += len(attrs)
+				attrs2 := *logRecord.GetAttributes()
+				attrCount += len(attrs2)
 			}
 		}
 	}
@@ -257,9 +257,9 @@ func touchAll(lazy *LogsData) {
 			logRecords := *sl.GetLogRecords()
 
 			for _, logRecord := range logRecords {
-				attrs = *logRecord.GetAttributes()
-				for i := range attrs {
-					attrs[i].SetKey(attrs[i].Key())
+				attrs2 := *logRecord.GetAttributes()
+				for i := range attrs2 {
+					attrs2[i].SetKey(attrs2[i].Key())
 				}
 			}
 		}
@@ -308,6 +308,7 @@ func BenchmarkLazyPassthroughFullReadNoModify(b *testing.B) {
 		countAttrs(lazy)
 		require.NoError(b, err)
 		require.NotNil(b, ps.BufferBytes())
+		keyValuePool.Release(lazy)
 	}
 }
 
@@ -334,6 +335,8 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 		err = lazy.Marshal(ps)
 		require.NoError(b, err)
 		require.NotNil(b, ps.BufferBytes())
+
+		keyValuePool.Release(lazy)
 	}
 }
 
@@ -395,7 +398,7 @@ func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
 		// Traverse all data to get it loaded. This is the worst case.
 		countAttrs(lazy)
 
-		//require.EqualValues(b, 2010, attrCount)
+		keyValuePool.Release(lazy)
 	}
 }
 

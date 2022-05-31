@@ -123,8 +123,10 @@ func (m *ResourceLogs) decode() {
 			}
 		},
 	)
-	m.scopeLogs = make([]ScopeLogs, 0, lrCount)
+	//m.scopeLogs = make([]ScopeLogs, 0, lrCount)
+	m.scopeLogs = scopeLogsPool.GetScopeLogss(lrCount)
 
+	lrIndex := 0
 	buf.Reset(m.bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -144,12 +146,12 @@ func (m *ResourceLogs) decode() {
 				if err != nil {
 					return false, err
 				}
-				m.scopeLogs = append(
-					m.scopeLogs, ScopeLogs{
-						bytes:        v,
-						ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
-					},
-				)
+				sl := &m.scopeLogs[lrIndex]
+				lrIndex++
+				*sl = ScopeLogs{
+					bytes:        v,
+					ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+				}
 			}
 			return true, nil
 		},
@@ -269,8 +271,10 @@ func (m *ScopeLogs) decode() {
 			}
 		},
 	)
-	m.logRecords = make([]LogRecord, 0, lrCount)
+	//m.logRecords = make([]LogRecord, 0, lrCount)
+	m.logRecords = logRecordPool.GetLogRecords(lrCount)
 
+	lrIndex := 0
 	buf.Reset(m.bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -280,12 +284,11 @@ func (m *ScopeLogs) decode() {
 				if err != nil {
 					return false, err
 				}
-				m.logRecords = append(
-					m.logRecords, LogRecord{
-						bytes:        v,
-						ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
-					},
-				)
+				lr := &m.logRecords[lrIndex]
+				*lr = LogRecord{
+					bytes:        v,
+					ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+				}
 			}
 			return true, nil
 		},
@@ -335,11 +338,10 @@ func (m *LogRecord) decode() {
 			}
 		},
 	)
-	//attrCount, err := molecule.CountFieldsInMessage(buf, 2)
-	//if err != nil {
-	//}
-	m.attributes = make([]KeyValue, 0, attrCount)
+	//m.attributes = make([]*KeyValue, 0, attrCount)
+	m.attributes = keyValuePool.GetKeyValues(attrCount)
 
+	attrIndex := 0
 	buf.Reset(m.bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -356,12 +358,12 @@ func (m *LogRecord) decode() {
 				if err != nil {
 					return false, err
 				}
-				m.attributes = append(
-					m.attributes, KeyValue{
-						bytes:        v,
-						ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
-					},
-				)
+				kv := &m.attributes[attrIndex]
+				attrIndex++
+				*kv = KeyValue{
+					bytes:        v,
+					ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+				}
 
 			case 3:
 				v, err := value.AsUint32()
