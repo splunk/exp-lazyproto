@@ -3,18 +3,20 @@ package simple
 import (
 	"testing"
 
+	gogolib "github.com/gogo/protobuf/proto"
 	"github.com/richardartoul/molecule"
 	"github.com/richardartoul/molecule/src/protowire"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
+	googlemsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/google/gen/logs"
+	googlelib "google.golang.org/protobuf/proto"
 
-	"github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/google"
+	gogomsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/gogo/gen/logs"
 )
 
-func createLogRecord(n int) *google.LogRecord {
-	sl := &google.LogRecord{
-		Attributes: []*google.KeyValue{
+func createLogRecord(n int) *gogomsg.LogRecord {
+	sl := &gogomsg.LogRecord{
+		Attributes: []*gogomsg.KeyValue{
 			{
 				Key:   "http.method",
 				Value: "GET",
@@ -35,8 +37,8 @@ func createLogRecord(n int) *google.LogRecord {
 
 }
 
-func createScopedLogs(n int) *google.ScopeLogs {
-	sl := &google.ScopeLogs{}
+func createScopedLogs(n int) *gogomsg.ScopeLogs {
+	sl := &gogomsg.ScopeLogs{}
 
 	for i := 0; i < 10; i++ {
 		sl.LogRecords = append(sl.LogRecords, createLogRecord(i))
@@ -45,13 +47,13 @@ func createScopedLogs(n int) *google.ScopeLogs {
 	return sl
 }
 
-func createLogsData() *google.LogsData {
-	src := &google.LogsData{}
+func createLogsData() *gogomsg.LogsData {
+	src := &gogomsg.LogsData{}
 
 	for i := 0; i < 10; i++ {
-		rl := &google.ResourceLogs{
-			Resource: &google.Resource{
-				Attributes: []*google.KeyValue{
+		rl := &gogomsg.ResourceLogs{
+			Resource: &gogomsg.Resource{
+				Attributes: []*gogomsg.KeyValue{
 					{
 						Key:   "service.name",
 						Value: "checkout",
@@ -72,11 +74,11 @@ func createLogsData() *google.LogsData {
 }
 
 func TestDecode(t *testing.T) {
-	src := &google.LogsData{
-		ResourceLogs: []*google.ResourceLogs{
+	src := &gogomsg.LogsData{
+		ResourceLogs: []*gogomsg.ResourceLogs{
 			{
-				Resource: &google.Resource{
-					Attributes: []*google.KeyValue{
+				Resource: &gogomsg.Resource{
+					Attributes: []*gogomsg.KeyValue{
 						{
 							Key:   "key1",
 							Value: "value1",
@@ -84,12 +86,12 @@ func TestDecode(t *testing.T) {
 					},
 					DroppedAttributesCount: 12,
 				},
-				ScopeLogs: []*google.ScopeLogs{
+				ScopeLogs: []*gogomsg.ScopeLogs{
 					{
-						LogRecords: []*google.LogRecord{
+						LogRecords: []*gogomsg.LogRecord{
 							{
 								TimeUnixNano: 123,
-								Attributes: []*google.KeyValue{
+								Attributes: []*gogomsg.KeyValue{
 									{
 										Key:   "key2",
 										Value: "value2",
@@ -103,7 +105,7 @@ func TestDecode(t *testing.T) {
 			},
 		},
 	}
-	marshalledBytes, err := proto.Marshal(src)
+	marshalledBytes, err := gogolib.Marshal(src)
 	require.NoError(t, err)
 
 	lazy := NewLogsData(marshalledBytes)
@@ -148,7 +150,7 @@ func TestDecode(t *testing.T) {
 func TestLazyPassthrough(t *testing.T) {
 	src := createLogsData()
 
-	marshalBytes, err := proto.Marshal(src)
+	marshalBytes, err := gogolib.Marshal(src)
 	require.NoError(t, err)
 	require.NotNil(t, marshalBytes)
 
@@ -160,13 +162,77 @@ func TestLazyPassthrough(t *testing.T) {
 	assert.EqualValues(t, marshalBytes, ps.BufferBytes())
 }
 
-func BenchmarkGoogleMarshal(b *testing.B) {
+func BenchmarkGogoMarshal(b *testing.B) {
 	src := createLogsData()
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		bytes, err := proto.Marshal(src)
+		bytes, err := gogolib.Marshal(src)
+		require.NoError(b, err)
+		require.NotNil(b, bytes)
+	}
+}
+
+func BenchmarkGogoUnmarshal(b *testing.B) {
+	src := createLogsData()
+
+	bytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, bytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var ld gogomsg.LogsData
+		err := gogolib.Unmarshal(bytes, &ld)
+		require.NoError(b, err)
+
+		attrCount := 0
+		for _, rl := range ld.ResourceLogs {
+			attrCount += len(rl.Resource.Attributes)
+			for _, sl := range rl.ScopeLogs {
+				for _, lr := range sl.LogRecords {
+					attrCount += len(lr.Attributes)
+				}
+			}
+		}
+
+		//require.EqualValues(b, 2010, attrCount)
+	}
+}
+
+func BenchmarkGogoPasssthrough(b *testing.B) {
+	src := createLogsData()
+
+	bytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, bytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var ld gogomsg.LogsData
+		err := gogolib.Unmarshal(bytes, &ld)
+		require.NoError(b, err)
+
+		destBytes, err := gogolib.Marshal(src)
+		require.NoError(b, err)
+		require.NotNil(b, destBytes)
+	}
+}
+
+func BenchmarkGoogleMarshal(b *testing.B) {
+	src := createLogsData()
+	bytes, err := gogolib.Marshal(src)
+	var ld googlemsg.LogsData
+	err = googlelib.Unmarshal(bytes, &ld)
+	require.NoError(b, err)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		bytes, err := googlelib.Marshal(&ld)
 		require.NoError(b, err)
 		require.NotNil(b, bytes)
 	}
@@ -175,15 +241,15 @@ func BenchmarkGoogleMarshal(b *testing.B) {
 func BenchmarkGoogleUnmarshal(b *testing.B) {
 	src := createLogsData()
 
-	bytes, err := proto.Marshal(src)
+	bytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
 	require.NotNil(b, bytes)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		var ld google.LogsData
-		err := proto.Unmarshal(bytes, &ld)
+		var ld googlemsg.LogsData
+		err := googlelib.Unmarshal(bytes, &ld)
 		require.NoError(b, err)
 
 		attrCount := 0
@@ -203,18 +269,18 @@ func BenchmarkGoogleUnmarshal(b *testing.B) {
 func BenchmarkGooglePasssthrough(b *testing.B) {
 	src := createLogsData()
 
-	bytes, err := proto.Marshal(src)
+	bytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
 	require.NotNil(b, bytes)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		var ld google.LogsData
-		err := proto.Unmarshal(bytes, &ld)
+		var ld googlemsg.LogsData
+		err := googlelib.Unmarshal(bytes, &ld)
 		require.NoError(b, err)
 
-		destBytes, err := proto.Marshal(src)
+		destBytes, err := googlelib.Marshal(&ld)
 		require.NoError(b, err)
 		require.NotNil(b, destBytes)
 	}
@@ -266,13 +332,75 @@ func touchAll(lazy *LogsData) {
 	}
 }
 
+func BenchmarkLazyMarshalUnchanged(b *testing.B) {
+	src := createLogsData()
+
+	marshalBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, marshalBytes)
+
+	lazy := NewLogsData(marshalBytes)
+	countAttrs(lazy)
+
+	b.ResetTimer()
+
+	ps := molecule.NewProtoStream()
+	for i := 0; i < b.N; i++ {
+		ps.Reset()
+		err = lazy.Marshal(ps)
+		require.NoError(b, err)
+		require.NotNil(b, ps.BufferBytes())
+	}
+}
+
+func BenchmarkLazyMarshalFullModified(b *testing.B) {
+	src := createLogsData()
+
+	marshalBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, marshalBytes)
+
+	lazy := NewLogsData(marshalBytes)
+	countAttrs(lazy)
+	touchAll(lazy)
+
+	b.ResetTimer()
+
+	ps := molecule.NewProtoStream()
+	for i := 0; i < b.N; i++ {
+		ps.Reset()
+		err = lazy.Marshal(ps)
+		require.NoError(b, err)
+		require.NotNil(b, ps.BufferBytes())
+	}
+}
+
+func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
+	src := createLogsData()
+
+	bytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, bytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		lazy := NewLogsData(bytes)
+
+		// Traverse all data to get it loaded. This is the worst case.
+		countAttrs(lazy)
+
+		keyValuePool.Release(lazy)
+	}
+}
+
 func BenchmarkLazyPassthroughNoReadOrModify(b *testing.B) {
 	// This is the best case scenario for passthrough. We don't read or modify any
 	// data, just unmarshal and marshal it exactly as it is.
 
 	src := createLogsData()
 
-	marshalBytes, err := proto.Marshal(src)
+	marshalBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
 	require.NotNil(b, marshalBytes)
 
@@ -294,7 +422,7 @@ func BenchmarkLazyPassthroughFullReadNoModify(b *testing.B) {
 
 	src := createLogsData()
 
-	marshalBytes, err := proto.Marshal(src)
+	marshalBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
 	require.NotNil(b, marshalBytes)
 
@@ -318,7 +446,7 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 
 	src := createLogsData()
 
-	marshalBytes, err := proto.Marshal(src)
+	marshalBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
 	require.NotNil(b, marshalBytes)
 
@@ -335,68 +463,6 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 		err = lazy.Marshal(ps)
 		require.NoError(b, err)
 		require.NotNil(b, ps.BufferBytes())
-
-		keyValuePool.Release(lazy)
-	}
-}
-
-func BenchmarkLazyMarshalUnchanged(b *testing.B) {
-	src := createLogsData()
-
-	marshalBytes, err := proto.Marshal(src)
-	require.NoError(b, err)
-	require.NotNil(b, marshalBytes)
-
-	lazy := NewLogsData(marshalBytes)
-	countAttrs(lazy)
-
-	b.ResetTimer()
-
-	ps := molecule.NewProtoStream()
-	for i := 0; i < b.N; i++ {
-		ps.Reset()
-		err = lazy.Marshal(ps)
-		require.NoError(b, err)
-		require.NotNil(b, ps.BufferBytes())
-	}
-}
-
-func BenchmarkLazyMarshalFullModified(b *testing.B) {
-	src := createLogsData()
-
-	marshalBytes, err := proto.Marshal(src)
-	require.NoError(b, err)
-	require.NotNil(b, marshalBytes)
-
-	lazy := NewLogsData(marshalBytes)
-	countAttrs(lazy)
-	touchAll(lazy)
-
-	b.ResetTimer()
-
-	ps := molecule.NewProtoStream()
-	for i := 0; i < b.N; i++ {
-		ps.Reset()
-		err = lazy.Marshal(ps)
-		require.NoError(b, err)
-		require.NotNil(b, ps.BufferBytes())
-	}
-}
-
-func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
-	src := createLogsData()
-
-	bytes, err := proto.Marshal(src)
-	require.NoError(b, err)
-	require.NotNil(b, bytes)
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		lazy := NewLogsData(bytes)
-
-		// Traverse all data to get it loaded. This is the worst case.
-		countAttrs(lazy)
 
 		keyValuePool.Release(lazy)
 	}
