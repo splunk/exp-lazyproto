@@ -312,13 +312,13 @@ type LogRecord struct {
 	ProtoMessage
 	bytes                  []byte
 	timeUnixNano           uint64
-	attributes             []KeyValue
+	attributes             []*KeyValue
 	droppedAttributesCount uint32
 }
 
 const logRecordAttributesDecoded = 2
 
-func (m *LogRecord) GetAttributes() *[]KeyValue {
+func (m *LogRecord) GetAttributes() *[]*KeyValue {
 	if m.flags&logRecordAttributesDecoded == 0 {
 		for i := range m.attributes {
 			m.attributes[i].decode()
@@ -358,7 +358,7 @@ func (m *LogRecord) decode() {
 				if err != nil {
 					return false, err
 				}
-				kv := &m.attributes[attrIndex]
+				kv := m.attributes[attrIndex]
 				attrIndex++
 				*kv = KeyValue{
 					bytes:        v,

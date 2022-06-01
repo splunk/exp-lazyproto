@@ -439,7 +439,7 @@ func BenchmarkLogRecordMarshal(b *testing.B) {
 		value: "val",
 	}
 	lr := LogRecord{
-		attributes: []KeyValue{kv},
+		attributes: []*KeyValue{&kv},
 	}
 
 	ps := molecule.NewProtoStream()

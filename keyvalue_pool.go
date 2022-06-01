@@ -3,14 +3,14 @@ package simple
 import "sync"
 
 type KeyValuePool struct {
-	freedKeyValue []KeyValue
+	freedKeyValue []*KeyValue
 }
 
 var keyValuePool = KeyValuePool{}
 
 var poolMux = sync.Mutex{}
 
-func (p *KeyValuePool) GetKeyValues(count int) []KeyValue {
+func (p *KeyValuePool) GetKeyValues(count int) []*KeyValue {
 	poolMux.Lock()
 	defer poolMux.Unlock()
 
@@ -20,12 +20,15 @@ func (p *KeyValuePool) GetKeyValues(count int) []KeyValue {
 		return r
 	}
 
-	r := make([]KeyValue, count)
+	r := make([]*KeyValue, count)
 	i := 0
 	for ; i < len(p.freedKeyValue); i++ {
 		r[i] = p.freedKeyValue[i]
 	}
 	p.freedKeyValue = nil
+	for ; i < count; i++ {
+		r[i] = &KeyValue{}
+	}
 
 	return r
 }
