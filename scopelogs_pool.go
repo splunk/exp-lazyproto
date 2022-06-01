@@ -7,6 +7,9 @@ type ScopeLogsPool struct {
 var scopeLogsPool = ScopeLogsPool{}
 
 func (p *ScopeLogsPool) GetScopeLogss(count int) []ScopeLogs {
+	poolMux.Lock()
+	defer poolMux.Unlock()
+
 	if len(p.freedScopeLogs) >= count {
 		r := p.freedScopeLogs[len(p.freedScopeLogs)-count:]
 		p.freedScopeLogs = p.freedScopeLogs[:len(p.freedScopeLogs)-count]
@@ -23,8 +26,8 @@ func (p *ScopeLogsPool) GetScopeLogss(count int) []ScopeLogs {
 	return r
 }
 
-func (p *ScopeLogsPool) Release(l *LogsData) {
-	for _, rl := range l.resourceLogs {
-		p.freedScopeLogs = append(p.freedScopeLogs, rl.scopeLogs...)
-	}
-}
+//func (p *ScopeLogsPool) Release(l *LogsData) {
+//	for _, rl := range l.resourceLogs {
+//		p.freedScopeLogs = append(p.freedScopeLogs, rl.scopeLogs...)
+//	}
+//}

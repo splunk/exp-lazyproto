@@ -7,6 +7,9 @@ type LogRecordPool struct {
 var logRecordPool = LogRecordPool{}
 
 func (p *LogRecordPool) GetLogRecords(count int) []LogRecord {
+	poolMux.Lock()
+	defer poolMux.Unlock()
+
 	if len(p.freedLogRecord) >= count {
 		r := p.freedLogRecord[len(p.freedLogRecord)-count:]
 		p.freedLogRecord = p.freedLogRecord[:len(p.freedLogRecord)-count]
@@ -20,30 +23,13 @@ func (p *LogRecordPool) GetLogRecords(count int) []LogRecord {
 	}
 	p.freedLogRecord = nil
 
-	for ; i < count; i++ {
-		//r[i] = LogRecord{}
-	}
-
 	return r
 }
 
-//func (p *LogRecordPool) GetLogRecord() *LogRecord {
-//	if len(p.freedLogRecord) == 0 {
-//		return &LogRecord{}
+//func (p *LogRecordPool) Release(l *LogsData) {
+//	for _, rl := range l.resourceLogs {
+//		for _, sl := range rl.scopeLogs {
+//			p.freedLogRecord = append(p.freedLogRecord, sl.logRecords...)
+//		}
 //	}
-//	r := p.freedLogRecord[len(p.freedLogRecord)-1]
-//	p.freedLogRecord = p.freedLogRecord[:len(p.freedLogRecord)-1]
-//	return r
-//}
-
-func (p *LogRecordPool) Release(l *LogsData) {
-	for _, rl := range l.resourceLogs {
-		for _, sl := range rl.scopeLogs {
-			p.freedLogRecord = append(p.freedLogRecord, sl.logRecords...)
-		}
-	}
-}
-
-//func (p *LogRecordPool) releaseLogRecord(attr *LogRecord) {
-//	p.freedLogRecord = append(p.freedLogRecord, attr)
 //}

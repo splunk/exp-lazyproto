@@ -1,12 +1,19 @@
 package simple
 
+import "sync"
+
 type KeyValuePool struct {
 	freedKeyValue []KeyValue
 }
 
 var keyValuePool = KeyValuePool{}
 
+var poolMux = sync.Mutex{}
+
 func (p *KeyValuePool) GetKeyValues(count int) []KeyValue {
+	poolMux.Lock()
+	defer poolMux.Unlock()
+
 	if len(p.freedKeyValue) >= count {
 		r := p.freedKeyValue[len(p.freedKeyValue)-count:]
 		p.freedKeyValue = p.freedKeyValue[:len(p.freedKeyValue)-count]
@@ -24,6 +31,9 @@ func (p *KeyValuePool) GetKeyValues(count int) []KeyValue {
 }
 
 func (p *KeyValuePool) Release(l *LogsData) {
+	poolMux.Lock()
+	defer poolMux.Unlock()
+
 	for _, rl := range l.resourceLogs {
 		scopeLogsPool.freedScopeLogs = append(
 			scopeLogsPool.freedScopeLogs, rl.scopeLogs...,
