@@ -3,31 +3,24 @@ package simple
 import (
 	"github.com/richardartoul/molecule"
 	"github.com/richardartoul/molecule/src/codec"
+	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 )
 
-const flagsMessageModified = 1
-
-type ProtoMessage struct {
-	flags  uint64
-	parent *ProtoMessage
-}
-
 type LogsData struct {
-	ProtoMessage
-	bytes        []byte
+	protoMessage lazyproto.ProtoMessage
 	resourceLogs []ResourceLogs
 }
 
 const logsDataResourceLogsDecoded = 2
 
 func NewLogsData(bytes []byte) *LogsData {
-	m := &LogsData{bytes: bytes}
+	m := &LogsData{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
 }
 
 func (m *LogsData) decode() {
-	buf := codec.NewBuffer(m.bytes)
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	lrCount := 0
 	molecule.MessageFieldNums(
@@ -39,7 +32,7 @@ func (m *LogsData) decode() {
 	)
 	m.resourceLogs = make([]ResourceLogs, 0, lrCount)
 
-	buf.Reset(m.bytes)
+	buf.Reset(m.protoMessage.Bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
@@ -51,8 +44,9 @@ func (m *LogsData) decode() {
 				m.resourceLogs = append(
 					m.resourceLogs,
 					ResourceLogs{
-						bytes:        v,
-						ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+						protoMessage: lazyproto.ProtoMessage{
+							Parent: &m.protoMessage, Bytes: v,
+						},
 					},
 				)
 			}
@@ -62,58 +56,57 @@ func (m *LogsData) decode() {
 }
 
 func (m *LogsData) GetResourceLogs() *[]ResourceLogs {
-	if m.flags&logsDataResourceLogsDecoded == 0 {
+	if m.protoMessage.Flags&logsDataResourceLogsDecoded == 0 {
 		for i := range m.resourceLogs {
 			m.resourceLogs[i].decode()
 		}
-		m.flags |= logsDataResourceLogsDecoded
+		m.protoMessage.Flags |= logsDataResourceLogsDecoded
 	}
 	return &m.resourceLogs
 }
 
 func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
-	if m.flags&flagsMessageModified != 0 {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		for _, logs := range m.resourceLogs {
 			token := ps.BeginEmbedded()
 			logs.Marshal(ps)
 			ps.EndEmbedded(token, 1)
 		}
 	} else {
-		ps.Raw(m.bytes)
+		ps.Raw(m.protoMessage.Bytes)
 	}
 	return nil
 }
 
 type ResourceLogs struct {
-	ProtoMessage
-	bytes     []byte
-	resource  *Resource
-	scopeLogs []ScopeLogs
+	protoMessage lazyproto.ProtoMessage
+	resource     *Resource
+	scopeLogs    []ScopeLogs
 }
 
 const resourceLogsResourceDecoded = 2
 const resourceLogsScopeLogsDecoded = 4
 
 func (m *ResourceLogs) GetResource() **Resource {
-	if m.flags&resourceLogsResourceDecoded == 0 {
+	if m.protoMessage.Flags&resourceLogsResourceDecoded == 0 {
 		m.resource.decode()
-		m.flags |= resourceLogsResourceDecoded
+		m.protoMessage.Flags |= resourceLogsResourceDecoded
 	}
 	return &m.resource
 }
 
 func (m *ResourceLogs) GetScopeLogs() *[]ScopeLogs {
-	if m.flags&resourceLogsScopeLogsDecoded == 0 {
+	if m.protoMessage.Flags&resourceLogsScopeLogsDecoded == 0 {
 		for i := range m.scopeLogs {
 			m.scopeLogs[i].decode()
 		}
-		m.flags |= resourceLogsScopeLogsDecoded
+		m.protoMessage.Flags |= resourceLogsScopeLogsDecoded
 	}
 	return &m.scopeLogs
 }
 
 func (m *ResourceLogs) decode() {
-	buf := codec.NewBuffer(m.bytes)
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	lrCount := 0
 	molecule.MessageFieldNums(
@@ -127,7 +120,7 @@ func (m *ResourceLogs) decode() {
 	m.scopeLogs = scopeLogsPool.GetScopeLogss(lrCount)
 
 	lrIndex := 0
-	buf.Reset(m.bytes)
+	buf.Reset(m.protoMessage.Bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
@@ -137,8 +130,9 @@ func (m *ResourceLogs) decode() {
 					return false, err
 				}
 				m.resource = &Resource{
-					bytes:        v,
-					ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+					protoMessage: lazyproto.ProtoMessage{
+						Parent: &m.protoMessage, Bytes: v,
+					},
 				}
 
 			case 2:
@@ -149,8 +143,9 @@ func (m *ResourceLogs) decode() {
 				sl := &m.scopeLogs[lrIndex]
 				lrIndex++
 				*sl = ScopeLogs{
-					bytes:        v,
-					ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+					protoMessage: lazyproto.ProtoMessage{
+						Parent: &m.protoMessage, Bytes: v,
+					},
 				}
 			}
 			return true, nil
@@ -159,7 +154,7 @@ func (m *ResourceLogs) decode() {
 }
 
 func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
-	if m.flags&flagsMessageModified != 0 {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		if m.resource != nil {
 			token := ps.BeginEmbedded()
 			m.resource.Marshal(ps)
@@ -171,14 +166,13 @@ func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbedded(token, 2)
 		}
 	} else {
-		ps.Raw(m.bytes)
+		ps.Raw(m.protoMessage.Bytes)
 	}
 	return nil
 }
 
 type Resource struct {
-	ProtoMessage
-	bytes                  []byte
+	protoMessage           lazyproto.ProtoMessage
 	attributes             []KeyValue
 	DroppedAttributesCount uint32
 }
@@ -186,17 +180,17 @@ type Resource struct {
 const resourceAttributesDecoded = 2
 
 func (m *Resource) GetAttributes() *[]KeyValue {
-	if m.flags&resourceAttributesDecoded == 0 {
+	if m.protoMessage.Flags&resourceAttributesDecoded == 0 {
 		for i := range m.attributes {
 			m.attributes[i].decode()
 		}
-		m.flags |= resourceAttributesDecoded
+		m.protoMessage.Flags |= resourceAttributesDecoded
 	}
 	return &m.attributes
 }
 
 func (m *Resource) decode() {
-	buf := codec.NewBuffer(m.bytes)
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
@@ -207,8 +201,9 @@ func (m *Resource) decode() {
 				}
 				m.attributes = append(
 					m.attributes, KeyValue{
-						bytes:        v,
-						ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+						protoMessage: lazyproto.ProtoMessage{
+							Parent: &m.protoMessage, Bytes: v,
+						},
 					},
 				)
 
@@ -228,7 +223,7 @@ var resourceAttrKeyPrepared = molecule.PrepareEmbeddedField(1)
 var resourceDroppedKeyPrepared = molecule.PrepareUint32Field(2)
 
 func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
-	if m.flags&flagsMessageModified != 0 {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		for _, attr := range m.attributes {
 			token := ps.BeginEmbedded()
 			attr.Marshal(ps)
@@ -237,31 +232,30 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 		}
 		ps.Uint32Prepared(resourceDroppedKeyPrepared, m.DroppedAttributesCount)
 	} else {
-		ps.Raw(m.bytes)
+		ps.Raw(m.protoMessage.Bytes)
 	}
 	return nil
 }
 
 type ScopeLogs struct {
-	ProtoMessage
-	bytes      []byte
-	logRecords []LogRecord
+	protoMessage lazyproto.ProtoMessage
+	logRecords   []LogRecord
 }
 
 const scopeLogsLogRecordsDecoded = 2
 
 func (m *ScopeLogs) GetLogRecords() *[]LogRecord {
-	if m.flags&scopeLogsLogRecordsDecoded == 0 {
+	if m.protoMessage.Flags&scopeLogsLogRecordsDecoded == 0 {
 		for i := range m.logRecords {
 			m.logRecords[i].decode()
 		}
-		m.flags |= scopeLogsLogRecordsDecoded
+		m.protoMessage.Flags |= scopeLogsLogRecordsDecoded
 	}
 	return &m.logRecords
 }
 
 func (m *ScopeLogs) decode() {
-	buf := codec.NewBuffer(m.bytes)
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	lrCount := 0
 	molecule.MessageFieldNums(
@@ -275,7 +269,7 @@ func (m *ScopeLogs) decode() {
 	m.logRecords = logRecordPool.GetLogRecords(lrCount)
 
 	lrIndex := 0
-	buf.Reset(m.bytes)
+	buf.Reset(m.protoMessage.Bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
@@ -286,8 +280,9 @@ func (m *ScopeLogs) decode() {
 				}
 				lr := &m.logRecords[lrIndex]
 				*lr = LogRecord{
-					bytes:        v,
-					ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+					protoMessage: lazyproto.ProtoMessage{
+						Parent: &m.protoMessage, Bytes: v,
+					},
 				}
 			}
 			return true, nil
@@ -296,21 +291,20 @@ func (m *ScopeLogs) decode() {
 }
 
 func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
-	if m.flags&flagsMessageModified != 0 {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		for _, logRecord := range m.logRecords {
 			token := ps.BeginEmbedded()
 			logRecord.Marshal(ps)
 			ps.EndEmbedded(token, 1)
 		}
 	} else {
-		ps.Raw(m.bytes)
+		ps.Raw(m.protoMessage.Bytes)
 	}
 	return nil
 }
 
 type LogRecord struct {
-	ProtoMessage
-	bytes                  []byte
+	protoMessage           lazyproto.ProtoMessage
 	timeUnixNano           uint64
 	attributes             []*KeyValue
 	droppedAttributesCount uint32
@@ -319,17 +313,17 @@ type LogRecord struct {
 const logRecordAttributesDecoded = 2
 
 func (m *LogRecord) GetAttributes() *[]*KeyValue {
-	if m.flags&logRecordAttributesDecoded == 0 {
+	if m.protoMessage.Flags&logRecordAttributesDecoded == 0 {
 		for i := range m.attributes {
 			m.attributes[i].decode()
 		}
-		m.flags |= logRecordAttributesDecoded
+		m.protoMessage.Flags |= logRecordAttributesDecoded
 	}
 	return &m.attributes
 }
 
 func (m *LogRecord) decode() {
-	buf := codec.NewBuffer(m.bytes)
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
 	attrCount := 0
 	molecule.MessageFieldNums(
 		buf, func(fieldNum int32) {
@@ -342,7 +336,7 @@ func (m *LogRecord) decode() {
 	m.attributes = keyValuePool.GetKeyValues(attrCount)
 
 	attrIndex := 0
-	buf.Reset(m.bytes)
+	buf.Reset(m.protoMessage.Bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
@@ -361,8 +355,9 @@ func (m *LogRecord) decode() {
 				kv := m.attributes[attrIndex]
 				attrIndex++
 				*kv = KeyValue{
-					bytes:        v,
-					ProtoMessage: ProtoMessage{parent: &m.ProtoMessage},
+					protoMessage: lazyproto.ProtoMessage{
+						Parent: &m.protoMessage, Bytes: v,
+					},
 				}
 
 			case 3:
@@ -382,7 +377,7 @@ var logRecordAttrPrepared = molecule.PrepareEmbeddedField(2)
 var logRecordDroppedPrepared = molecule.PrepareUint32Field(3)
 
 func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
-	if m.flags&flagsMessageModified != 0 {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		ps.Fixed64Prepared(logRecordTimePrepared, m.timeUnixNano)
 
 		for _, attr := range m.attributes {
@@ -393,16 +388,15 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 
 		ps.Uint32Prepared(logRecordDroppedPrepared, m.droppedAttributesCount)
 	} else {
-		ps.Raw(m.bytes)
+		ps.Raw(m.protoMessage.Bytes)
 	}
 	return nil
 }
 
 type KeyValue struct {
-	ProtoMessage
-	bytes []byte
-	key   string
-	value string
+	protoMessage lazyproto.ProtoMessage
+	key          string
+	value        string
 }
 
 func (m *KeyValue) Key() string {
@@ -411,27 +405,11 @@ func (m *KeyValue) Key() string {
 
 func (m *KeyValue) SetKey(s string) {
 	m.key = s
-	m.markModified() // TODO: check if this is inlined.
-}
-
-func (m *ProtoMessage) markModified() {
-	if m.flags&flagsMessageModified != 0 {
-		return
-	}
-
-	m.flags |= flagsMessageModified
-	parent := m.parent
-	for parent != nil {
-		if parent.flags&flagsMessageModified != 0 {
-			break
-		}
-		parent.flags |= flagsMessageModified
-		parent = parent.parent
-	}
+	m.protoMessage.MarkModified() // TODO: check if this is inlined.
 }
 
 func (m *KeyValue) decode() {
-	buf := codec.NewBuffer(m.bytes)
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
@@ -458,11 +436,11 @@ var keyValuePreparedKey = molecule.PrepareStringField(1)
 var keyValuePreparedValue = molecule.PrepareStringField(2)
 
 func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
-	if m.flags&flagsMessageModified != 0 {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		ps.PreparedString(keyValuePreparedKey, m.key)
 		ps.PreparedString(keyValuePreparedValue, m.value)
 	} else {
-		ps.Raw(m.bytes)
+		ps.Raw(m.protoMessage.Bytes)
 	}
 	return nil
 }

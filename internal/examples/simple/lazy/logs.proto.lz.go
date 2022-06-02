@@ -3,33 +3,26 @@ package simple
 import (
 	"github.com/richardartoul/molecule"
 	"github.com/richardartoul/molecule/src/codec"
+	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 )
-
-const flagsMessageModified = 1
-
-type ProtoMessage struct {
-	flags  uint64
-	parent *ProtoMessage
-	bytes  []byte
-}
 
 // ====================== Generated for message LogsData ======================
 
 // LogsData contains all log data
 type LogsData struct {
-	ProtoMessage
+	protoMessage lazyproto.ProtoMessage
 	// List of ResourceLogs
 	resourceLogs []*ResourceLogs
 }
 
 func NewLogsData(bytes []byte) *LogsData {
-	m := &LogsData{ProtoMessage: ProtoMessage{bytes: bytes}}
+	m := &LogsData{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
 }
 
 func (m *LogsData) decode() {
-	buf := codec.NewBuffer(m.bytes)
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	// Count all repeated fields. We need one counter per field.
 	resourceLogsCount := 0
@@ -45,7 +38,7 @@ func (m *LogsData) decode() {
 	m.resourceLogs = make([]*ResourceLogs, 0, resourceLogsCount)
 
 	// Reset the buffer to start iterating over the fields again
-	buf.Reset(m.bytes)
+	buf.Reset(m.protoMessage.Bytes)
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	resourceLogsCount = 0
@@ -61,7 +54,9 @@ func (m *LogsData) decode() {
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
 				m.resourceLogs[resourceLogsCount] = &ResourceLogs{
-					ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
+					protoMessage: lazyproto.ProtoMessage{
+						Parent: &m.protoMessage, Bytes: v,
+					},
 				}
 				resourceLogsCount++
 			}
@@ -74,12 +69,12 @@ func (m *LogsData) decode() {
 const flagLogsDataResourceLogsDecoded = 0x0000000000000002
 
 func (m *LogsData) GetResourceLogs() []*ResourceLogs {
-	if m.flags&flagLogsDataResourceLogsDecoded == 0 {
+	if m.protoMessage.Flags&flagLogsDataResourceLogsDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.resourceLogs {
 			m.resourceLogs[i].decode()
 		}
-		m.flags |= flagLogsDataResourceLogsDecoded
+		m.protoMessage.Flags |= flagLogsDataResourceLogsDecoded
 	}
 	return m.resourceLogs
 }
@@ -87,7 +82,7 @@ func (m *LogsData) GetResourceLogs() []*ResourceLogs {
 // ====================== Generated for message ResourceLogs ======================
 
 type ResourceLogs struct {
-	ProtoMessage
+	protoMessage lazyproto.ProtoMessage
 	// The Resource
 	resource *Resource
 	// List of ScopeLogs
@@ -95,13 +90,13 @@ type ResourceLogs struct {
 }
 
 func NewResourceLogs(bytes []byte) *ResourceLogs {
-	m := &ResourceLogs{ProtoMessage: ProtoMessage{bytes: bytes}}
+	m := &ResourceLogs{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
 }
 
 func (m *ResourceLogs) decode() {
-	buf := codec.NewBuffer(m.bytes)
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	// Count all repeated fields. We need one counter per field.
 	scopeLogsCount := 0
@@ -117,7 +112,7 @@ func (m *ResourceLogs) decode() {
 	m.scopeLogs = make([]*ScopeLogs, 0, scopeLogsCount)
 
 	// Reset the buffer to start iterating over the fields again
-	buf.Reset(m.bytes)
+	buf.Reset(m.protoMessage.Bytes)
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	scopeLogsCount = 0
@@ -132,7 +127,9 @@ func (m *ResourceLogs) decode() {
 					return false, err
 				}
 				m.resource = &Resource{
-					ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
+					protoMessage: lazyproto.ProtoMessage{
+						Parent: &m.protoMessage, Bytes: v,
+					},
 				}
 			case 2:
 				// Decode scopeLogs.
@@ -142,7 +139,9 @@ func (m *ResourceLogs) decode() {
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
 				m.scopeLogs[scopeLogsCount] = &ScopeLogs{
-					ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
+					protoMessage: lazyproto.ProtoMessage{
+						Parent: &m.protoMessage, Bytes: v,
+					},
 				}
 				scopeLogsCount++
 			}
@@ -156,21 +155,21 @@ const flagResourceLogsResourceDecoded = 0x0000000000000002
 const flagResourceLogsScopeLogsDecoded = 0x0000000000000004
 
 func (m *ResourceLogs) GetResource() *Resource {
-	if m.flags&flagResourceLogsResourceDecoded == 0 {
+	if m.protoMessage.Flags&flagResourceLogsResourceDecoded == 0 {
 		// Decode nested message(s).
 		m.resource.decode()
-		m.flags |= flagResourceLogsResourceDecoded
+		m.protoMessage.Flags |= flagResourceLogsResourceDecoded
 	}
 	return m.resource
 }
 
 func (m *ResourceLogs) GetScopeLogs() []*ScopeLogs {
-	if m.flags&flagResourceLogsScopeLogsDecoded == 0 {
+	if m.protoMessage.Flags&flagResourceLogsScopeLogsDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.scopeLogs {
 			m.scopeLogs[i].decode()
 		}
-		m.flags |= flagResourceLogsScopeLogsDecoded
+		m.protoMessage.Flags |= flagResourceLogsScopeLogsDecoded
 	}
 	return m.scopeLogs
 }
@@ -178,19 +177,19 @@ func (m *ResourceLogs) GetScopeLogs() []*ScopeLogs {
 // ====================== Generated for message Resource ======================
 
 type Resource struct {
-	ProtoMessage
+	protoMessage           lazyproto.ProtoMessage
 	attributes             []*KeyValue
 	droppedAttributesCount uint32
 }
 
 func NewResource(bytes []byte) *Resource {
-	m := &Resource{ProtoMessage: ProtoMessage{bytes: bytes}}
+	m := &Resource{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
 }
 
 func (m *Resource) decode() {
-	buf := codec.NewBuffer(m.bytes)
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
@@ -206,7 +205,7 @@ func (m *Resource) decode() {
 	m.attributes = make([]*KeyValue, 0, attributesCount)
 
 	// Reset the buffer to start iterating over the fields again
-	buf.Reset(m.bytes)
+	buf.Reset(m.protoMessage.Bytes)
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	attributesCount = 0
@@ -222,7 +221,9 @@ func (m *Resource) decode() {
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
 				m.attributes[attributesCount] = &KeyValue{
-					ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
+					protoMessage: lazyproto.ProtoMessage{
+						Parent: &m.protoMessage, Bytes: v,
+					},
 				}
 				attributesCount++
 			case 2:
@@ -242,12 +243,12 @@ func (m *Resource) decode() {
 const flagResourceAttributesDecoded = 0x0000000000000002
 
 func (m *Resource) GetAttributes() []*KeyValue {
-	if m.flags&flagResourceAttributesDecoded == 0 {
+	if m.protoMessage.Flags&flagResourceAttributesDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.attributes {
 			m.attributes[i].decode()
 		}
-		m.flags |= flagResourceAttributesDecoded
+		m.protoMessage.Flags |= flagResourceAttributesDecoded
 	}
 	return m.attributes
 }
@@ -260,19 +261,19 @@ func (m *Resource) GetDroppedAttributesCount() uint32 {
 
 // A collection of Logs produced by a Scope.
 type ScopeLogs struct {
-	ProtoMessage
+	protoMessage lazyproto.ProtoMessage
 	// A list of log records.
 	logRecords []*LogRecord
 }
 
 func NewScopeLogs(bytes []byte) *ScopeLogs {
-	m := &ScopeLogs{ProtoMessage: ProtoMessage{bytes: bytes}}
+	m := &ScopeLogs{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
 }
 
 func (m *ScopeLogs) decode() {
-	buf := codec.NewBuffer(m.bytes)
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	// Count all repeated fields. We need one counter per field.
 	logRecordsCount := 0
@@ -288,7 +289,7 @@ func (m *ScopeLogs) decode() {
 	m.logRecords = make([]*LogRecord, 0, logRecordsCount)
 
 	// Reset the buffer to start iterating over the fields again
-	buf.Reset(m.bytes)
+	buf.Reset(m.protoMessage.Bytes)
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	logRecordsCount = 0
@@ -304,7 +305,9 @@ func (m *ScopeLogs) decode() {
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
 				m.logRecords[logRecordsCount] = &LogRecord{
-					ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
+					protoMessage: lazyproto.ProtoMessage{
+						Parent: &m.protoMessage, Bytes: v,
+					},
 				}
 				logRecordsCount++
 			}
@@ -317,12 +320,12 @@ func (m *ScopeLogs) decode() {
 const flagScopeLogsLogRecordsDecoded = 0x0000000000000002
 
 func (m *ScopeLogs) GetLogRecords() []*LogRecord {
-	if m.flags&flagScopeLogsLogRecordsDecoded == 0 {
+	if m.protoMessage.Flags&flagScopeLogsLogRecordsDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.logRecords {
 			m.logRecords[i].decode()
 		}
-		m.flags |= flagScopeLogsLogRecordsDecoded
+		m.protoMessage.Flags |= flagScopeLogsLogRecordsDecoded
 	}
 	return m.logRecords
 }
@@ -330,20 +333,20 @@ func (m *ScopeLogs) GetLogRecords() []*LogRecord {
 // ====================== Generated for message LogRecord ======================
 
 type LogRecord struct {
-	ProtoMessage
+	protoMessage           lazyproto.ProtoMessage
 	timeUnixNano           uint64
 	attributes             []*KeyValue
 	droppedAttributesCount uint32
 }
 
 func NewLogRecord(bytes []byte) *LogRecord {
-	m := &LogRecord{ProtoMessage: ProtoMessage{bytes: bytes}}
+	m := &LogRecord{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
 }
 
 func (m *LogRecord) decode() {
-	buf := codec.NewBuffer(m.bytes)
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
@@ -359,7 +362,7 @@ func (m *LogRecord) decode() {
 	m.attributes = make([]*KeyValue, 0, attributesCount)
 
 	// Reset the buffer to start iterating over the fields again
-	buf.Reset(m.bytes)
+	buf.Reset(m.protoMessage.Bytes)
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	attributesCount = 0
@@ -382,7 +385,9 @@ func (m *LogRecord) decode() {
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
 				m.attributes[attributesCount] = &KeyValue{
-					ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
+					protoMessage: lazyproto.ProtoMessage{
+						Parent: &m.protoMessage, Bytes: v,
+					},
 				}
 				attributesCount++
 			case 3:
@@ -406,12 +411,12 @@ func (m *LogRecord) GetTimeUnixNano() uint64 {
 }
 
 func (m *LogRecord) GetAttributes() []*KeyValue {
-	if m.flags&flagLogRecordAttributesDecoded == 0 {
+	if m.protoMessage.Flags&flagLogRecordAttributesDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.attributes {
 			m.attributes[i].decode()
 		}
-		m.flags |= flagLogRecordAttributesDecoded
+		m.protoMessage.Flags |= flagLogRecordAttributesDecoded
 	}
 	return m.attributes
 }
@@ -423,19 +428,19 @@ func (m *LogRecord) GetDroppedAttributesCount() uint32 {
 // ====================== Generated for message KeyValue ======================
 
 type KeyValue struct {
-	ProtoMessage
-	key   string
-	value string
+	protoMessage lazyproto.ProtoMessage
+	key          string
+	value        string
 }
 
 func NewKeyValue(bytes []byte) *KeyValue {
-	m := &KeyValue{ProtoMessage: ProtoMessage{bytes: bytes}}
+	m := &KeyValue{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
 }
 
 func (m *KeyValue) decode() {
-	buf := codec.NewBuffer(m.bytes)
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	// Iterate and decode the fields.
 	molecule.MessageEach(

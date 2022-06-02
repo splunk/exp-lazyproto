@@ -190,20 +190,8 @@ func (g *generator) oFile(fdescr *desc.FileDescriptor) error {
 import (
 	"github.com/richardartoul/molecule"
 	"github.com/richardartoul/molecule/src/codec"
+	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 )
-`,
-	)
-
-	g.o(
-		`
-const flagsMessageModified = 1
-
-type ProtoMessage struct {
-	flags  uint64
-	parent *ProtoMessage
-	bytes []byte
-}
-
 `,
 	)
 
@@ -269,7 +257,7 @@ func (g *generator) oMessage(msg *Message) error {
 
 	g.o("type %s struct {\n", msg.GetName())
 	g.i(1)
-	g.o("ProtoMessage\n")
+	g.o("protoMessage lazyproto.ProtoMessage\n")
 	for _, field := range msg.Fields {
 		si := field.GetSourceInfo()
 		if si != nil {
@@ -285,7 +273,7 @@ func (g *generator) oMessage(msg *Message) error {
 	g.o(
 		`
 func New%s(bytes []byte) *%s {
-	m := &%s{ProtoMessage: ProtoMessage{bytes: bytes}}
+	m := &%s{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
 }
@@ -309,7 +297,7 @@ func (g *generator) oMsgDecodeFunc(msg *Message) error {
 	g.o(
 		`
 func (m *%s) decode() {
-	buf := codec.NewBuffer(m.bytes)
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
 `, msg.GetName(),
 	)
 
@@ -385,7 +373,9 @@ if err != nil {
 					`
 // The slice is pre-allocated, assign to the appropriate index.
 m.%s[%s] = &%s{
-	ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
+	protoMessage: lazyproto.ProtoMessage{
+		Parent: &m.protoMessage, Bytes: v,
+	},
 }
 %s++
 `, field.GetName(), counterName, field.GetMessageType().GetName(), counterName,
@@ -394,7 +384,9 @@ m.%s[%s] = &%s{
 				g.o(
 					`
 m.%s = &%s{
-	ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
+	protoMessage: lazyproto.ProtoMessage{
+		Parent: &m.protoMessage, Bytes: v,
+	},
 }
 `, field.GetName(), field.GetMessageType().GetName(),
 				)
@@ -453,7 +445,7 @@ if fieldNum == %d {
 		)
 	}
 	g.o("\n// Reset the buffer to start iterating over the fields again")
-	g.o("\nbuf.Reset(m.bytes)\n")
+	g.o("\nbuf.Reset(m.protoMessage.Bytes)\n")
 	g.o("\n// Set slice indexes to 0 to begin iterating over repeated fields.\n")
 	for _, field := range fields {
 		counterName := field.GetName() + "Count"
@@ -507,7 +499,7 @@ func (g *generator) FieldAccessors(msg *Message, field *Field) error {
 
 	if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		g.i(1)
-		g.o("if m.flags&%s == 0 {\n", g.fieldFlagName(msg, field))
+		g.o("if m.protoMessage.Flags&%s == 0 {\n", g.fieldFlagName(msg, field))
 		g.i(1)
 		g.o("// Decode nested message(s).\n")
 		if field.IsRepeated() {
@@ -520,7 +512,7 @@ func (g *generator) FieldAccessors(msg *Message, field *Field) error {
 		}
 		g.i(-1)
 
-		g.o("	m.flags |= %s\n", g.fieldFlagName(msg, field))
+		g.o("	m.protoMessage.Flags |= %s\n", g.fieldFlagName(msg, field))
 		g.o("}\n")
 		g.i(-1)
 	}
