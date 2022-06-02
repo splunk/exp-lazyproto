@@ -554,14 +554,24 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 	return g.lastErr
 }
 
+func (g *generator) oMarshalPreparedField(msg *Message, field *Field, typeName string) {
+	g.o(
+		"ps.%sPrepared(prepared%s%s, m.%s)\n", typeName, msg.GetName(),
+		field.GetCapitalName(), field.GetName(),
+	)
+}
+
 func (g *generator) oMarshalField(msg *Message, field *Field) {
 	g.o("// Marshal %s\n", field.camelName)
 	switch field.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		g.o(
-			"ps.PreparedString(prepared%s%s, m.key)\n", msg.GetName(),
-			field.GetCapitalName(),
-		)
+		g.oMarshalPreparedField(msg, field, "String")
+
+	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
+		g.oMarshalPreparedField(msg, field, "Fixed64")
+
+	case descriptor.FieldDescriptorProto_TYPE_UINT32:
+		g.oMarshalPreparedField(msg, field, "Uint32")
 
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		if field.IsRepeated() {
@@ -587,9 +597,19 @@ func (g *generator) oMarshalField(msg *Message, field *Field) {
 func (g *generator) oPrepareMarshalField(msg *Message, field *Field) {
 	switch field.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		g.o(
-			"var prepared%s%s = molecule.PrepareStringField(%d)\n", msg.GetName(),
-			field.GetCapitalName(), field.GetNumber(),
-		)
+		g.o(preparedFieldDecl(msg, field, "String"))
+
+	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
+		g.o(preparedFieldDecl(msg, field, "Fixed64"))
+
+	case descriptor.FieldDescriptorProto_TYPE_UINT32:
+		g.o(preparedFieldDecl(msg, field, "Uint32"))
 	}
+}
+
+func preparedFieldDecl(msg *Message, field *Field, typeName string) string {
+	return fmt.Sprintf(
+		"var prepared%s%s = molecule.Prepare%sField(%d)\n", msg.GetName(),
+		field.GetCapitalName(), typeName, field.GetNumber(),
+	)
 }

@@ -298,6 +298,7 @@ func (m *Resource) decode() {
 }
 
 // Prepared keys for marshaling.
+var preparedResourceDroppedAttributesCount = molecule.PrepareUint32Field(2)
 
 func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
@@ -308,6 +309,9 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbedded(token, 1)
 		}
 		// Marshal droppedAttributesCount
+		ps.Uint32Prepared(
+			preparedResourceDroppedAttributesCount, m.droppedAttributesCount,
+		)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -501,10 +505,13 @@ func (m *LogRecord) decode() {
 }
 
 // Prepared keys for marshaling.
+var preparedLogRecordTimeUnixNano = molecule.PrepareFixed64Field(1)
+var preparedLogRecordDroppedAttributesCount = molecule.PrepareUint32Field(3)
 
 func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal timeUnixNano
+		ps.Fixed64Prepared(preparedLogRecordTimeUnixNano, m.timeUnixNano)
 		// Marshal attributes
 		for _, elem := range m.attributes {
 			token := ps.BeginEmbedded()
@@ -512,6 +519,9 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbedded(token, 2)
 		}
 		// Marshal droppedAttributesCount
+		ps.Uint32Prepared(
+			preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount,
+		)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -575,9 +585,9 @@ var preparedKeyValueValue = molecule.PrepareStringField(2)
 func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal key
-		ps.PreparedString(preparedKeyValueKey, m.key)
+		ps.StringPrepared(preparedKeyValueKey, m.key)
 		// Marshal value
-		ps.PreparedString(preparedKeyValueValue, m.key)
+		ps.StringPrepared(preparedKeyValueValue, m.value)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)

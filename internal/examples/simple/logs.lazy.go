@@ -437,8 +437,8 @@ var keyValuePreparedValue = molecule.PrepareStringField(2)
 
 func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
-		ps.PreparedString(keyValuePreparedKey, m.key)
-		ps.PreparedString(keyValuePreparedValue, m.value)
+		ps.StringPrepared(keyValuePreparedKey, m.key)
+		ps.StringPrepared(keyValuePreparedValue, m.value)
 	} else {
 		ps.Raw(m.protoMessage.Bytes)
 	}

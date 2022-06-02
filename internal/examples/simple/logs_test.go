@@ -550,12 +550,12 @@ func BenchmarkWriteUint32Prepared(b *testing.B) {
 	}
 }
 
-func BenchmarkWriteUint32LongPrepared(b *testing.B) {
-	val := uint32(123)
-	ps := molecule.NewProtoStream()
-	k := molecule.PrepareLongField(1, protowire.VarintType)
-	for i := 0; i < b.N; i++ {
-		ps.Reset()
-		ps.Uint32LongPrepared(k, val)
-	}
-}
+//func BenchmarkWriteUint32LongPrepared(b *testing.B) {
+//	val := uint32(123)
+//	ps := molecule.NewProtoStream()
+//	k := molecule.PrepareLongField(1, protowire.VarintType)
+//	for i := 0; i < b.N; i++ {
+//		ps.Reset()
+//		ps.Uint32LongPrepared(k, val)
+//	}
+//}
