@@ -13,8 +13,10 @@ type ProtoMessage struct {
 	bytes  []byte
 }
 
+// LogsData contains all log data
 type LogsData struct {
 	ProtoMessage
+	// List of ResourceLogs
 	resource_logs []*ResourceLogs
 }
 
@@ -68,7 +70,9 @@ func (m *LogsData) decode() {
 
 type ResourceLogs struct {
 	ProtoMessage
-	resource   *Resource
+	// The Resource
+	resource *Resource
+	// List of ScopeLogs
 	scope_logs []*ScopeLogs
 }
 
@@ -229,8 +233,10 @@ func (m *KeyValue) decode() {
 	)
 }
 
+// A collection of Logs produced by a Scope.
 type ScopeLogs struct {
 	ProtoMessage
+	// A list of log records.
 	log_records []*LogRecord
 }
 

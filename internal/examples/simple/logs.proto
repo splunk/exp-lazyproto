@@ -4,12 +4,16 @@ package simple;
 
 option go_package = "gen/logs";
 
+// LogsData contains all log data
 message LogsData {
+  // List of ResourceLogs
   repeated ResourceLogs resource_logs = 1;
 }
 
 message ResourceLogs {
+  // The Resource
   Resource resource = 1;
+  // List of ScopeLogs
   repeated ScopeLogs scope_logs = 2;
 }
 

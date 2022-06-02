@@ -140,11 +140,20 @@ func (g *generator) processFile(inputFilePath string) error {
 		Accessor: func(filename string) (io.ReadCloser, error) {
 			return os.Open(inputFilePath)
 		},
+		IncludeSourceCodeInfo: true,
 	}
 	fdescrs, err := p.ParseFiles(inputFilePath)
 	if err != nil {
 		return err
 	}
+
+	//asts, err := p.ParseToAST(inputFilePath)
+	//if err != nil {
+	//	return err
+	//}
+	//for _, ast := range asts {
+	//	ast.GetSyntax()
+	//}
 
 	for _, fdescr := range fdescrs {
 		if err := g.oFile(fdescr); err != nil {
@@ -200,93 +209,6 @@ type ProtoMessage struct {
 	return nil
 }
 
-//func (g *generator) oParsed() error {
-//	fname := path.Base(g.file.InputFilePath) + ".lz.go"
-//	fname = path.Join(g.outputDir, fname)
-//	fdir := path.Dir(fname)
-//	if err := os.MkdirAll(fdir, 0700); err != nil {
-//		return err
-//	}
-//
-//	var err error
-//	g.outF, err = os.Create(fname)
-//	if err != nil {
-//		return err
-//	}
-//
-//	g.o("package %s\n", g.file.PackageName)
-//	g.o(
-//		`
-//import (
-//	"github.com/richardartoul/molecule"
-//	"github.com/richardartoul/molecule/src/codec"
-//)
-//`,
-//	)
-//
-//	g.o(
-//		`
-//const flagsMessageModified = 1
-//type ProtoMessage struct {
-//	flags  uint64
-//	parent *ProtoMessage
-//	bytes []byte
-//}
-//`,
-//	)
-//
-//	for _, msg := range g.file.Messages {
-//		g.o("type %s struct {\n", msg.Name)
-//		g.i(1)
-//		g.o("ProtoMessage\n")
-//		//for _, field := range msg.Fields {
-//		//	g.o("%s %s\n", field.FieldName, g.convertType(field))
-//		//}
-//		g.i(-1)
-//		g.o("}\n")
-//
-//		g.o(
-//			`
-//func New%s(bytes []byte) *%s {
-//	m := &%s{ProtoMessage: ProtoMessage{bytes: bytes}}
-//	m.decode()
-//	return m
-//}
-//
-//func (m *%s) decode() {
-//	buf := codec.NewBuffer(m.bytes)
-//`, msg.Name, msg.Name, msg.Name, msg.Name,
-//		)
-//
-//		g.oRepeatedFieldCounts()
-//
-//		g.o(
-//			`
-//	molecule.MessageEach(
-//		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
-//			switch fieldNum {
-//`,
-//		)
-//
-//		g.i(3)
-//		//g.oFieldDecode(msg.Fields)
-//		g.i(-3)
-//
-//		g.o(
-//			`
-//			}
-//			return true, nil
-//		},
-//	)
-//}
-//
-//`,
-//		)
-//	}
-//
-//	return nil
-//}
-
 func (g *generator) o(str string, a ...any) bool {
 
 	str = fmt.Sprintf(str, a...)
@@ -333,10 +255,23 @@ func (g *generator) convertType(field *desc.FieldDescriptor) string {
 }
 
 func (g *generator) oMessage(msg *desc.MessageDescriptor) error {
+	si := msg.GetSourceInfo()
+	if si != nil {
+		if si.GetLeadingComments() != "" {
+			g.o("//%s", si.GetLeadingComments())
+		}
+	}
+
 	g.o("type %s struct {\n", msg.GetName())
 	g.i(1)
 	g.o("ProtoMessage\n")
 	for _, field := range msg.GetFields() {
+		si := field.GetSourceInfo()
+		if si != nil {
+			if si.GetLeadingComments() != "" {
+				g.o("//%s", si.GetLeadingComments())
+			}
+		}
 		g.o("%s %s\n", field.GetName(), g.convertType(field))
 	}
 	g.i(-1)
@@ -349,10 +284,17 @@ func New%s(bytes []byte) *%s {
 	m.decode()
 	return m
 }
+`, msg.GetName(), msg.GetName(), msg.GetName(),
+	)
+	return g.oMsgDecode(msg)
+}
 
+func (g *generator) oMsgDecode(msg *desc.MessageDescriptor) error {
+	g.o(
+		`
 func (m *%s) decode() {
 	buf := codec.NewBuffer(m.bytes)
-`, msg.GetName(), msg.GetName(), msg.GetName(), msg.GetName(),
+`, msg.GetName(),
 	)
 
 	g.i(1)
