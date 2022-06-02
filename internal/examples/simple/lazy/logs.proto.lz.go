@@ -1,9 +1,9 @@
 package simple
 
 import (
-	"github.com/richardartoul/molecule"
-	"github.com/richardartoul/molecule/src/codec"
 	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
+	"github.com/tigrannajaryan/molecule"
+	"github.com/tigrannajaryan/molecule/src/codec"
 )
 
 // ====================== Generated for message LogsData ======================

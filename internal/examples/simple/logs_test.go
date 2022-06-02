@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	gogolib "github.com/gogo/protobuf/proto"
-	"github.com/richardartoul/molecule"
-	"github.com/richardartoul/molecule/src/protowire"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	googlemsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/google/gen/logs"
+	"github.com/tigrannajaryan/molecule"
+	"github.com/tigrannajaryan/molecule/src/protowire"
 	googlelib "google.golang.org/protobuf/proto"
 
 	gogomsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/gogo/gen/logs"

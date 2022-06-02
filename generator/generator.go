@@ -188,8 +188,8 @@ func (g *generator) oFile(fdescr *desc.FileDescriptor) error {
 	g.o(
 		`
 import (
-	"github.com/richardartoul/molecule"
-	"github.com/richardartoul/molecule/src/codec"
+	"github.com/tigrannajaryan/molecule"
+	"github.com/tigrannajaryan/molecule/src/codec"
 	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 )
 `,
