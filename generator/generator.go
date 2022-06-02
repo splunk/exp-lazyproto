@@ -2,12 +2,17 @@ package generator
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"strings"
 
-	"github.com/yoheimuta/go-protoparser/v4"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/jhump/protoreflect/desc"
+	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/yoheimuta/go-protoparser/v4/parser"
+
+	_ "github.com/jhump/protoreflect/desc/protoparse"
 )
 
 func Generate(inputProtoFiles []string, outputDir string) error {
@@ -131,33 +136,32 @@ func (g *generator) VisitSyntax(syntax *parser.Syntax) (next bool) {
 }
 
 func (g *generator) processFile(inputFilePath string) error {
-	inF, err := os.Open(inputFilePath)
+	p := protoparse.Parser{
+		Accessor: func(filename string) (io.ReadCloser, error) {
+			return os.Open(inputFilePath)
+		},
+	}
+	fdescrs, err := p.ParseFiles(inputFilePath)
 	if err != nil {
 		return err
 	}
 
-	ast, err := protoparser.Parse(inF)
-	if err != nil {
-		return err
-	}
-
-	g.file = &File{
-		InputFilePath: inputFilePath,
-		Messages:      map[string]*Message{},
-	}
-	for _, elem := range ast.ProtoBody {
-		g.lastErr = nil
-		elem.Accept(g)
-		if g.lastErr != nil {
-			return g.lastErr
+	for _, fdescr := range fdescrs {
+		if err := g.oFile(fdescr); err != nil {
+			return err
+		}
+		for _, msg := range fdescr.GetMessageTypes() {
+			if err := g.oMessage(msg); err != nil {
+				return err
+			}
 		}
 	}
 
-	return g.oParsed()
+	return nil
 }
 
-func (g *generator) oParsed() error {
-	fname := path.Base(g.file.InputFilePath) + ".lz.go"
+func (g *generator) oFile(fdescr *desc.FileDescriptor) error {
+	fname := path.Base(fdescr.GetName()) + ".lz.go"
 	fname = path.Join(g.outputDir, fname)
 	fdir := path.Dir(fname)
 	if err := os.MkdirAll(fdir, 0700); err != nil {
@@ -170,7 +174,7 @@ func (g *generator) oParsed() error {
 		return err
 	}
 
-	g.o("package %s\n", g.file.PackageName)
+	g.o("package %s\n", fdescr.GetPackage())
 	g.o(
 		`
 import (
@@ -183,65 +187,105 @@ import (
 	g.o(
 		`
 const flagsMessageModified = 1
+
 type ProtoMessage struct {
 	flags  uint64
 	parent *ProtoMessage
 	bytes []byte
 }
+
 `,
 	)
-
-	for _, msg := range g.file.Messages {
-		g.o("type %s struct {\n", msg.Name)
-		g.i(1)
-		g.o("ProtoMessage\n")
-		for _, field := range msg.Fields {
-			g.o("%s %s\n", field.FieldName, g.convertType(field))
-		}
-		g.i(-1)
-		g.o("}\n")
-
-		g.o(
-			`
-func New%s(bytes []byte) *%s {
-	m := &%s{ProtoMessage: ProtoMessage{bytes: bytes}}
-	m.decode()
-	return m
-}
-
-func (m *%s) decode() {
-	buf := codec.NewBuffer(m.bytes)
-`, msg.Name, msg.Name, msg.Name, msg.Name,
-		)
-
-		g.oRepeatedFieldCounts()
-
-		g.o(
-			`
-	molecule.MessageEach(
-		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
-			switch fieldNum {
-`,
-		)
-
-		g.i(3)
-		g.oFieldDecode(msg.Fields)
-		g.i(-3)
-
-		g.o(
-			`
-			}
-			return true, nil
-		},
-	)
-}
-
-`,
-		)
-	}
 
 	return nil
 }
+
+//func (g *generator) oParsed() error {
+//	fname := path.Base(g.file.InputFilePath) + ".lz.go"
+//	fname = path.Join(g.outputDir, fname)
+//	fdir := path.Dir(fname)
+//	if err := os.MkdirAll(fdir, 0700); err != nil {
+//		return err
+//	}
+//
+//	var err error
+//	g.outF, err = os.Create(fname)
+//	if err != nil {
+//		return err
+//	}
+//
+//	g.o("package %s\n", g.file.PackageName)
+//	g.o(
+//		`
+//import (
+//	"github.com/richardartoul/molecule"
+//	"github.com/richardartoul/molecule/src/codec"
+//)
+//`,
+//	)
+//
+//	g.o(
+//		`
+//const flagsMessageModified = 1
+//type ProtoMessage struct {
+//	flags  uint64
+//	parent *ProtoMessage
+//	bytes []byte
+//}
+//`,
+//	)
+//
+//	for _, msg := range g.file.Messages {
+//		g.o("type %s struct {\n", msg.Name)
+//		g.i(1)
+//		g.o("ProtoMessage\n")
+//		//for _, field := range msg.Fields {
+//		//	g.o("%s %s\n", field.FieldName, g.convertType(field))
+//		//}
+//		g.i(-1)
+//		g.o("}\n")
+//
+//		g.o(
+//			`
+//func New%s(bytes []byte) *%s {
+//	m := &%s{ProtoMessage: ProtoMessage{bytes: bytes}}
+//	m.decode()
+//	return m
+//}
+//
+//func (m *%s) decode() {
+//	buf := codec.NewBuffer(m.bytes)
+//`, msg.Name, msg.Name, msg.Name, msg.Name,
+//		)
+//
+//		g.oRepeatedFieldCounts()
+//
+//		g.o(
+//			`
+//	molecule.MessageEach(
+//		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
+//			switch fieldNum {
+//`,
+//		)
+//
+//		g.i(3)
+//		//g.oFieldDecode(msg.Fields)
+//		g.i(-3)
+//
+//		g.o(
+//			`
+//			}
+//			return true, nil
+//		},
+//	)
+//}
+//
+//`,
+//		)
+//	}
+//
+//	return nil
+//}
 
 func (g *generator) o(str string, a ...any) bool {
 
@@ -268,41 +312,136 @@ func (g *generator) i(ofs int) {
 	g.spaces += 4 * ofs
 }
 
-func (g *generator) convertType(field *parser.Field) string {
+func (g *generator) convertType(field *desc.FieldDescriptor) string {
 	var s string
 
-	if field.IsRepeated {
+	if field.IsRepeated() {
 		s = "[]"
 	}
 
-	switch field.Type {
-	case "fixed64":
+	switch field.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 		s += "uint64"
-	case "uint32":
+	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		s += "uint32"
-	case "string":
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		s += "string"
 	default:
-		s += "*" + field.Type
+		s += "*" + field.GetMessageType().GetName()
 	}
 	return s
 }
 
-func (g *generator) oFieldDecode(fields map[string]*parser.Field) string {
-	for _, field := range fields {
-		g.o("case %s:", field.FieldNumber)
-		g.i(1)
-		switch field.Type {
-		case "string":
-			g.o(
-				`
-v, err := value.AsStringUnsafe()
+func (g *generator) oMessage(msg *desc.MessageDescriptor) error {
+	g.o("type %s struct {\n", msg.GetName())
+	g.i(1)
+	g.o("ProtoMessage\n")
+	for _, field := range msg.GetFields() {
+		g.o("%s %s\n", field.GetName(), g.convertType(field))
+	}
+	g.i(-1)
+	g.o("}\n")
+
+	g.o(
+		`
+func New%s(bytes []byte) *%s {
+	m := &%s{ProtoMessage: ProtoMessage{bytes: bytes}}
+	m.decode()
+	return m
+}
+
+func (m *%s) decode() {
+	buf := codec.NewBuffer(m.bytes)
+`, msg.GetName(), msg.GetName(), msg.GetName(), msg.GetName(),
+	)
+
+	g.i(1)
+	g.oRepeatedFieldCounts(msg)
+
+	g.o(
+		`
+// Iterate and decode the fields.
+molecule.MessageEach(
+	buf, func(fieldNum int32, value molecule.Value) (bool, error) {
+		switch fieldNum {
+`,
+	)
+
+	g.i(2)
+	g.oFieldDecode(msg.GetFields())
+	g.i(-2)
+
+	g.i(-1)
+
+	g.o(
+		`			}
+			return true, nil
+		},
+	)
+}
+
+`,
+	)
+
+	return g.lastErr
+}
+
+func (g *generator) oFieldDecodePrimitive(field *desc.FieldDescriptor, asType string) {
+	g.o(
+		`
+v, err := value.As%s()
 if err != nil {
 	return false, err
 }
 m.%s = v
-`, field.FieldName,
+`, asType, field.GetName(),
+	)
+}
+
+func (g *generator) oFieldDecode(fields []*desc.FieldDescriptor) string {
+	for _, field := range fields {
+		g.o("case %d:\n", field.GetNumber())
+		g.i(1)
+		g.o("// Decode %s", field.GetName())
+		switch field.GetType() {
+		case descriptor.FieldDescriptorProto_TYPE_FIXED64:
+			g.oFieldDecodePrimitive(field, "Fixed64")
+
+		case descriptor.FieldDescriptorProto_TYPE_UINT32:
+			g.oFieldDecodePrimitive(field, "Uint32")
+
+		case descriptor.FieldDescriptorProto_TYPE_STRING:
+			g.oFieldDecodePrimitive(field, "StringUnsafe")
+
+		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+			g.o(
+				`
+v, err := value.AsBytesUnsafe()
+if err != nil {
+	return false, err
+}`,
 			)
+
+			if field.IsRepeated() {
+				counterName := field.GetName() + "Count"
+				g.o(
+					`
+// The slice is pre-allocated, assign to the appropriate index.
+m.%s[%s] = &%s{	
+	ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
+}
+%s++
+`, field.GetName(), counterName, field.GetMessageType().GetName(), counterName,
+				)
+			} else {
+				g.o(
+					`
+m.%s = &%s{	
+	ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
+}
+`, field.GetName(), field.GetMessageType().GetName(),
+				)
+			}
 		}
 		g.i(-1)
 	}
@@ -310,6 +449,67 @@ m.%s = v
 	return ""
 }
 
-func (g *generator) oRepeatedFieldCounts() {
+func (g *generator) oRepeatedFieldCounts(msg *desc.MessageDescriptor) {
+	fields := g.getRepeatedFields(msg)
+	if len(fields) == 0 {
+		return
+	}
 
+	g.o("\n// Count all repeated fields. We need one counter per field.\n")
+
+	for _, field := range fields {
+		counterName := field.GetName() + "Count"
+		g.o("%s := 0", counterName)
+	}
+
+	g.o(
+		`
+molecule.MessageFieldNums(
+	buf, func(fieldNum int32) {`,
+	)
+	for _, field := range fields {
+		counterName := field.GetName() + "Count"
+		g.i(2)
+		g.o(
+			`
+if fieldNum == %d {
+	%s++
+}`, field.GetNumber(), counterName,
+		)
+		g.i(-2)
+	}
+	g.o(
+		`
+	},
+)
+`,
+	)
+
+	g.o("\n// Pre-allocate slices for repeated fields.\n")
+
+	for _, field := range fields {
+		counterName := field.GetName() + "Count"
+		g.o(
+			"m.%s = make([]*%s, 0, %s)\n", field.GetName(),
+			field.GetMessageType().GetName(),
+			counterName,
+		)
+	}
+	g.o("\n// Reset the buffer to start iterating over the fields again")
+	g.o("\nbuf.Reset(m.bytes)\n")
+	g.o("\n// Set slice indexes to 0 to begin iterating over repeated fields.\n")
+	for _, field := range fields {
+		counterName := field.GetName() + "Count"
+		g.o("%s = 0", counterName)
+	}
+}
+
+func (g *generator) getRepeatedFields(msg *desc.MessageDescriptor) []*desc.FieldDescriptor {
+	var r []*desc.FieldDescriptor
+	for _, field := range msg.GetFields() {
+		if field.IsRepeated() {
+			r = append(r, field)
+		}
+	}
+	return r
 }
