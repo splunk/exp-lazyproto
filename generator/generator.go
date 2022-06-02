@@ -280,11 +280,15 @@ func New%s(bytes []byte) *%s {
 `, msg.GetName(), msg.GetName(), msg.GetName(),
 	)
 
+	if err := g.oFieldsAccessors(msg); err != nil {
+		return err
+	}
+
 	if err := g.oMsgDecodeFunc(msg); err != nil {
 		return err
 	}
 
-	if err := g.oFieldsAccessors(msg); err != nil {
+	if err := g.oMarshalFunc(msg); err != nil {
 		return err
 	}
 
@@ -325,6 +329,7 @@ molecule.MessageEach(
 		},
 	)
 }
+
 `,
 	)
 
@@ -523,4 +528,68 @@ func (g *generator) FieldAccessors(msg *Message, field *Field) error {
 `, field.GetName(),
 	)
 	return g.lastErr
+}
+
+func (g *generator) oMarshalFunc(msg *Message) error {
+	g.o("// Prepared keys for marshaling.\n")
+	for _, field := range msg.Fields {
+		g.oPrepareMarshalField(msg, field)
+	}
+
+	g.o("\nfunc (m *%s) Marshal(ps *molecule.ProtoStream) error {\n", msg.GetName())
+	g.i(1)
+	g.o("if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {\n")
+	g.i(1)
+	for _, field := range msg.Fields {
+		g.oMarshalField(msg, field)
+	}
+	g.i(-1)
+	g.o("} else {\n")
+	g.o("	// Message is unchanged. Used original bytes.\n")
+	g.o("	ps.Raw(m.protoMessage.Bytes)\n")
+	g.o("}\n")
+	g.o("return nil\n")
+	g.i(-1)
+	g.o("}\n")
+	return g.lastErr
+}
+
+func (g *generator) oMarshalField(msg *Message, field *Field) {
+	g.o("// Marshal %s\n", field.camelName)
+	switch field.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		g.o(
+			"ps.PreparedString(prepared%s%s, m.key)\n", msg.GetName(),
+			field.GetCapitalName(),
+		)
+
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		if field.IsRepeated() {
+			g.o("for _, elem := range m.%s {\n", field.camelName)
+			g.i(1)
+			g.o("token := ps.BeginEmbedded()\n")
+			g.o("elem.Marshal(ps)\n")
+			g.o("ps.EndEmbedded(token, %d)\n", field.GetNumber())
+			g.i(-1)
+		} else {
+			g.o("if m.%s != nil {\n", field.camelName)
+			g.i(1)
+			g.o("token := ps.BeginEmbedded()\n")
+			g.o("m.%s.Marshal(ps)\n", field.camelName)
+			g.o("ps.EndEmbedded(token, %d)\n", field.GetNumber())
+			g.i(-1)
+		}
+
+		g.o("}\n")
+	}
+}
+
+func (g *generator) oPrepareMarshalField(msg *Message, field *Field) {
+	switch field.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		g.o(
+			"var prepared%s%s = molecule.PrepareStringField(%d)\n", msg.GetName(),
+			field.GetCapitalName(), field.GetNumber(),
+		)
+	}
 }

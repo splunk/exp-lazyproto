@@ -21,6 +21,20 @@ func NewLogsData(bytes []byte) *LogsData {
 	return m
 }
 
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagLogsDataResourceLogsDecoded = 0x0000000000000002
+
+func (m *LogsData) GetResourceLogs() []*ResourceLogs {
+	if m.protoMessage.Flags&flagLogsDataResourceLogsDecoded == 0 {
+		// Decode nested message(s).
+		for i := range m.resourceLogs {
+			m.resourceLogs[i].decode()
+		}
+		m.protoMessage.Flags |= flagLogsDataResourceLogsDecoded
+	}
+	return m.resourceLogs
+}
+
 func (m *LogsData) decode() {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
@@ -65,18 +79,21 @@ func (m *LogsData) decode() {
 	)
 }
 
-// Bitmasks that indicate that the particular nested message is decoded.
-const flagLogsDataResourceLogsDecoded = 0x0000000000000002
+// Prepared keys for marshaling.
 
-func (m *LogsData) GetResourceLogs() []*ResourceLogs {
-	if m.protoMessage.Flags&flagLogsDataResourceLogsDecoded == 0 {
-		// Decode nested message(s).
-		for i := range m.resourceLogs {
-			m.resourceLogs[i].decode()
+func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+		// Marshal resourceLogs
+		for _, elem := range m.resourceLogs {
+			token := ps.BeginEmbedded()
+			elem.Marshal(ps)
+			ps.EndEmbedded(token, 1)
 		}
-		m.protoMessage.Flags |= flagLogsDataResourceLogsDecoded
+	} else {
+		// Message is unchanged. Used original bytes.
+		ps.Raw(m.protoMessage.Bytes)
 	}
-	return m.resourceLogs
+	return nil
 }
 
 // ====================== Generated for message ResourceLogs ======================
@@ -93,6 +110,30 @@ func NewResourceLogs(bytes []byte) *ResourceLogs {
 	m := &ResourceLogs{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
+}
+
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagResourceLogsResourceDecoded = 0x0000000000000002
+const flagResourceLogsScopeLogsDecoded = 0x0000000000000004
+
+func (m *ResourceLogs) GetResource() *Resource {
+	if m.protoMessage.Flags&flagResourceLogsResourceDecoded == 0 {
+		// Decode nested message(s).
+		m.resource.decode()
+		m.protoMessage.Flags |= flagResourceLogsResourceDecoded
+	}
+	return m.resource
+}
+
+func (m *ResourceLogs) GetScopeLogs() []*ScopeLogs {
+	if m.protoMessage.Flags&flagResourceLogsScopeLogsDecoded == 0 {
+		// Decode nested message(s).
+		for i := range m.scopeLogs {
+			m.scopeLogs[i].decode()
+		}
+		m.protoMessage.Flags |= flagResourceLogsScopeLogsDecoded
+	}
+	return m.scopeLogs
 }
 
 func (m *ResourceLogs) decode() {
@@ -150,28 +191,27 @@ func (m *ResourceLogs) decode() {
 	)
 }
 
-// Bitmasks that indicate that the particular nested message is decoded.
-const flagResourceLogsResourceDecoded = 0x0000000000000002
-const flagResourceLogsScopeLogsDecoded = 0x0000000000000004
+// Prepared keys for marshaling.
 
-func (m *ResourceLogs) GetResource() *Resource {
-	if m.protoMessage.Flags&flagResourceLogsResourceDecoded == 0 {
-		// Decode nested message(s).
-		m.resource.decode()
-		m.protoMessage.Flags |= flagResourceLogsResourceDecoded
-	}
-	return m.resource
-}
-
-func (m *ResourceLogs) GetScopeLogs() []*ScopeLogs {
-	if m.protoMessage.Flags&flagResourceLogsScopeLogsDecoded == 0 {
-		// Decode nested message(s).
-		for i := range m.scopeLogs {
-			m.scopeLogs[i].decode()
+func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+		// Marshal resource
+		if m.resource != nil {
+			token := ps.BeginEmbedded()
+			m.resource.Marshal(ps)
+			ps.EndEmbedded(token, 1)
 		}
-		m.protoMessage.Flags |= flagResourceLogsScopeLogsDecoded
+		// Marshal scopeLogs
+		for _, elem := range m.scopeLogs {
+			token := ps.BeginEmbedded()
+			elem.Marshal(ps)
+			ps.EndEmbedded(token, 2)
+		}
+	} else {
+		// Message is unchanged. Used original bytes.
+		ps.Raw(m.protoMessage.Bytes)
 	}
-	return m.scopeLogs
+	return nil
 }
 
 // ====================== Generated for message Resource ======================
@@ -186,6 +226,24 @@ func NewResource(bytes []byte) *Resource {
 	m := &Resource{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
+}
+
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagResourceAttributesDecoded = 0x0000000000000002
+
+func (m *Resource) GetAttributes() []*KeyValue {
+	if m.protoMessage.Flags&flagResourceAttributesDecoded == 0 {
+		// Decode nested message(s).
+		for i := range m.attributes {
+			m.attributes[i].decode()
+		}
+		m.protoMessage.Flags |= flagResourceAttributesDecoded
+	}
+	return m.attributes
+}
+
+func (m *Resource) GetDroppedAttributesCount() uint32 {
+	return m.droppedAttributesCount
 }
 
 func (m *Resource) decode() {
@@ -239,22 +297,22 @@ func (m *Resource) decode() {
 	)
 }
 
-// Bitmasks that indicate that the particular nested message is decoded.
-const flagResourceAttributesDecoded = 0x0000000000000002
+// Prepared keys for marshaling.
 
-func (m *Resource) GetAttributes() []*KeyValue {
-	if m.protoMessage.Flags&flagResourceAttributesDecoded == 0 {
-		// Decode nested message(s).
-		for i := range m.attributes {
-			m.attributes[i].decode()
+func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+		// Marshal attributes
+		for _, elem := range m.attributes {
+			token := ps.BeginEmbedded()
+			elem.Marshal(ps)
+			ps.EndEmbedded(token, 1)
 		}
-		m.protoMessage.Flags |= flagResourceAttributesDecoded
+		// Marshal droppedAttributesCount
+	} else {
+		// Message is unchanged. Used original bytes.
+		ps.Raw(m.protoMessage.Bytes)
 	}
-	return m.attributes
-}
-
-func (m *Resource) GetDroppedAttributesCount() uint32 {
-	return m.droppedAttributesCount
+	return nil
 }
 
 // ====================== Generated for message ScopeLogs ======================
@@ -270,6 +328,20 @@ func NewScopeLogs(bytes []byte) *ScopeLogs {
 	m := &ScopeLogs{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
+}
+
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagScopeLogsLogRecordsDecoded = 0x0000000000000002
+
+func (m *ScopeLogs) GetLogRecords() []*LogRecord {
+	if m.protoMessage.Flags&flagScopeLogsLogRecordsDecoded == 0 {
+		// Decode nested message(s).
+		for i := range m.logRecords {
+			m.logRecords[i].decode()
+		}
+		m.protoMessage.Flags |= flagScopeLogsLogRecordsDecoded
+	}
+	return m.logRecords
 }
 
 func (m *ScopeLogs) decode() {
@@ -316,18 +388,21 @@ func (m *ScopeLogs) decode() {
 	)
 }
 
-// Bitmasks that indicate that the particular nested message is decoded.
-const flagScopeLogsLogRecordsDecoded = 0x0000000000000002
+// Prepared keys for marshaling.
 
-func (m *ScopeLogs) GetLogRecords() []*LogRecord {
-	if m.protoMessage.Flags&flagScopeLogsLogRecordsDecoded == 0 {
-		// Decode nested message(s).
-		for i := range m.logRecords {
-			m.logRecords[i].decode()
+func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+		// Marshal logRecords
+		for _, elem := range m.logRecords {
+			token := ps.BeginEmbedded()
+			elem.Marshal(ps)
+			ps.EndEmbedded(token, 1)
 		}
-		m.protoMessage.Flags |= flagScopeLogsLogRecordsDecoded
+	} else {
+		// Message is unchanged. Used original bytes.
+		ps.Raw(m.protoMessage.Bytes)
 	}
-	return m.logRecords
+	return nil
 }
 
 // ====================== Generated for message LogRecord ======================
@@ -343,6 +418,28 @@ func NewLogRecord(bytes []byte) *LogRecord {
 	m := &LogRecord{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
+}
+
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagLogRecordAttributesDecoded = 0x0000000000000002
+
+func (m *LogRecord) GetTimeUnixNano() uint64 {
+	return m.timeUnixNano
+}
+
+func (m *LogRecord) GetAttributes() []*KeyValue {
+	if m.protoMessage.Flags&flagLogRecordAttributesDecoded == 0 {
+		// Decode nested message(s).
+		for i := range m.attributes {
+			m.attributes[i].decode()
+		}
+		m.protoMessage.Flags |= flagLogRecordAttributesDecoded
+	}
+	return m.attributes
+}
+
+func (m *LogRecord) GetDroppedAttributesCount() uint32 {
+	return m.droppedAttributesCount
 }
 
 func (m *LogRecord) decode() {
@@ -403,26 +500,23 @@ func (m *LogRecord) decode() {
 	)
 }
 
-// Bitmasks that indicate that the particular nested message is decoded.
-const flagLogRecordAttributesDecoded = 0x0000000000000002
+// Prepared keys for marshaling.
 
-func (m *LogRecord) GetTimeUnixNano() uint64 {
-	return m.timeUnixNano
-}
-
-func (m *LogRecord) GetAttributes() []*KeyValue {
-	if m.protoMessage.Flags&flagLogRecordAttributesDecoded == 0 {
-		// Decode nested message(s).
-		for i := range m.attributes {
-			m.attributes[i].decode()
+func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+		// Marshal timeUnixNano
+		// Marshal attributes
+		for _, elem := range m.attributes {
+			token := ps.BeginEmbedded()
+			elem.Marshal(ps)
+			ps.EndEmbedded(token, 2)
 		}
-		m.protoMessage.Flags |= flagLogRecordAttributesDecoded
+		// Marshal droppedAttributesCount
+	} else {
+		// Message is unchanged. Used original bytes.
+		ps.Raw(m.protoMessage.Bytes)
 	}
-	return m.attributes
-}
-
-func (m *LogRecord) GetDroppedAttributesCount() uint32 {
-	return m.droppedAttributesCount
+	return nil
 }
 
 // ====================== Generated for message KeyValue ======================
@@ -437,6 +531,14 @@ func NewKeyValue(bytes []byte) *KeyValue {
 	m := &KeyValue{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
+}
+
+func (m *KeyValue) GetKey() string {
+	return m.key
+}
+
+func (m *KeyValue) GetValue() string {
+	return m.value
 }
 
 func (m *KeyValue) decode() {
@@ -466,10 +568,19 @@ func (m *KeyValue) decode() {
 	)
 }
 
-func (m *KeyValue) GetKey() string {
-	return m.key
-}
+// Prepared keys for marshaling.
+var preparedKeyValueKey = molecule.PrepareStringField(1)
+var preparedKeyValueValue = molecule.PrepareStringField(2)
 
-func (m *KeyValue) GetValue() string {
-	return m.value
+func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+		// Marshal key
+		ps.PreparedString(preparedKeyValueKey, m.key)
+		// Marshal value
+		ps.PreparedString(preparedKeyValueValue, m.key)
+	} else {
+		// Message is unchanged. Used original bytes.
+		ps.Raw(m.protoMessage.Bytes)
+	}
+	return nil
 }
