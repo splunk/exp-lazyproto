@@ -309,9 +309,7 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbedded(token, 1)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedResourceDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedResourceDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -519,9 +517,7 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbedded(token, 2)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)

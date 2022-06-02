@@ -6,12 +6,14 @@ import (
 	"github.com/tigrannajaryan/molecule/src/codec"
 )
 
+// ====================== Generated for message LogsData ======================
+
+// LogsData contains all log data
 type LogsData struct {
 	protoMessage lazyproto.ProtoMessage
+	// List of ResourceLogs
 	resourceLogs []ResourceLogs
 }
-
-const logsDataResourceLogsDecoded = 2
 
 func NewLogsData(bytes []byte) *LogsData {
 	m := &LogsData{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
@@ -19,28 +21,52 @@ func NewLogsData(bytes []byte) *LogsData {
 	return m
 }
 
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagLogsDataResourceLogsDecoded = 2
+
+func (m *LogsData) GetResourceLogs() *[]ResourceLogs {
+	if m.protoMessage.Flags&flagLogsDataResourceLogsDecoded == 0 {
+		// Decode nested message(s).
+		for i := range m.resourceLogs {
+			m.resourceLogs[i].decode()
+		}
+		m.protoMessage.Flags |= flagLogsDataResourceLogsDecoded
+	}
+	return &m.resourceLogs
+}
+
 func (m *LogsData) decode() {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
-	lrCount := 0
+	// Count all repeated fields. We need one counter per field.
+	resourceLogsCount := 0
 	molecule.MessageFieldNums(
 		buf, func(fieldNum int32) {
 			if fieldNum == 1 {
-				lrCount++
+				resourceLogsCount++
 			}
 		},
 	)
-	m.resourceLogs = make([]ResourceLogs, 0, lrCount)
 
+	// Pre-allocate slices for repeated fields.
+	m.resourceLogs = make([]ResourceLogs, 0, resourceLogsCount)
+
+	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.protoMessage.Bytes)
+
+	// Set slice indexes to 0 to begin iterating over repeated fields.
+	resourceLogsCount = 0
+	// Iterate and decode the fields.
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
+				// Decode resourceLogs.
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
 				}
+				// The slice is pre-allocated, assign to the appropriate index.
 				m.resourceLogs = append(
 					m.resourceLogs,
 					ResourceLogs{
@@ -53,16 +79,6 @@ func (m *LogsData) decode() {
 			return true, nil
 		},
 	)
-}
-
-func (m *LogsData) GetResourceLogs() *[]ResourceLogs {
-	if m.protoMessage.Flags&logsDataResourceLogsDecoded == 0 {
-		for i := range m.resourceLogs {
-			m.resourceLogs[i].decode()
-		}
-		m.protoMessage.Flags |= logsDataResourceLogsDecoded
-	}
-	return &m.resourceLogs
 }
 
 func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
