@@ -22,11 +22,6 @@ message Resource {
   uint32 dropped_attributes_count = 2;
 }
 
-message KeyValue {
-  string key =1;
-  string value = 2;
-}
-
 // A collection of Logs produced by a Scope.
 message ScopeLogs {
   // A list of log records.
@@ -38,3 +33,9 @@ message LogRecord {
   repeated KeyValue attributes = 2;
   uint32 dropped_attributes_count = 3;
 }
+
+message KeyValue {
+  string key =1;
+  string value = 2;
+}
+

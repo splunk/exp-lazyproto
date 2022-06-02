@@ -17,7 +17,7 @@ type ProtoMessage struct {
 type LogsData struct {
 	ProtoMessage
 	// List of ResourceLogs
-	resource_logs []*ResourceLogs
+	resourceLogs []*ResourceLogs
 }
 
 func NewLogsData(bytes []byte) *LogsData {
@@ -30,56 +30,56 @@ func (m *LogsData) decode() {
 	buf := codec.NewBuffer(m.bytes)
 
 	// Count all repeated fields. We need one counter per field.
-	resource_logsCount := 0
+	resourceLogsCount := 0
 	molecule.MessageFieldNums(
 		buf, func(fieldNum int32) {
 			if fieldNum == 1 {
-				resource_logsCount++
+				resourceLogsCount++
 			}
 		},
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.resource_logs = make([]*ResourceLogs, 0, resource_logsCount)
+	m.resourceLogs = make([]*ResourceLogs, 0, resourceLogsCount)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.bytes)
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
-	resource_logsCount = 0
+	resourceLogsCount = 0
 	// Iterate and decode the fields.
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
-				// Decode resource_logs
+				// Decode resourceLogs.
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				m.resource_logs[resource_logsCount] = &ResourceLogs{
+				m.resourceLogs[resourceLogsCount] = &ResourceLogs{
 					ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
 				}
-				resource_logsCount++
+				resourceLogsCount++
 			}
 			return true, nil
 		},
 	)
 }
 
-// Bitmasks that indicate that the particular nested message is decoded
-const flagLogsDataresource_logsDecoded = 0x0000000000000002
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagLogsDataResourceLogsDecoded = 0x0000000000000002
 
-func (m *LogsData) Getresource_logs() []*ResourceLogs {
-	if m.flags&flagLogsDataresource_logsDecoded == 0 {
-		// Decode nested message(s)
-		for i := range m.resource_logs {
-			m.resource_logs[i].decode()
+func (m *LogsData) GetResourceLogs() []*ResourceLogs {
+	if m.flags&flagLogsDataResourceLogsDecoded == 0 {
+		// Decode nested message(s).
+		for i := range m.resourceLogs {
+			m.resourceLogs[i].decode()
 		}
-		m.flags |= flagLogsDataresource_logsDecoded
+		m.flags |= flagLogsDataResourceLogsDecoded
 	}
-	return m.resource_logs
+	return m.resourceLogs
 }
 
 type ResourceLogs struct {
@@ -87,7 +87,7 @@ type ResourceLogs struct {
 	// The Resource
 	resource *Resource
 	// List of ScopeLogs
-	scope_logs []*ScopeLogs
+	scopeLogs []*ScopeLogs
 }
 
 func NewResourceLogs(bytes []byte) *ResourceLogs {
@@ -100,29 +100,29 @@ func (m *ResourceLogs) decode() {
 	buf := codec.NewBuffer(m.bytes)
 
 	// Count all repeated fields. We need one counter per field.
-	scope_logsCount := 0
+	scopeLogsCount := 0
 	molecule.MessageFieldNums(
 		buf, func(fieldNum int32) {
 			if fieldNum == 2 {
-				scope_logsCount++
+				scopeLogsCount++
 			}
 		},
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.scope_logs = make([]*ScopeLogs, 0, scope_logsCount)
+	m.scopeLogs = make([]*ScopeLogs, 0, scopeLogsCount)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.bytes)
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
-	scope_logsCount = 0
+	scopeLogsCount = 0
 	// Iterate and decode the fields.
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
-				// Decode resource
+				// Decode resource.
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
@@ -131,49 +131,49 @@ func (m *ResourceLogs) decode() {
 					ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
 				}
 			case 2:
-				// Decode scope_logs
+				// Decode scopeLogs.
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				m.scope_logs[scope_logsCount] = &ScopeLogs{
+				m.scopeLogs[scopeLogsCount] = &ScopeLogs{
 					ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
 				}
-				scope_logsCount++
+				scopeLogsCount++
 			}
 			return true, nil
 		},
 	)
 }
 
-// Bitmasks that indicate that the particular nested message is decoded
-const flagResourceLogsresourceDecoded = 0x0000000000000002
-const flagResourceLogsscope_logsDecoded = 0x0000000000000004
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagResourceLogsResourceDecoded = 0x0000000000000002
+const flagResourceLogsScopeLogsDecoded = 0x0000000000000004
 
-func (m *ResourceLogs) Getresource() *Resource {
-	if m.flags&flagResourceLogsresourceDecoded == 0 {
-		// Decode nested message(s)
+func (m *ResourceLogs) GetResource() *Resource {
+	if m.flags&flagResourceLogsResourceDecoded == 0 {
+		// Decode nested message(s).
 		m.resource.decode()
-		m.flags |= flagResourceLogsresourceDecoded
+		m.flags |= flagResourceLogsResourceDecoded
 	}
 	return m.resource
 }
-func (m *ResourceLogs) Getscope_logs() []*ScopeLogs {
-	if m.flags&flagResourceLogsscope_logsDecoded == 0 {
-		// Decode nested message(s)
-		for i := range m.scope_logs {
-			m.scope_logs[i].decode()
+func (m *ResourceLogs) GetScopeLogs() []*ScopeLogs {
+	if m.flags&flagResourceLogsScopeLogsDecoded == 0 {
+		// Decode nested message(s).
+		for i := range m.scopeLogs {
+			m.scopeLogs[i].decode()
 		}
-		m.flags |= flagResourceLogsscope_logsDecoded
+		m.flags |= flagResourceLogsScopeLogsDecoded
 	}
-	return m.scope_logs
+	return m.scopeLogs
 }
 
 type Resource struct {
 	ProtoMessage
-	attributes               []*KeyValue
-	dropped_attributes_count uint32
+	attributes             []*KeyValue
+	droppedAttributesCount uint32
 }
 
 func NewResource(bytes []byte) *Resource {
@@ -208,7 +208,7 @@ func (m *Resource) decode() {
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
-				// Decode attributes
+				// Decode attributes.
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
@@ -219,86 +219,40 @@ func (m *Resource) decode() {
 				}
 				attributesCount++
 			case 2:
-				// Decode dropped_attributes_count
+				// Decode droppedAttributesCount.
 				v, err := value.AsUint32()
 				if err != nil {
 					return false, err
 				}
-				m.dropped_attributes_count = v
+				m.droppedAttributesCount = v
 			}
 			return true, nil
 		},
 	)
 }
 
-// Bitmasks that indicate that the particular nested message is decoded
-const flagResourceattributesDecoded = 0x0000000000000002
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagResourceAttributesDecoded = 0x0000000000000002
 
-func (m *Resource) Getattributes() []*KeyValue {
-	if m.flags&flagResourceattributesDecoded == 0 {
-		// Decode nested message(s)
+func (m *Resource) GetAttributes() []*KeyValue {
+	if m.flags&flagResourceAttributesDecoded == 0 {
+		// Decode nested message(s).
 		for i := range m.attributes {
 			m.attributes[i].decode()
 		}
-		m.flags |= flagResourceattributesDecoded
+		m.flags |= flagResourceAttributesDecoded
 	}
 	return m.attributes
 }
-func (m *Resource) Getdropped_attributes_count() uint32 {
-	return m.dropped_attributes_count
-}
-
-type KeyValue struct {
-	ProtoMessage
-	key   string
-	value string
-}
-
-func NewKeyValue(bytes []byte) *KeyValue {
-	m := &KeyValue{ProtoMessage: ProtoMessage{bytes: bytes}}
-	m.decode()
-	return m
-}
-
-func (m *KeyValue) decode() {
-	buf := codec.NewBuffer(m.bytes)
-
-	// Iterate and decode the fields.
-	molecule.MessageEach(
-		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
-			switch fieldNum {
-			case 1:
-				// Decode key
-				v, err := value.AsStringUnsafe()
-				if err != nil {
-					return false, err
-				}
-				m.key = v
-			case 2:
-				// Decode value
-				v, err := value.AsStringUnsafe()
-				if err != nil {
-					return false, err
-				}
-				m.value = v
-			}
-			return true, nil
-		},
-	)
-}
-
-func (m *KeyValue) Getkey() string {
-	return m.key
-}
-func (m *KeyValue) Getvalue() string {
-	return m.value
+func (m *Resource) GetDroppedAttributesCount() uint32 {
+	return m.droppedAttributesCount
 }
 
 // A collection of Logs produced by a Scope.
 type ScopeLogs struct {
 	ProtoMessage
 	// A list of log records.
-	log_records []*LogRecord
+	logRecords []*LogRecord
 }
 
 func NewScopeLogs(bytes []byte) *ScopeLogs {
@@ -311,63 +265,63 @@ func (m *ScopeLogs) decode() {
 	buf := codec.NewBuffer(m.bytes)
 
 	// Count all repeated fields. We need one counter per field.
-	log_recordsCount := 0
+	logRecordsCount := 0
 	molecule.MessageFieldNums(
 		buf, func(fieldNum int32) {
 			if fieldNum == 1 {
-				log_recordsCount++
+				logRecordsCount++
 			}
 		},
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.log_records = make([]*LogRecord, 0, log_recordsCount)
+	m.logRecords = make([]*LogRecord, 0, logRecordsCount)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.bytes)
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
-	log_recordsCount = 0
+	logRecordsCount = 0
 	// Iterate and decode the fields.
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
-				// Decode log_records
+				// Decode logRecords.
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				m.log_records[log_recordsCount] = &LogRecord{
+				m.logRecords[logRecordsCount] = &LogRecord{
 					ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
 				}
-				log_recordsCount++
+				logRecordsCount++
 			}
 			return true, nil
 		},
 	)
 }
 
-// Bitmasks that indicate that the particular nested message is decoded
-const flagScopeLogslog_recordsDecoded = 0x0000000000000002
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagScopeLogsLogRecordsDecoded = 0x0000000000000002
 
-func (m *ScopeLogs) Getlog_records() []*LogRecord {
-	if m.flags&flagScopeLogslog_recordsDecoded == 0 {
-		// Decode nested message(s)
-		for i := range m.log_records {
-			m.log_records[i].decode()
+func (m *ScopeLogs) GetLogRecords() []*LogRecord {
+	if m.flags&flagScopeLogsLogRecordsDecoded == 0 {
+		// Decode nested message(s).
+		for i := range m.logRecords {
+			m.logRecords[i].decode()
 		}
-		m.flags |= flagScopeLogslog_recordsDecoded
+		m.flags |= flagScopeLogsLogRecordsDecoded
 	}
-	return m.log_records
+	return m.logRecords
 }
 
 type LogRecord struct {
 	ProtoMessage
-	time_unix_nano           uint64
-	attributes               []*KeyValue
-	dropped_attributes_count uint32
+	timeUnixNano           uint64
+	attributes             []*KeyValue
+	droppedAttributesCount uint32
 }
 
 func NewLogRecord(bytes []byte) *LogRecord {
@@ -402,14 +356,14 @@ func (m *LogRecord) decode() {
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
-				// Decode time_unix_nano
+				// Decode timeUnixNano.
 				v, err := value.AsFixed64()
 				if err != nil {
 					return false, err
 				}
-				m.time_unix_nano = v
+				m.timeUnixNano = v
 			case 2:
-				// Decode attributes
+				// Decode attributes.
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
@@ -420,34 +374,80 @@ func (m *LogRecord) decode() {
 				}
 				attributesCount++
 			case 3:
-				// Decode dropped_attributes_count
+				// Decode droppedAttributesCount.
 				v, err := value.AsUint32()
 				if err != nil {
 					return false, err
 				}
-				m.dropped_attributes_count = v
+				m.droppedAttributesCount = v
 			}
 			return true, nil
 		},
 	)
 }
 
-// Bitmasks that indicate that the particular nested message is decoded
-const flagLogRecordattributesDecoded = 0x0000000000000002
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagLogRecordAttributesDecoded = 0x0000000000000002
 
-func (m *LogRecord) Gettime_unix_nano() uint64 {
-	return m.time_unix_nano
+func (m *LogRecord) GetTimeUnixNano() uint64 {
+	return m.timeUnixNano
 }
-func (m *LogRecord) Getattributes() []*KeyValue {
-	if m.flags&flagLogRecordattributesDecoded == 0 {
-		// Decode nested message(s)
+func (m *LogRecord) GetAttributes() []*KeyValue {
+	if m.flags&flagLogRecordAttributesDecoded == 0 {
+		// Decode nested message(s).
 		for i := range m.attributes {
 			m.attributes[i].decode()
 		}
-		m.flags |= flagLogRecordattributesDecoded
+		m.flags |= flagLogRecordAttributesDecoded
 	}
 	return m.attributes
 }
-func (m *LogRecord) Getdropped_attributes_count() uint32 {
-	return m.dropped_attributes_count
+func (m *LogRecord) GetDroppedAttributesCount() uint32 {
+	return m.droppedAttributesCount
+}
+
+type KeyValue struct {
+	ProtoMessage
+	key   string
+	value string
+}
+
+func NewKeyValue(bytes []byte) *KeyValue {
+	m := &KeyValue{ProtoMessage: ProtoMessage{bytes: bytes}}
+	m.decode()
+	return m
+}
+
+func (m *KeyValue) decode() {
+	buf := codec.NewBuffer(m.bytes)
+
+	// Iterate and decode the fields.
+	molecule.MessageEach(
+		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
+			switch fieldNum {
+			case 1:
+				// Decode key.
+				v, err := value.AsStringUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.key = v
+			case 2:
+				// Decode value.
+				v, err := value.AsStringUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.value = v
+			}
+			return true, nil
+		},
+	)
+}
+
+func (m *KeyValue) GetKey() string {
+	return m.key
+}
+func (m *KeyValue) GetValue() string {
+	return m.value
 }

@@ -65,75 +65,75 @@ func (g *generator) VisitExtensions(extensions *parser.Extensions) (next bool) {
 	panic("implement me")
 }
 
-func (g *generator) VisitField(field *parser.Field) (next bool) {
-	g.field = field
-	g.msg.Fields[field.FieldName] = g.field
-	return true
-}
+//func (g *generator) VisitField(field *parser.Field) (next bool) {
+//	g.field = field
+//	g.msg.FieldsMap[field.FieldName] = g.field
+//	return true
+//}
 
-func (g *generator) VisitGroupField(field *parser.GroupField) (next bool) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *generator) VisitImport(i *parser.Import) (next bool) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *generator) VisitMapField(field *parser.MapField) (next bool) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *generator) VisitMessage(message *parser.Message) (next bool) {
-	g.msg = &Message{
-		Name:   message.MessageName,
-		Fields: map[string]*parser.Field{},
-	}
-	g.file.Messages[message.MessageName] = g.msg
-	return true
-}
-
-func (g *generator) VisitOneof(oneof *parser.Oneof) (next bool) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *generator) VisitOneofField(field *parser.OneofField) (next bool) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *generator) VisitOption(option *parser.Option) (next bool) {
-	//TODO implement me
-	return true
-}
-
-func (g *generator) VisitPackage(p *parser.Package) (next bool) {
-	g.file.PackageName = p.Name
-	return true
-}
-
-func (g *generator) VisitReserved(reserved *parser.Reserved) (next bool) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *generator) VisitRPC(rpc *parser.RPC) (next bool) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *generator) VisitService(service *parser.Service) (next bool) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *generator) VisitSyntax(syntax *parser.Syntax) (next bool) {
-	//TODO implement me
-	panic("implement me")
-}
+//func (g *generator) VisitGroupField(field *parser.GroupField) (next bool) {
+//	//TODO implement me
+//	panic("implement me")
+//}
+//
+//func (g *generator) VisitImport(i *parser.Import) (next bool) {
+//	//TODO implement me
+//	panic("implement me")
+//}
+//
+//func (g *generator) VisitMapField(field *parser.MapField) (next bool) {
+//	//TODO implement me
+//	panic("implement me")
+//}
+//
+//func (g *generator) VisitMessage(message *parser.Message) (next bool) {
+//	g.msg = &Message{
+//		Name:      message.MessageName,
+//		FieldsMap: map[string]*parser.Field{},
+//	}
+//	g.file.Messages[message.MessageName] = g.msg
+//	return true
+//}
+//
+//func (g *generator) VisitOneof(oneof *parser.Oneof) (next bool) {
+//	//TODO implement me
+//	panic("implement me")
+//}
+//
+//func (g *generator) VisitOneofField(field *parser.OneofField) (next bool) {
+//	//TODO implement me
+//	panic("implement me")
+//}
+//
+//func (g *generator) VisitOption(option *parser.Option) (next bool) {
+//	//TODO implement me
+//	return true
+//}
+//
+//func (g *generator) VisitPackage(p *parser.Package) (next bool) {
+//	g.file.PackageName = p.GetName
+//	return true
+//}
+//
+//func (g *generator) VisitReserved(reserved *parser.Reserved) (next bool) {
+//	//TODO implement me
+//	panic("implement me")
+//}
+//
+//func (g *generator) VisitRPC(rpc *parser.RPC) (next bool) {
+//	//TODO implement me
+//	panic("implement me")
+//}
+//
+//func (g *generator) VisitService(service *parser.Service) (next bool) {
+//	//TODO implement me
+//	panic("implement me")
+//}
+//
+//func (g *generator) VisitSyntax(syntax *parser.Syntax) (next bool) {
+//	//TODO implement me
+//	panic("implement me")
+//}
 
 func (g *generator) processFile(inputFilePath string) error {
 	p := protoparse.Parser{
@@ -159,7 +159,8 @@ func (g *generator) processFile(inputFilePath string) error {
 		if err := g.oFile(fdescr); err != nil {
 			return err
 		}
-		for _, msg := range fdescr.GetMessageTypes() {
+		for _, descr := range fdescr.GetMessageTypes() {
+			msg := NewMessage(descr)
 			if err := g.oMessage(msg); err != nil {
 				return err
 			}
@@ -234,7 +235,7 @@ func (g *generator) i(ofs int) {
 	g.spaces += 4 * ofs
 }
 
-func (g *generator) convertType(field *desc.FieldDescriptor) string {
+func (g *generator) convertType(field *Field) string {
 	var s string
 
 	if field.IsRepeated() {
@@ -254,7 +255,7 @@ func (g *generator) convertType(field *desc.FieldDescriptor) string {
 	return s
 }
 
-func (g *generator) oMessage(msg *desc.MessageDescriptor) error {
+func (g *generator) oMessage(msg *Message) error {
 	si := msg.GetSourceInfo()
 	if si != nil {
 		if si.GetLeadingComments() != "" {
@@ -265,7 +266,7 @@ func (g *generator) oMessage(msg *desc.MessageDescriptor) error {
 	g.o("type %s struct {\n", msg.GetName())
 	g.i(1)
 	g.o("ProtoMessage\n")
-	for _, field := range msg.GetFields() {
+	for _, field := range msg.Fields {
 		si := field.GetSourceInfo()
 		if si != nil {
 			if si.GetLeadingComments() != "" {
@@ -300,7 +301,7 @@ func New%s(bytes []byte) *%s {
 	return nil
 }
 
-func (g *generator) oMsgDecodeFunc(msg *desc.MessageDescriptor) error {
+func (g *generator) oMsgDecodeFunc(msg *Message) error {
 	g.o(
 		`
 func (m *%s) decode() {
@@ -321,7 +322,7 @@ molecule.MessageEach(
 	)
 
 	g.i(2)
-	g.oFieldDecode(msg.GetFields())
+	g.oFieldDecode(msg.Fields)
 	g.i(-2)
 
 	g.i(-1)
@@ -339,7 +340,7 @@ molecule.MessageEach(
 	return g.lastErr
 }
 
-func (g *generator) oFieldDecodePrimitive(field *desc.FieldDescriptor, asType string) {
+func (g *generator) oFieldDecodePrimitive(field *Field, asType string) {
 	g.o(
 		`
 v, err := value.As%s()
@@ -351,11 +352,11 @@ m.%s = v
 	)
 }
 
-func (g *generator) oFieldDecode(fields []*desc.FieldDescriptor) string {
+func (g *generator) oFieldDecode(fields []*Field) string {
 	for _, field := range fields {
 		g.o("case %d:\n", field.GetNumber())
 		g.i(1)
-		g.o("// Decode %s", field.GetName())
+		g.o("// Decode %s.", field.GetName())
 		switch field.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 			g.oFieldDecodePrimitive(field, "Fixed64")
@@ -402,7 +403,7 @@ m.%s = &%s{
 	return ""
 }
 
-func (g *generator) oRepeatedFieldCounts(msg *desc.MessageDescriptor) {
+func (g *generator) oRepeatedFieldCounts(msg *Message) {
 	fields := g.getRepeatedFields(msg)
 	if len(fields) == 0 {
 		return
@@ -457,9 +458,9 @@ if fieldNum == %d {
 	}
 }
 
-func (g *generator) getRepeatedFields(msg *desc.MessageDescriptor) []*desc.FieldDescriptor {
-	var r []*desc.FieldDescriptor
-	for _, field := range msg.GetFields() {
+func (g *generator) getRepeatedFields(msg *Message) []*Field {
+	var r []*Field
+	for _, field := range msg.Fields {
 		if field.IsRepeated() {
 			r = append(r, field)
 		}
@@ -467,14 +468,14 @@ func (g *generator) getRepeatedFields(msg *desc.MessageDescriptor) []*desc.Field
 	return r
 }
 
-func (g *generator) oFieldsAccessors(msg *desc.MessageDescriptor) error {
+func (g *generator) oFieldsAccessors(msg *Message) error {
 	// Generate decode bit flags
 	bitMask := uint64(2) // Start from 2 since bit 1 is used for "flagsMessageModified"
 	hasFlags := false
-	for _, field := range msg.GetFields() {
+	for _, field := range msg.Fields {
 		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 			if !hasFlags {
-				g.o("// Bitmasks that indicate that the particular nested message is decoded\n")
+				g.o("// Bitmasks that indicate that the particular nested message is decoded.\n")
 			}
 
 			g.o("const %s = 0x%016X\n", g.fieldFlagName(msg, field), bitMask)
@@ -486,7 +487,7 @@ func (g *generator) oFieldsAccessors(msg *desc.MessageDescriptor) error {
 		g.o("\n")
 	}
 
-	for _, field := range msg.GetFields() {
+	for _, field := range msg.Fields {
 		if err := g.FieldAccessors(msg, field); err != nil {
 			return err
 		}
@@ -494,17 +495,13 @@ func (g *generator) oFieldsAccessors(msg *desc.MessageDescriptor) error {
 	return nil
 }
 
-func (g *generator) fieldFlagName(
-	msg *desc.MessageDescriptor, field *desc.FieldDescriptor,
-) string {
-	return fmt.Sprintf("flag%s%sDecoded", msg.GetName(), field.GetName())
+func (g *generator) fieldFlagName(msg *Message, field *Field) string {
+	return fmt.Sprintf("flag%s%sDecoded", msg.GetName(), field.GetCapitalName())
 }
 
-func (g *generator) FieldAccessors(
-	msg *desc.MessageDescriptor, field *desc.FieldDescriptor,
-) error {
+func (g *generator) FieldAccessors(msg *Message, field *Field) error {
 	g.o(
-		"func (m *%s) Get%s() %s {\n", msg.GetName(), field.GetName(),
+		"func (m *%s) Get%s() %s {\n", msg.GetName(), field.GetCapitalName(),
 		g.convertType(field),
 	)
 
@@ -512,7 +509,7 @@ func (g *generator) FieldAccessors(
 		g.i(1)
 		g.o("if m.flags&%s == 0 {\n", g.fieldFlagName(msg, field))
 		g.i(1)
-		g.o("// Decode nested message(s)\n")
+		g.o("// Decode nested message(s).\n")
 		if field.IsRepeated() {
 			g.o("for i := range m.%s {\n", field.GetName())
 			g.o("	m.%s[i].decode()\n", field.GetName())
