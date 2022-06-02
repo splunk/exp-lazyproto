@@ -13,6 +13,8 @@ type ProtoMessage struct {
 	bytes  []byte
 }
 
+// ====================== Generated for message LogsData ======================
+
 // LogsData contains all log data
 type LogsData struct {
 	ProtoMessage
@@ -81,6 +83,8 @@ func (m *LogsData) GetResourceLogs() []*ResourceLogs {
 	}
 	return m.resourceLogs
 }
+
+// ====================== Generated for message ResourceLogs ======================
 
 type ResourceLogs struct {
 	ProtoMessage
@@ -159,6 +163,7 @@ func (m *ResourceLogs) GetResource() *Resource {
 	}
 	return m.resource
 }
+
 func (m *ResourceLogs) GetScopeLogs() []*ScopeLogs {
 	if m.flags&flagResourceLogsScopeLogsDecoded == 0 {
 		// Decode nested message(s).
@@ -169,6 +174,8 @@ func (m *ResourceLogs) GetScopeLogs() []*ScopeLogs {
 	}
 	return m.scopeLogs
 }
+
+// ====================== Generated for message Resource ======================
 
 type Resource struct {
 	ProtoMessage
@@ -244,9 +251,12 @@ func (m *Resource) GetAttributes() []*KeyValue {
 	}
 	return m.attributes
 }
+
 func (m *Resource) GetDroppedAttributesCount() uint32 {
 	return m.droppedAttributesCount
 }
+
+// ====================== Generated for message ScopeLogs ======================
 
 // A collection of Logs produced by a Scope.
 type ScopeLogs struct {
@@ -316,6 +326,8 @@ func (m *ScopeLogs) GetLogRecords() []*LogRecord {
 	}
 	return m.logRecords
 }
+
+// ====================== Generated for message LogRecord ======================
 
 type LogRecord struct {
 	ProtoMessage
@@ -392,6 +404,7 @@ const flagLogRecordAttributesDecoded = 0x0000000000000002
 func (m *LogRecord) GetTimeUnixNano() uint64 {
 	return m.timeUnixNano
 }
+
 func (m *LogRecord) GetAttributes() []*KeyValue {
 	if m.flags&flagLogRecordAttributesDecoded == 0 {
 		// Decode nested message(s).
@@ -402,9 +415,12 @@ func (m *LogRecord) GetAttributes() []*KeyValue {
 	}
 	return m.attributes
 }
+
 func (m *LogRecord) GetDroppedAttributesCount() uint32 {
 	return m.droppedAttributesCount
 }
+
+// ====================== Generated for message KeyValue ======================
 
 type KeyValue struct {
 	ProtoMessage
@@ -448,6 +464,7 @@ func (m *KeyValue) decode() {
 func (m *KeyValue) GetKey() string {
 	return m.key
 }
+
 func (m *KeyValue) GetValue() string {
 	return m.value
 }

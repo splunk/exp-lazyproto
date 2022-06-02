@@ -217,7 +217,7 @@ func (g *generator) o(str string, a ...any) bool {
 	strs := strings.Split(str, "\n")
 	for i := range strs {
 		if strings.TrimSpace(strs[i]) != "" {
-			strs[i] = strings.Repeat(" ", g.spaces) + strs[i]
+			strs[i] = strings.Repeat("\t", g.spaces) + strs[i]
 		}
 	}
 
@@ -232,7 +232,7 @@ func (g *generator) o(str string, a ...any) bool {
 }
 
 func (g *generator) i(ofs int) {
-	g.spaces += 4 * ofs
+	g.spaces += ofs
 }
 
 func (g *generator) convertType(field *Field) string {
@@ -256,6 +256,10 @@ func (g *generator) convertType(field *Field) string {
 }
 
 func (g *generator) oMessage(msg *Message) error {
+	g.o(
+		"// ====================== Generated for message %s ======================\n\n",
+		msg.GetName(),
+	)
 	si := msg.GetSourceInfo()
 	if si != nil {
 		if si.GetLeadingComments() != "" {
@@ -333,7 +337,6 @@ molecule.MessageEach(
 		},
 	)
 }
-
 `,
 	)
 
@@ -381,7 +384,7 @@ if err != nil {
 				g.o(
 					`
 // The slice is pre-allocated, assign to the appropriate index.
-m.%s[%s] = &%s{	
+m.%s[%s] = &%s{
 	ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
 }
 %s++
@@ -390,7 +393,7 @@ m.%s[%s] = &%s{
 			} else {
 				g.o(
 					`
-m.%s = &%s{	
+m.%s = &%s{
 	ProtoMessage: ProtoMessage{bytes: v, parent: &m.ProtoMessage},
 }
 `, field.GetName(), field.GetMessageType().GetName(),
@@ -471,20 +474,17 @@ func (g *generator) getRepeatedFields(msg *Message) []*Field {
 func (g *generator) oFieldsAccessors(msg *Message) error {
 	// Generate decode bit flags
 	bitMask := uint64(2) // Start from 2 since bit 1 is used for "flagsMessageModified"
-	hasFlags := false
+	firstFlag := true
 	for _, field := range msg.Fields {
 		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			if !hasFlags {
-				g.o("// Bitmasks that indicate that the particular nested message is decoded.\n")
+			if firstFlag {
+				g.o("\n// Bitmasks that indicate that the particular nested message is decoded.\n")
 			}
 
 			g.o("const %s = 0x%016X\n", g.fieldFlagName(msg, field), bitMask)
 			bitMask *= 2
-			hasFlags = true
+			firstFlag = false
 		}
-	}
-	if hasFlags {
-		g.o("\n")
 	}
 
 	for _, field := range msg.Fields {
@@ -501,7 +501,7 @@ func (g *generator) fieldFlagName(msg *Message, field *Field) string {
 
 func (g *generator) FieldAccessors(msg *Message, field *Field) error {
 	g.o(
-		"func (m *%s) Get%s() %s {\n", msg.GetName(), field.GetCapitalName(),
+		"\nfunc (m *%s) Get%s() %s {\n", msg.GetName(), field.GetCapitalName(),
 		g.convertType(field),
 	)
 
