@@ -153,11 +153,11 @@ func (g *generator) processFile(inputFilePath string) error {
 		}
 	}
 
-	return g.generateParsed()
+	return g.oParsed()
 }
 
-func (g *generator) generateParsed() error {
-	fname := path.Base(g.file.InputFilePath) + ".lazy.go"
+func (g *generator) oParsed() error {
+	fname := path.Base(g.file.InputFilePath) + ".lz.go"
 	fname = path.Join(g.outputDir, fname)
 	fdir := path.Dir(fname)
 	if err := os.MkdirAll(fdir, 0700); err != nil {
@@ -170,23 +170,93 @@ func (g *generator) generateParsed() error {
 		return err
 	}
 
-	g.w("package %s\n", g.file.PackageName)
+	g.o("package %s\n", g.file.PackageName)
+	g.o(
+		`
+import (
+	"github.com/richardartoul/molecule"
+	"github.com/richardartoul/molecule/src/codec"
+)
+`,
+	)
+
+	g.o(
+		`
+const flagsMessageModified = 1
+type ProtoMessage struct {
+	flags  uint64
+	parent *ProtoMessage
+	bytes []byte
+}
+`,
+	)
 
 	for _, msg := range g.file.Messages {
-		g.w("type %s struct {\n", msg.Name)
-		g.i()
+		g.o("type %s struct {\n", msg.Name)
+		g.i(1)
+		g.o("ProtoMessage\n")
 		for _, field := range msg.Fields {
-			g.w("%s %s\n", field.FieldName, g.convertType(field))
+			g.o("%s %s\n", field.FieldName, g.convertType(field))
 		}
-		g.o()
-		g.w("}\n")
+		g.i(-1)
+		g.o("}\n")
+
+		g.o(
+			`
+func New%s(bytes []byte) *%s {
+	m := &%s{ProtoMessage: ProtoMessage{bytes: bytes}}
+	m.decode()
+	return m
+}
+
+func (m *%s) decode() {
+	buf := codec.NewBuffer(m.bytes)
+`, msg.Name, msg.Name, msg.Name, msg.Name,
+		)
+
+		g.oRepeatedFieldCounts()
+
+		g.o(
+			`
+	molecule.MessageEach(
+		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
+			switch fieldNum {
+`,
+		)
+
+		g.i(3)
+		g.oFieldDecode(msg.Fields)
+		g.i(-3)
+
+		g.o(
+			`
+			}
+			return true, nil
+		},
+	)
+}
+
+`,
+		)
 	}
 
 	return nil
 }
 
-func (g *generator) w(str string, a ...any) bool {
-	_, err := fmt.Fprintf(g.outF, strings.Repeat(" ", g.spaces)+str, a...)
+func (g *generator) o(str string, a ...any) bool {
+
+	str = fmt.Sprintf(str, a...)
+
+	strs := strings.Split(str, "\n")
+	for i := range strs {
+		if strings.TrimSpace(strs[i]) != "" {
+			strs[i] = strings.Repeat(" ", g.spaces) + strs[i]
+		}
+	}
+
+	str = strings.Join(strs, "\n")
+
+	_, err := g.outF.WriteString(str)
 	if err != nil {
 		g.lastErr = err
 		return false
@@ -194,12 +264,8 @@ func (g *generator) w(str string, a ...any) bool {
 	return true
 }
 
-func (g *generator) i() {
-	g.spaces += 4
-}
-
-func (g *generator) o() {
-	g.spaces -= 4
+func (g *generator) i(ofs int) {
+	g.spaces += 4 * ofs
 }
 
 func (g *generator) convertType(field *parser.Field) string {
@@ -220,4 +286,30 @@ func (g *generator) convertType(field *parser.Field) string {
 		s += "*" + field.Type
 	}
 	return s
+}
+
+func (g *generator) oFieldDecode(fields map[string]*parser.Field) string {
+	for _, field := range fields {
+		g.o("case %s:", field.FieldNumber)
+		g.i(1)
+		switch field.Type {
+		case "string":
+			g.o(
+				`
+v, err := value.AsStringUnsafe()
+if err != nil {
+	return false, err
+}
+m.%s = v
+`, field.FieldName,
+			)
+		}
+		g.i(-1)
+	}
+
+	return ""
+}
+
+func (g *generator) oRepeatedFieldCounts() {
+
 }
