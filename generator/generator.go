@@ -286,10 +286,21 @@ func New%s(bytes []byte) *%s {
 }
 `, msg.GetName(), msg.GetName(), msg.GetName(),
 	)
-	return g.oMsgDecode(msg)
+
+	if err := g.oMsgDecodeFunc(msg); err != nil {
+		return err
+	}
+
+	if err := g.oFieldsAccessors(msg); err != nil {
+		return err
+	}
+
+	g.o("\n")
+
+	return nil
 }
 
-func (g *generator) oMsgDecode(msg *desc.MessageDescriptor) error {
+func (g *generator) oMsgDecodeFunc(msg *desc.MessageDescriptor) error {
 	g.o(
 		`
 func (m *%s) decode() {
@@ -454,4 +465,73 @@ func (g *generator) getRepeatedFields(msg *desc.MessageDescriptor) []*desc.Field
 		}
 	}
 	return r
+}
+
+func (g *generator) oFieldsAccessors(msg *desc.MessageDescriptor) error {
+	// Generate decode bit flags
+	bitMask := uint64(2) // Start from 2 since bit 1 is used for "flagsMessageModified"
+	hasFlags := false
+	for _, field := range msg.GetFields() {
+		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			if !hasFlags {
+				g.o("// Bitmasks that indicate that the particular nested message is decoded\n")
+			}
+
+			g.o("const %s = 0x%016X\n", g.fieldFlagName(msg, field), bitMask)
+			bitMask *= 2
+			hasFlags = true
+		}
+	}
+	if hasFlags {
+		g.o("\n")
+	}
+
+	for _, field := range msg.GetFields() {
+		if err := g.FieldAccessors(msg, field); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (g *generator) fieldFlagName(
+	msg *desc.MessageDescriptor, field *desc.FieldDescriptor,
+) string {
+	return fmt.Sprintf("flag%s%sDecoded", msg.GetName(), field.GetName())
+}
+
+func (g *generator) FieldAccessors(
+	msg *desc.MessageDescriptor, field *desc.FieldDescriptor,
+) error {
+	g.o(
+		"func (m *%s) Get%s() %s {\n", msg.GetName(), field.GetName(),
+		g.convertType(field),
+	)
+
+	if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+		g.i(1)
+		g.o("if m.flags&%s == 0 {\n", g.fieldFlagName(msg, field))
+		g.i(1)
+		g.o("// Decode nested message(s)\n")
+		if field.IsRepeated() {
+			g.o("for i := range m.%s {\n", field.GetName())
+			g.o("	m.%s[i].decode()\n", field.GetName())
+			g.o("}\n")
+
+		} else {
+			g.o("m.%s.decode()\n", field.GetName())
+		}
+		g.i(-1)
+
+		g.o("	m.flags |= %s\n", g.fieldFlagName(msg, field))
+		g.o("}\n")
+		g.i(-1)
+	}
+
+	g.o(
+		`	return m.%s
+}
+`, field.GetName(),
+	)
+	return g.lastErr
 }

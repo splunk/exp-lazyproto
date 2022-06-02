@@ -68,6 +68,20 @@ func (m *LogsData) decode() {
 	)
 }
 
+// Bitmasks that indicate that the particular nested message is decoded
+const flagLogsDataresource_logsDecoded = 0x0000000000000002
+
+func (m *LogsData) Getresource_logs() []*ResourceLogs {
+	if m.flags&flagLogsDataresource_logsDecoded == 0 {
+		// Decode nested message(s)
+		for i := range m.resource_logs {
+			m.resource_logs[i].decode()
+		}
+		m.flags |= flagLogsDataresource_logsDecoded
+	}
+	return m.resource_logs
+}
+
 type ResourceLogs struct {
 	ProtoMessage
 	// The Resource
@@ -133,6 +147,29 @@ func (m *ResourceLogs) decode() {
 	)
 }
 
+// Bitmasks that indicate that the particular nested message is decoded
+const flagResourceLogsresourceDecoded = 0x0000000000000002
+const flagResourceLogsscope_logsDecoded = 0x0000000000000004
+
+func (m *ResourceLogs) Getresource() *Resource {
+	if m.flags&flagResourceLogsresourceDecoded == 0 {
+		// Decode nested message(s)
+		m.resource.decode()
+		m.flags |= flagResourceLogsresourceDecoded
+	}
+	return m.resource
+}
+func (m *ResourceLogs) Getscope_logs() []*ScopeLogs {
+	if m.flags&flagResourceLogsscope_logsDecoded == 0 {
+		// Decode nested message(s)
+		for i := range m.scope_logs {
+			m.scope_logs[i].decode()
+		}
+		m.flags |= flagResourceLogsscope_logsDecoded
+	}
+	return m.scope_logs
+}
+
 type Resource struct {
 	ProtoMessage
 	attributes               []*KeyValue
@@ -194,6 +231,23 @@ func (m *Resource) decode() {
 	)
 }
 
+// Bitmasks that indicate that the particular nested message is decoded
+const flagResourceattributesDecoded = 0x0000000000000002
+
+func (m *Resource) Getattributes() []*KeyValue {
+	if m.flags&flagResourceattributesDecoded == 0 {
+		// Decode nested message(s)
+		for i := range m.attributes {
+			m.attributes[i].decode()
+		}
+		m.flags |= flagResourceattributesDecoded
+	}
+	return m.attributes
+}
+func (m *Resource) Getdropped_attributes_count() uint32 {
+	return m.dropped_attributes_count
+}
+
 type KeyValue struct {
 	ProtoMessage
 	key   string
@@ -231,6 +285,13 @@ func (m *KeyValue) decode() {
 			return true, nil
 		},
 	)
+}
+
+func (m *KeyValue) Getkey() string {
+	return m.key
+}
+func (m *KeyValue) Getvalue() string {
+	return m.value
 }
 
 // A collection of Logs produced by a Scope.
@@ -286,6 +347,20 @@ func (m *ScopeLogs) decode() {
 			return true, nil
 		},
 	)
+}
+
+// Bitmasks that indicate that the particular nested message is decoded
+const flagScopeLogslog_recordsDecoded = 0x0000000000000002
+
+func (m *ScopeLogs) Getlog_records() []*LogRecord {
+	if m.flags&flagScopeLogslog_recordsDecoded == 0 {
+		// Decode nested message(s)
+		for i := range m.log_records {
+			m.log_records[i].decode()
+		}
+		m.flags |= flagScopeLogslog_recordsDecoded
+	}
+	return m.log_records
 }
 
 type LogRecord struct {
@@ -355,4 +430,24 @@ func (m *LogRecord) decode() {
 			return true, nil
 		},
 	)
+}
+
+// Bitmasks that indicate that the particular nested message is decoded
+const flagLogRecordattributesDecoded = 0x0000000000000002
+
+func (m *LogRecord) Gettime_unix_nano() uint64 {
+	return m.time_unix_nano
+}
+func (m *LogRecord) Getattributes() []*KeyValue {
+	if m.flags&flagLogRecordattributesDecoded == 0 {
+		// Decode nested message(s)
+		for i := range m.attributes {
+			m.attributes[i].decode()
+		}
+		m.flags |= flagLogRecordattributesDecoded
+	}
+	return m.attributes
+}
+func (m *LogRecord) Getdropped_attributes_count() uint32 {
+	return m.dropped_attributes_count
 }
