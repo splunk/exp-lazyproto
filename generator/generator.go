@@ -206,7 +206,8 @@ func (g *generator) oMessage(msg *Message) error {
 	g.o(
 		`
 func New%s(bytes []byte) *%s {
-	m := &%s{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
+	m := %s.Get()
+	m.protoMessage.Bytes = bytes
 	m.decode()
 	return m
 }
@@ -214,7 +215,8 @@ func New%s(bytes []byte) *%s {
 func (m *%s) Free() {
 	%s.Release(m)
 }
-`, msg.GetName(), msg.GetName(), msg.GetName(), msg.GetName(), getPoolName(msg.GetName()),
+`, msg.GetName(), msg.GetName(), getPoolName(msg.GetName()), msg.GetName(),
+		getPoolName(msg.GetName()),
 	)
 
 	if err := g.oFieldsAccessors(msg); err != nil {
@@ -515,6 +517,10 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 	return g.lastErr
 }
 
+func embeddedFieldName(msg *Message, field *Field) string {
+	return fmt.Sprintf("prepared%s%s", msg.GetName(), field.GetCapitalName())
+}
+
 func (g *generator) oMarshalPreparedField(msg *Message, field *Field, typeName string) {
 	g.o(
 		"ps.%sPrepared(prepared%s%s, m.%s)\n", typeName, msg.GetName(),
@@ -540,14 +546,14 @@ func (g *generator) oMarshalField(msg *Message, field *Field) {
 			g.i(1)
 			g.o("token := ps.BeginEmbedded()\n")
 			g.o("elem.Marshal(ps)\n")
-			g.o("ps.EndEmbedded(token, %d)\n", field.GetNumber())
+			g.o("ps.EndEmbeddedPrepared(token, %s)\n", embeddedFieldName(msg, field))
 			g.i(-1)
 		} else {
 			g.o("if m.%s != nil {\n", field.camelName)
 			g.i(1)
 			g.o("token := ps.BeginEmbedded()\n")
 			g.o("m.%s.Marshal(ps)\n", field.camelName)
-			g.o("ps.EndEmbedded(token, %d)\n", field.GetNumber())
+			g.o("ps.EndEmbeddedPrepared(token, %s)\n", embeddedFieldName(msg, field))
 			g.i(-1)
 		}
 
@@ -565,6 +571,9 @@ func (g *generator) oPrepareMarshalField(msg *Message, field *Field) {
 
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		g.o(preparedFieldDecl(msg, field, "Uint32"))
+
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		g.o(preparedFieldDecl(msg, field, "Embedded"))
 	}
 }
 
