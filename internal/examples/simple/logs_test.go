@@ -405,7 +405,7 @@ func BenchmarkLazyMarshalFullModified(b *testing.B) {
 		ps.Reset()
 		err = lazy.Marshal(ps)
 		require.NoError(b, err)
-		require.NotNil(b, ps.BufferBytes())
+		require.EqualValues(b, len(marshalBytes), len(ps.BufferBytes()))
 	}
 }
 
