@@ -381,8 +381,8 @@ if fieldNum == %d {
 	for _, field := range fields {
 		counterName := field.GetName() + "Count"
 		g.o(
-			"m.%s = make([]*%s, 0, %s)\n", field.GetName(),
-			field.GetMessageType().GetName(),
+			"m.%s = %s.GetSlice(%s)\n", field.GetName(),
+			getPoolName(field.GetMessageType().GetName()),
 			counterName,
 		)
 	}

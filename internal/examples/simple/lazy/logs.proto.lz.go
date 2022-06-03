@@ -51,7 +51,7 @@ func (m *LogsData) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.resourceLogs = make([]*ResourceLogs, 0, resourceLogsCount)
+	m.resourceLogs = resourceLogsPool.GetSlice(resourceLogsCount)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.protoMessage.Bytes)
@@ -244,7 +244,7 @@ func (m *ResourceLogs) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.scopeLogs = make([]*ScopeLogs, 0, scopeLogsCount)
+	m.scopeLogs = scopeLogsPool.GetSlice(scopeLogsCount)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.protoMessage.Bytes)
@@ -454,7 +454,7 @@ func (m *Resource) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.attributes = make([]*KeyValue, 0, attributesCount)
+	m.attributes = keyValuePool.GetSlice(attributesCount)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.protoMessage.Bytes)
@@ -647,7 +647,7 @@ func (m *ScopeLogs) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.logRecords = make([]*LogRecord, 0, logRecordsCount)
+	m.logRecords = logRecordPool.GetSlice(logRecordsCount)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.protoMessage.Bytes)
@@ -837,7 +837,7 @@ func (m *LogRecord) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.attributes = make([]*KeyValue, 0, attributesCount)
+	m.attributes = keyValuePool.GetSlice(attributesCount)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.protoMessage.Bytes)
