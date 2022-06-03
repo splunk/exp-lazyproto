@@ -426,7 +426,10 @@ func (g *generator) oFieldsAccessors(msg *Message) error {
 	}
 
 	for _, field := range msg.Fields {
-		if err := g.FieldAccessors(msg, field); err != nil {
+		if err := g.oFieldGetter(msg, field); err != nil {
+			return err
+		}
+		if err := g.oFieldSetter(msg, field); err != nil {
 			return err
 		}
 	}
@@ -437,9 +440,9 @@ func (g *generator) fieldFlagName(msg *Message, field *Field) string {
 	return fmt.Sprintf("flag%s%sDecoded", msg.GetName(), field.GetCapitalName())
 }
 
-func (g *generator) FieldAccessors(msg *Message, field *Field) error {
+func (g *generator) oFieldGetter(msg *Message, field *Field) error {
 	g.o(
-		"\nfunc (m *%s) Get%s() %s {\n", msg.GetName(), field.GetCapitalName(),
+		"\nfunc (m *%s) %s() %s {\n", msg.GetName(), field.GetCapitalName(),
 		g.convertType(field),
 	)
 
@@ -468,6 +471,23 @@ func (g *generator) FieldAccessors(msg *Message, field *Field) error {
 }
 `, field.GetName(),
 	)
+
+	return g.lastErr
+}
+
+func (g *generator) oFieldSetter(msg *Message, field *Field) error {
+	g.o(
+		"\nfunc (m *%s) Set%s(v %s)  {\n", msg.GetName(), field.GetCapitalName(),
+		g.convertType(field),
+	)
+
+	g.o("	m.%s = v\n", field.GetName())
+	g.o("	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {\n")
+	g.o("		m.protoMessage.MarkModified()\n")
+	g.o("	}\n")
+
+	g.o("}\n")
+
 	return g.lastErr
 }
 

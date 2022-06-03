@@ -9,10 +9,6 @@ type ProtoMessage struct {
 }
 
 func (m *ProtoMessage) MarkModified() {
-	if m.Flags&FlagsMessageModified != 0 {
-		return
-	}
-
 	m.Flags |= FlagsMessageModified
 	parent := m.Parent
 	for parent != nil {

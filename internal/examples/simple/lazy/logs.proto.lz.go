@@ -30,7 +30,7 @@ func (m *LogsData) Free() {
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagLogsDataResourceLogsDecoded = 0x0000000000000002
 
-func (m *LogsData) GetResourceLogs() []*ResourceLogs {
+func (m *LogsData) ResourceLogs() []*ResourceLogs {
 	if m.protoMessage.Flags&flagLogsDataResourceLogsDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.resourceLogs {
@@ -39,6 +39,13 @@ func (m *LogsData) GetResourceLogs() []*ResourceLogs {
 		m.protoMessage.Flags |= flagLogsDataResourceLogsDecoded
 	}
 	return m.resourceLogs
+}
+
+func (m *LogsData) SetResourceLogs(v []*ResourceLogs) {
+	m.resourceLogs = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
 }
 
 func (m *LogsData) decode() {
@@ -218,7 +225,7 @@ func (m *ResourceLogs) Free() {
 const flagResourceLogsResourceDecoded = 0x0000000000000002
 const flagResourceLogsScopeLogsDecoded = 0x0000000000000004
 
-func (m *ResourceLogs) GetResource() *Resource {
+func (m *ResourceLogs) Resource() *Resource {
 	if m.protoMessage.Flags&flagResourceLogsResourceDecoded == 0 {
 		// Decode nested message(s).
 		m.resource.decode()
@@ -227,7 +234,14 @@ func (m *ResourceLogs) GetResource() *Resource {
 	return m.resource
 }
 
-func (m *ResourceLogs) GetScopeLogs() []*ScopeLogs {
+func (m *ResourceLogs) SetResource(v *Resource) {
+	m.resource = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *ResourceLogs) ScopeLogs() []*ScopeLogs {
 	if m.protoMessage.Flags&flagResourceLogsScopeLogsDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.scopeLogs {
@@ -236,6 +250,13 @@ func (m *ResourceLogs) GetScopeLogs() []*ScopeLogs {
 		m.protoMessage.Flags |= flagResourceLogsScopeLogsDecoded
 	}
 	return m.scopeLogs
+}
+
+func (m *ResourceLogs) SetScopeLogs(v []*ScopeLogs) {
+	m.scopeLogs = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
 }
 
 func (m *ResourceLogs) decode() {
@@ -437,7 +458,7 @@ func (m *Resource) Free() {
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagResourceAttributesDecoded = 0x0000000000000002
 
-func (m *Resource) GetAttributes() []*KeyValue {
+func (m *Resource) Attributes() []*KeyValue {
 	if m.protoMessage.Flags&flagResourceAttributesDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.attributes {
@@ -448,8 +469,22 @@ func (m *Resource) GetAttributes() []*KeyValue {
 	return m.attributes
 }
 
-func (m *Resource) GetDroppedAttributesCount() uint32 {
+func (m *Resource) SetAttributes(v []*KeyValue) {
+	m.attributes = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *Resource) DroppedAttributesCount() uint32 {
 	return m.droppedAttributesCount
+}
+
+func (m *Resource) SetDroppedAttributesCount(v uint32) {
+	m.droppedAttributesCount = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
 }
 
 func (m *Resource) decode() {
@@ -638,7 +673,7 @@ func (m *ScopeLogs) Free() {
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagScopeLogsLogRecordsDecoded = 0x0000000000000002
 
-func (m *ScopeLogs) GetLogRecords() []*LogRecord {
+func (m *ScopeLogs) LogRecords() []*LogRecord {
 	if m.protoMessage.Flags&flagScopeLogsLogRecordsDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.logRecords {
@@ -647,6 +682,13 @@ func (m *ScopeLogs) GetLogRecords() []*LogRecord {
 		m.protoMessage.Flags |= flagScopeLogsLogRecordsDecoded
 	}
 	return m.logRecords
+}
+
+func (m *ScopeLogs) SetLogRecords(v []*LogRecord) {
+	m.logRecords = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
 }
 
 func (m *ScopeLogs) decode() {
@@ -824,11 +866,18 @@ func (m *LogRecord) Free() {
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagLogRecordAttributesDecoded = 0x0000000000000002
 
-func (m *LogRecord) GetTimeUnixNano() uint64 {
+func (m *LogRecord) TimeUnixNano() uint64 {
 	return m.timeUnixNano
 }
 
-func (m *LogRecord) GetAttributes() []*KeyValue {
+func (m *LogRecord) SetTimeUnixNano(v uint64) {
+	m.timeUnixNano = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *LogRecord) Attributes() []*KeyValue {
 	if m.protoMessage.Flags&flagLogRecordAttributesDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.attributes {
@@ -839,8 +888,22 @@ func (m *LogRecord) GetAttributes() []*KeyValue {
 	return m.attributes
 }
 
-func (m *LogRecord) GetDroppedAttributesCount() uint32 {
+func (m *LogRecord) SetAttributes(v []*KeyValue) {
+	m.attributes = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *LogRecord) DroppedAttributesCount() uint32 {
 	return m.droppedAttributesCount
+}
+
+func (m *LogRecord) SetDroppedAttributesCount(v uint32) {
+	m.droppedAttributesCount = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
 }
 
 func (m *LogRecord) decode() {
@@ -1035,12 +1098,26 @@ func (m *KeyValue) Free() {
 	keyValuePool.Release(m)
 }
 
-func (m *KeyValue) GetKey() string {
+func (m *KeyValue) Key() string {
 	return m.key
 }
 
-func (m *KeyValue) GetValue() string {
+func (m *KeyValue) SetKey(v string) {
+	m.key = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *KeyValue) Value() string {
 	return m.value
+}
+
+func (m *KeyValue) SetValue(v string) {
+	m.value = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
 }
 
 func (m *KeyValue) decode() {

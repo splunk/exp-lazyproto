@@ -438,7 +438,9 @@ func (m *KeyValue) Key() string {
 
 func (m *KeyValue) SetKey(s string) {
 	m.key = s
-	m.protoMessage.MarkModified() // TODO: check if this is inlined.
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
 }
 
 func (m *KeyValue) decode() {
