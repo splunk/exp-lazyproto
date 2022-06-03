@@ -23,6 +23,10 @@ func NewLogsData(bytes []byte) *LogsData {
 	return m
 }
 
+func (m *LogsData) Free() {
+	logsDataPool.Release(m)
+}
+
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagLogsDataResourceLogsDecoded = 0x0000000000000002
 
@@ -204,6 +208,10 @@ func NewResourceLogs(bytes []byte) *ResourceLogs {
 	m := &ResourceLogs{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
+}
+
+func (m *ResourceLogs) Free() {
+	resourceLogsPool.Release(m)
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
@@ -422,6 +430,10 @@ func NewResource(bytes []byte) *Resource {
 	return m
 }
 
+func (m *Resource) Free() {
+	resourcePool.Release(m)
+}
+
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagResourceAttributesDecoded = 0x0000000000000002
 
@@ -619,6 +631,10 @@ func NewScopeLogs(bytes []byte) *ScopeLogs {
 	return m
 }
 
+func (m *ScopeLogs) Free() {
+	scopeLogsPool.Release(m)
+}
+
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagScopeLogsLogRecordsDecoded = 0x0000000000000002
 
@@ -799,6 +815,10 @@ func NewLogRecord(bytes []byte) *LogRecord {
 	m := &LogRecord{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
+}
+
+func (m *LogRecord) Free() {
+	logRecordPool.Release(m)
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
@@ -1009,6 +1029,10 @@ func NewKeyValue(bytes []byte) *KeyValue {
 	m := &KeyValue{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
+}
+
+func (m *KeyValue) Free() {
+	keyValuePool.Release(m)
 }
 
 func (m *KeyValue) GetKey() string {

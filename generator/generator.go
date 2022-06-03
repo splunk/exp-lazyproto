@@ -210,7 +210,11 @@ func New%s(bytes []byte) *%s {
 	m.decode()
 	return m
 }
-`, msg.GetName(), msg.GetName(), msg.GetName(),
+
+func (m *%s) Free() {
+	%s.Release(m)
+}
+`, msg.GetName(), msg.GetName(), msg.GetName(), msg.GetName(), getPoolName(msg.GetName()),
 	)
 
 	if err := g.oFieldsAccessors(msg); err != nil {
