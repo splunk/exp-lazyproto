@@ -4,14 +4,15 @@ import (
 	"testing"
 
 	gogolib "github.com/gogo/protobuf/proto"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	gogomsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/gogo/gen/logs"
 	googlemsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/google/gen/logs"
-	"github.com/tigrannajaryan/molecule"
-	"github.com/tigrannajaryan/molecule/src/protowire"
+	lazymsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/lazy"
 	googlelib "google.golang.org/protobuf/proto"
 
-	gogomsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/gogo/gen/logs"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/tigrannajaryan/molecule"
+	"github.com/tigrannajaryan/molecule/src/protowire"
 )
 
 func createLogRecord(n int) *gogomsg.LogRecord {
@@ -420,6 +421,28 @@ func BenchmarkLazyPassthroughNoReadOrModify(b *testing.B) {
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
 		lazy := NewLogsData(marshalBytes)
+		ps.Reset()
+		err = lazy.Marshal(ps)
+		require.NoError(b, err)
+		require.NotNil(b, ps.BufferBytes())
+	}
+}
+
+func BenchmarkLazyGenPassthroughNoReadOrModify(b *testing.B) {
+	// This is the best case scenario for passthrough. We don't read or modify any
+	// data, just unmarshal and marshal it exactly as it is.
+
+	src := createLogsData()
+
+	marshalBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, marshalBytes)
+
+	b.ResetTimer()
+
+	ps := molecule.NewProtoStream()
+	for i := 0; i < b.N; i++ {
+		lazy := lazymsg.NewLogsData(marshalBytes)
 		ps.Reset()
 		err = lazy.Marshal(ps)
 		require.NoError(b, err)
