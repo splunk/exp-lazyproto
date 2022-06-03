@@ -29,12 +29,19 @@ func createLogRecord(n int) *gogomsg.LogRecord {
 				Key:   "http.server",
 				Value: "example.com",
 			},
+			{
+				Key:   "db.name",
+				Value: "postgres",
+			},
+			{
+				Key:   "host.name",
+				Value: "localhost",
+			},
 		},
 		DroppedAttributesCount: 12,
 	}
 
 	return sl
-
 }
 
 func createScopedLogs(n int) *gogomsg.ScopeLogs {
@@ -145,6 +152,8 @@ func TestDecode(t *testing.T) {
 	lazy.Marshal(ps)
 
 	assert.EqualValues(t, marshalledBytes, ps.BufferBytes())
+
+	logsDataPool.Release(lazy)
 }
 
 func TestLazyPassthrough(t *testing.T) {
@@ -160,6 +169,8 @@ func TestLazyPassthrough(t *testing.T) {
 	err = lazy.Marshal(ps)
 	require.NoError(t, err)
 	assert.EqualValues(t, marshalBytes, ps.BufferBytes())
+
+	logsDataPool.Release(lazy)
 }
 
 func BenchmarkGogoMarshal(b *testing.B) {
@@ -390,7 +401,7 @@ func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
 		// Traverse all data to get it loaded. This is the worst case.
 		countAttrs(lazy)
 
-		keyValuePool.Release(lazy)
+		logsDataPool.Release(lazy)
 	}
 }
 
@@ -436,7 +447,7 @@ func BenchmarkLazyPassthroughFullReadNoModify(b *testing.B) {
 		countAttrs(lazy)
 		require.NoError(b, err)
 		require.NotNil(b, ps.BufferBytes())
-		keyValuePool.Release(lazy)
+		logsDataPool.Release(lazy)
 	}
 }
 
@@ -464,7 +475,7 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 		require.NoError(b, err)
 		require.NotNil(b, ps.BufferBytes())
 
-		keyValuePool.Release(lazy)
+		logsDataPool.Release(lazy)
 	}
 }
 
@@ -488,7 +499,7 @@ func BenchmarkResourceMarshal(b *testing.B) {
 		value: "val",
 	}
 	res := Resource{
-		attributes:             []KeyValue{kv},
+		attributes:             []*KeyValue{&kv},
 		DroppedAttributesCount: 0,
 	}
 
@@ -523,14 +534,6 @@ func BenchmarkAppendVarintProtowire(b *testing.B) {
 	}
 }
 
-//func BenchmarkAppendVarintMolecule(b *testing.B) {
-//	bts := make([]byte, 0, b.N*10)
-//	value := uint64(123)
-//	for i := 0; i < b.N; i++ {
-//		bts = molecule.AppendVarint(bts, value)
-//	}
-//}
-
 func BenchmarkWriteUint32(b *testing.B) {
 	val := uint32(123)
 	ps := molecule.NewProtoStream()
@@ -549,13 +552,3 @@ func BenchmarkWriteUint32Prepared(b *testing.B) {
 		ps.Uint32Prepared(k, val)
 	}
 }
-
-//func BenchmarkWriteUint32LongPrepared(b *testing.B) {
-//	val := uint32(123)
-//	ps := molecule.NewProtoStream()
-//	k := molecule.PrepareLongField(1, protowire.VarintType)
-//	for i := 0; i < b.N; i++ {
-//		ps.Reset()
-//		ps.Uint32LongPrepared(k, val)
-//	}
-//}

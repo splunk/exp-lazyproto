@@ -12,11 +12,12 @@ import (
 type LogsData struct {
 	protoMessage lazyproto.ProtoMessage
 	// List of ResourceLogs
-	resourceLogs []ResourceLogs
+	resourceLogs []*ResourceLogs
 }
 
 func NewLogsData(bytes []byte) *LogsData {
-	m := &LogsData{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
+	m := logsDataPool.Get()
+	*m = LogsData{protoMessage: lazyproto.ProtoMessage{Bytes: bytes}}
 	m.decode()
 	return m
 }
@@ -24,7 +25,7 @@ func NewLogsData(bytes []byte) *LogsData {
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagLogsDataResourceLogsDecoded = 2
 
-func (m *LogsData) GetResourceLogs() *[]ResourceLogs {
+func (m *LogsData) GetResourceLogs() *[]*ResourceLogs {
 	if m.protoMessage.Flags&flagLogsDataResourceLogsDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.resourceLogs {
@@ -49,7 +50,8 @@ func (m *LogsData) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.resourceLogs = make([]ResourceLogs, 0, resourceLogsCount)
+	//m.resourceLogs = make([]ResourceLogs, 0, resourceLogsCount)
+	m.resourceLogs = resourceLogsPool.Get(resourceLogsCount)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.protoMessage.Bytes)
@@ -67,14 +69,13 @@ func (m *LogsData) decode() {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				m.resourceLogs = append(
-					m.resourceLogs,
-					ResourceLogs{
-						protoMessage: lazyproto.ProtoMessage{
-							Parent: &m.protoMessage, Bytes: v,
-						},
+				rl := m.resourceLogs[resourceLogsCount]
+				resourceLogsCount++
+				*rl = ResourceLogs{
+					protoMessage: lazyproto.ProtoMessage{
+						Parent: &m.protoMessage, Bytes: v,
 					},
-				)
+				}
 			}
 			return true, nil
 		},
@@ -97,7 +98,7 @@ func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
 type ResourceLogs struct {
 	protoMessage lazyproto.ProtoMessage
 	resource     *Resource
-	scopeLogs    []ScopeLogs
+	scopeLogs    []*ScopeLogs
 }
 
 const resourceLogsResourceDecoded = 2
@@ -111,7 +112,7 @@ func (m *ResourceLogs) GetResource() **Resource {
 	return &m.resource
 }
 
-func (m *ResourceLogs) GetScopeLogs() *[]ScopeLogs {
+func (m *ResourceLogs) GetScopeLogs() *[]*ScopeLogs {
 	if m.protoMessage.Flags&resourceLogsScopeLogsDecoded == 0 {
 		for i := range m.scopeLogs {
 			m.scopeLogs[i].decode()
@@ -133,7 +134,7 @@ func (m *ResourceLogs) decode() {
 		},
 	)
 	//m.scopeLogs = make([]ScopeLogs, 0, lrCount)
-	m.scopeLogs = scopeLogsPool.GetScopeLogss(lrCount)
+	m.scopeLogs = scopeLogsPool.Get(lrCount)
 
 	lrIndex := 0
 	buf.Reset(m.protoMessage.Bytes)
@@ -145,7 +146,8 @@ func (m *ResourceLogs) decode() {
 				if err != nil {
 					return false, err
 				}
-				m.resource = &Resource{
+				m.resource = resourcePool.Get()
+				*m.resource = Resource{
 					protoMessage: lazyproto.ProtoMessage{
 						Parent: &m.protoMessage, Bytes: v,
 					},
@@ -156,7 +158,7 @@ func (m *ResourceLogs) decode() {
 				if err != nil {
 					return false, err
 				}
-				sl := &m.scopeLogs[lrIndex]
+				sl := m.scopeLogs[lrIndex]
 				lrIndex++
 				*sl = ScopeLogs{
 					protoMessage: lazyproto.ProtoMessage{
@@ -189,13 +191,13 @@ func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 
 type Resource struct {
 	protoMessage           lazyproto.ProtoMessage
-	attributes             []KeyValue
+	attributes             []*KeyValue
 	DroppedAttributesCount uint32
 }
 
 const resourceAttributesDecoded = 2
 
-func (m *Resource) GetAttributes() *[]KeyValue {
+func (m *Resource) GetAttributes() *[]*KeyValue {
 	if m.protoMessage.Flags&resourceAttributesDecoded == 0 {
 		for i := range m.attributes {
 			m.attributes[i].decode()
@@ -207,6 +209,18 @@ func (m *Resource) GetAttributes() *[]KeyValue {
 
 func (m *Resource) decode() {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
+	attrCount := 0
+	molecule.MessageFieldNums(
+		buf, func(fieldNum int32) {
+			if fieldNum == 2 {
+				attrCount++
+			}
+		},
+	)
+	m.attributes = poolKeyValue.Get(attrCount)
+
+	attrIndex := 0
+	buf.Reset(m.protoMessage.Bytes)
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
@@ -215,13 +229,13 @@ func (m *Resource) decode() {
 				if err != nil {
 					return false, err
 				}
-				m.attributes = append(
-					m.attributes, KeyValue{
-						protoMessage: lazyproto.ProtoMessage{
-							Parent: &m.protoMessage, Bytes: v,
-						},
+				kv := m.attributes[attrIndex]
+				attrIndex++
+				*kv = KeyValue{
+					protoMessage: lazyproto.ProtoMessage{
+						Parent: &m.protoMessage, Bytes: v,
 					},
-				)
+				}
 
 			case 2:
 				v, err := value.AsUint32()
@@ -255,12 +269,12 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 
 type ScopeLogs struct {
 	protoMessage lazyproto.ProtoMessage
-	logRecords   []LogRecord
+	logRecords   []*LogRecord
 }
 
 const scopeLogsLogRecordsDecoded = 2
 
-func (m *ScopeLogs) GetLogRecords() *[]LogRecord {
+func (m *ScopeLogs) GetLogRecords() *[]*LogRecord {
 	if m.protoMessage.Flags&scopeLogsLogRecordsDecoded == 0 {
 		for i := range m.logRecords {
 			m.logRecords[i].decode()
@@ -282,7 +296,7 @@ func (m *ScopeLogs) decode() {
 		},
 	)
 	//m.logRecords = make([]LogRecord, 0, lrCount)
-	m.logRecords = logRecordPool.GetLogRecords(lrCount)
+	m.logRecords = logRecordPool.Get(lrCount)
 
 	lrIndex := 0
 	buf.Reset(m.protoMessage.Bytes)
@@ -294,7 +308,7 @@ func (m *ScopeLogs) decode() {
 				if err != nil {
 					return false, err
 				}
-				lr := &m.logRecords[lrIndex]
+				lr := m.logRecords[lrIndex]
 				*lr = LogRecord{
 					protoMessage: lazyproto.ProtoMessage{
 						Parent: &m.protoMessage, Bytes: v,
@@ -348,8 +362,7 @@ func (m *LogRecord) decode() {
 			}
 		},
 	)
-	//m.attributes = make([]*KeyValue, 0, attrCount)
-	m.attributes = keyValuePool.GetKeyValues(attrCount)
+	m.attributes = poolKeyValue.Get(attrCount)
 
 	attrIndex := 0
 	buf.Reset(m.protoMessage.Bytes)

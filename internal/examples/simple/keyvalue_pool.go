@@ -2,52 +2,45 @@ package simple
 
 import "sync"
 
-type KeyValuePool struct {
-	freedKeyValue []*KeyValue
+type poolKeyValueType struct {
+	freed []*KeyValue
+	mux   sync.Mutex
 }
 
-var keyValuePool = KeyValuePool{}
+var poolKeyValue = poolKeyValueType{}
 
-var poolMux = sync.Mutex{}
+func (p *poolKeyValueType) Get(count int) []*KeyValue {
+	p.mux.Lock()
+	defer p.mux.Unlock()
 
-func (p *KeyValuePool) GetKeyValues(count int) []*KeyValue {
-	poolMux.Lock()
-	defer poolMux.Unlock()
-
-	if len(p.freedKeyValue) >= count {
-		r := p.freedKeyValue[len(p.freedKeyValue)-count:]
-		p.freedKeyValue = p.freedKeyValue[:len(p.freedKeyValue)-count]
+	if len(p.freed) >= count {
+		r := p.freed[len(p.freed)-count:]
+		p.freed = p.freed[:len(p.freed)-count]
 		return r
 	}
 
 	r := make([]*KeyValue, count)
 	i := 0
-	for ; i < len(p.freedKeyValue); i++ {
-		r[i] = p.freedKeyValue[i]
+	for ; i < len(p.freed); i++ {
+		r[i] = p.freed[i]
 	}
-	p.freedKeyValue = nil
-	for ; i < count; i++ {
-		r[i] = &KeyValue{}
+	p.freed = nil
+
+	if i < count {
+		storage := make([]KeyValue, count-i)
+		j := 0
+		for ; i < count; i++ {
+			r[i] = &storage[j]
+			j++
+		}
 	}
 
 	return r
 }
 
-func (p *KeyValuePool) Release(l *LogsData) {
-	poolMux.Lock()
-	defer poolMux.Unlock()
+func (p *poolKeyValueType) ReleaseSlice(attributes []*KeyValue) {
+	p.mux.Lock()
+	defer p.mux.Unlock()
 
-	for _, rl := range l.resourceLogs {
-		scopeLogsPool.freedScopeLogs = append(
-			scopeLogsPool.freedScopeLogs, rl.scopeLogs...,
-		)
-		for _, sl := range rl.scopeLogs {
-			logRecordPool.freedLogRecord = append(
-				logRecordPool.freedLogRecord, sl.logRecords...,
-			)
-			for _, logRecord := range sl.logRecords {
-				p.freedKeyValue = append(p.freedKeyValue, logRecord.attributes...)
-			}
-		}
-	}
+	p.freed = append(p.freed, attributes...)
 }

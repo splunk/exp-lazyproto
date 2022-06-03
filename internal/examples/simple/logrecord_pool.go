@@ -1,35 +1,48 @@
 package simple
 
+import "sync"
+
 type LogRecordPool struct {
-	freedLogRecord []LogRecord
+	freed []*LogRecord
+	mux   sync.Mutex
 }
 
 var logRecordPool = LogRecordPool{}
 
-func (p *LogRecordPool) GetLogRecords(count int) []LogRecord {
-	poolMux.Lock()
-	defer poolMux.Unlock()
+func (p *LogRecordPool) Get(count int) []*LogRecord {
+	p.mux.Lock()
+	defer p.mux.Unlock()
 
-	if len(p.freedLogRecord) >= count {
-		r := p.freedLogRecord[len(p.freedLogRecord)-count:]
-		p.freedLogRecord = p.freedLogRecord[:len(p.freedLogRecord)-count]
+	if len(p.freed) >= count {
+		r := p.freed[len(p.freed)-count:]
+		p.freed = p.freed[:len(p.freed)-count]
 		return r
 	}
 
-	r := make([]LogRecord, count)
+	r := make([]*LogRecord, count)
 	i := 0
-	for ; i < len(p.freedLogRecord); i++ {
-		r[i] = p.freedLogRecord[i]
+	for ; i < len(p.freed); i++ {
+		r[i] = p.freed[i]
 	}
-	p.freedLogRecord = nil
+	p.freed = nil
+	if i < count {
+		storage := make([]LogRecord, count-i)
+		j := 0
+		for ; i < count; i++ {
+			r[i] = &storage[j]
+			j++
+		}
+	}
 
 	return r
 }
 
-//func (p *LogRecordPool) Release(l *LogsData) {
-//	for _, rl := range l.resourceLogs {
-//		for _, sl := range rl.scopeLogs {
-//			p.freedLogRecord = append(p.freedLogRecord, sl.logRecords...)
-//		}
-//	}
-//}
+func (p *LogRecordPool) ReleaseSlice(records []*LogRecord) {
+	for _, logRecord := range records {
+		poolKeyValue.ReleaseSlice(logRecord.attributes)
+	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+	p.freed = append(p.freed, records...)
+}

@@ -1,33 +1,48 @@
 package simple
 
+import "sync"
+
 type ScopeLogsPool struct {
-	freedScopeLogs []ScopeLogs
+	freed []*ScopeLogs
+	mux   sync.Mutex
 }
 
 var scopeLogsPool = ScopeLogsPool{}
 
-func (p *ScopeLogsPool) GetScopeLogss(count int) []ScopeLogs {
-	poolMux.Lock()
-	defer poolMux.Unlock()
+func (p *ScopeLogsPool) Get(count int) []*ScopeLogs {
+	p.mux.Lock()
+	defer p.mux.Unlock()
 
-	if len(p.freedScopeLogs) >= count {
-		r := p.freedScopeLogs[len(p.freedScopeLogs)-count:]
-		p.freedScopeLogs = p.freedScopeLogs[:len(p.freedScopeLogs)-count]
+	if len(p.freed) >= count {
+		r := p.freed[len(p.freed)-count:]
+		p.freed = p.freed[:len(p.freed)-count]
 		return r
 	}
 
-	r := make([]ScopeLogs, count)
+	r := make([]*ScopeLogs, count)
 	i := 0
-	for ; i < len(p.freedScopeLogs); i++ {
-		r[i] = p.freedScopeLogs[i]
+	for ; i < len(p.freed); i++ {
+		r[i] = p.freed[i]
 	}
-	p.freedScopeLogs = nil
+	p.freed = nil
+	if i < count {
+		storage := make([]ScopeLogs, count-i)
+		j := 0
+		for ; i < count; i++ {
+			r[i] = &storage[j]
+			j++
+		}
+	}
 
 	return r
 }
 
-//func (p *ScopeLogsPool) Release(l *LogsData) {
-//	for _, rl := range l.resourceLogs {
-//		p.freedScopeLogs = append(p.freedScopeLogs, rl.scopeLogs...)
-//	}
-//}
+func (p *ScopeLogsPool) ReleaseSlice(sls []*ScopeLogs) {
+	for _, sl := range sls {
+		logRecordPool.ReleaseSlice(sl.logRecords)
+	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+	scopeLogsPool.freed = append(scopeLogsPool.freed, sls...)
+}
