@@ -65,76 +65,6 @@ func (g *generator) VisitExtensions(extensions *parser.Extensions) (next bool) {
 	panic("implement me")
 }
 
-//func (g *generator) VisitField(field *parser.Field) (next bool) {
-//	g.field = field
-//	g.msg.FieldsMap[field.FieldName] = g.field
-//	return true
-//}
-
-//func (g *generator) VisitGroupField(field *parser.GroupField) (next bool) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (g *generator) VisitImport(i *parser.Import) (next bool) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (g *generator) VisitMapField(field *parser.MapField) (next bool) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (g *generator) VisitMessage(message *parser.Message) (next bool) {
-//	g.msg = &Message{
-//		Name:      message.MessageName,
-//		FieldsMap: map[string]*parser.Field{},
-//	}
-//	g.file.Messages[message.MessageName] = g.msg
-//	return true
-//}
-//
-//func (g *generator) VisitOneof(oneof *parser.Oneof) (next bool) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (g *generator) VisitOneofField(field *parser.OneofField) (next bool) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (g *generator) VisitOption(option *parser.Option) (next bool) {
-//	//TODO implement me
-//	return true
-//}
-//
-//func (g *generator) VisitPackage(p *parser.Package) (next bool) {
-//	g.file.PackageName = p.GetName
-//	return true
-//}
-//
-//func (g *generator) VisitReserved(reserved *parser.Reserved) (next bool) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (g *generator) VisitRPC(rpc *parser.RPC) (next bool) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (g *generator) VisitService(service *parser.Service) (next bool) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (g *generator) VisitSyntax(syntax *parser.Syntax) (next bool) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-
 func (g *generator) processFile(inputFilePath string) error {
 	p := protoparse.Parser{
 		Accessor: func(filename string) (io.ReadCloser, error) {
@@ -188,10 +118,13 @@ func (g *generator) oFile(fdescr *desc.FileDescriptor) error {
 	g.o(
 		`
 import (
+	"sync"
+
+	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 	"github.com/tigrannajaryan/molecule"
 	"github.com/tigrannajaryan/molecule/src/codec"
-	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 )
+
 `,
 	)
 
@@ -535,7 +468,6 @@ func (g *generator) FieldAccessors(msg *Message, field *Field) error {
 }
 
 func (g *generator) oMarshalFunc(msg *Message) error {
-	g.o("// Prepared keys for marshaling.\n")
 	for _, field := range msg.Fields {
 		g.oPrepareMarshalField(msg, field)
 	}
@@ -611,8 +543,171 @@ func (g *generator) oPrepareMarshalField(msg *Message, field *Field) {
 	}
 }
 
+func unexportedName(name string) string {
+	return strings.ToLower(name[0:1]) + name[1:]
+}
+
 func (g *generator) oPool(msg *Message) error {
+	poolName := unexportedName(msg.GetName()) + "Pool"
+
+	g.o(
+		`
+// Pool of %s structs.
+type %sType struct {
+	pool []*%s
+	mux  sync.Mutex
+}
+
+var %s = %sType{}
+
+// Get one element from the pool. Creates a new element if the pool is empty.
+func (p *%sType) Get() *%s {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have elements in the pool?
+	if len(p.pool) >= 1 {
+		// Get the last element.
+		r := p.pool[len(p.pool)-1]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-1]
+		return r
+	}
+
+	// Pool is empty, create a new element.
+	return &%s{}
+}
+
+func (p *%sType) GetSlice(count int) []*%s {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have enough elements in the pool?
+	if len(p.pool) >= count {
+		// Cut the required slice from the end of the pool.
+		r := p.pool[len(p.pool)-count:]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-count]
+		return r
+	}
+
+	// Create a new slice.
+	r := make([]*%s, count)
+
+	// Initialize with what remains in the pool.
+	i := 0
+	for ; i < len(p.pool); i++ {
+		r[i] = p.pool[i]
+	}
+	p.pool = nil
+
+	if i < count {
+		// Create remaining elements.
+		storage := make([]%s, count-i)
+		j := 0
+		for ; i < count; i++ {
+			r[i] = &storage[j]
+			j++
+		}
+	}
+
+	return r
+}
+`,
+		msg.GetName(), poolName, msg.GetName(), poolName, poolName, poolName,
+		msg.GetName(), msg.GetName(), poolName, msg.GetName(), msg.GetName(),
+		msg.GetName(),
+	)
+
+	g.oPoolReleaseSlice(msg)
+	g.oPoolRelease(msg)
+
 	return g.lastErr
+}
+
+func getPoolName(msgName string) string {
+	return unexportedName(msgName) + "Pool"
+}
+
+func (g *generator) oPoolReleaseElem(msg *Message) {
+	//poolName := getPoolName(msg.GetName())
+
+	for _, field := range msg.Fields {
+		if field.GetType() != descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			continue
+		}
+
+		fieldType := getPoolName(field.GetMessageType().GetName())
+		g.o("// Release nested %s recursively to their pool.\n", field.GetName())
+		if field.IsRepeated() {
+			g.o("%s.ReleaseSlice(elem.%s)\n", fieldType, field.GetName())
+		} else {
+			g.o("if elem.%s != nil {\n", field.GetName())
+			g.o("	%s.Release(elem.%s)\n", fieldType, field.GetName())
+			g.o("}\n")
+		}
+	}
+
+	g.o(
+		`
+// Zero-initialize the released element.
+*elem = %s{}
+`, msg.GetName(),
+	)
+}
+
+func (g *generator) oPoolReleaseSlice(msg *Message) {
+	poolName := getPoolName(msg.GetName())
+
+	g.o(
+		`
+// ReleaseSlice releases a slice of elements back to the pool.
+func (p *%sType) ReleaseSlice(slice []*%s) {
+	for _, elem := range slice {
+`, poolName, msg.GetName(),
+	)
+
+	g.i(2)
+	g.oPoolReleaseElem(msg)
+	g.i(-2)
+
+	g.o(
+		`	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, slice...)
+}
+`,
+	)
+}
+
+func (g *generator) oPoolRelease(msg *Message) {
+	poolName := getPoolName(msg.GetName())
+
+	g.o(
+		`
+// Release an element back to the pool.
+func (p *%sType) Release(elem *%s) {
+`, poolName, msg.GetName(),
+	)
+
+	g.i(1)
+	g.oPoolReleaseElem(msg)
+	g.i(-1)
+
+	g.o(
+		`
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, elem)
+}
+`,
+	)
 }
 
 func preparedFieldDecl(msg *Message, field *Field, typeName string) string {

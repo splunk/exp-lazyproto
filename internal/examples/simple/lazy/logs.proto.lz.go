@@ -1,6 +1,8 @@
 package simple
 
 import (
+	"sync"
+
 	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 	"github.com/tigrannajaryan/molecule"
 	"github.com/tigrannajaryan/molecule/src/codec"
@@ -79,8 +81,6 @@ func (m *LogsData) decode() {
 	)
 }
 
-// Prepared keys for marshaling.
-
 func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal resourceLogs
@@ -94,6 +94,100 @@ func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
 		ps.Raw(m.protoMessage.Bytes)
 	}
 	return nil
+}
+
+// Pool of LogsData structs.
+type logsDataPoolType struct {
+	pool []*LogsData
+	mux  sync.Mutex
+}
+
+var logsDataPool = logsDataPoolType{}
+
+// Get one element from the pool. Creates a new element if the pool is empty.
+func (p *logsDataPoolType) Get() *LogsData {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have elements in the pool?
+	if len(p.pool) >= 1 {
+		// Get the last element.
+		r := p.pool[len(p.pool)-1]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-1]
+		return r
+	}
+
+	// Pool is empty, create a new element.
+	return &LogsData{}
+}
+
+func (p *logsDataPoolType) GetSlice(count int) []*LogsData {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have enough elements in the pool?
+	if len(p.pool) >= count {
+		// Cut the required slice from the end of the pool.
+		r := p.pool[len(p.pool)-count:]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-count]
+		return r
+	}
+
+	// Create a new slice.
+	r := make([]*LogsData, count)
+
+	// Initialize with what remains in the pool.
+	i := 0
+	for ; i < len(p.pool); i++ {
+		r[i] = p.pool[i]
+	}
+	p.pool = nil
+
+	if i < count {
+		// Create remaining elements.
+		storage := make([]LogsData, count-i)
+		j := 0
+		for ; i < count; i++ {
+			r[i] = &storage[j]
+			j++
+		}
+	}
+
+	return r
+}
+
+// ReleaseSlice releases a slice of elements back to the pool.
+func (p *logsDataPoolType) ReleaseSlice(slice []*LogsData) {
+	for _, elem := range slice {
+		// Release nested resourceLogs recursively to their pool.
+		resourceLogsPool.ReleaseSlice(elem.resourceLogs)
+
+		// Zero-initialize the released element.
+		*elem = LogsData{}
+	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, slice...)
+}
+
+// Release an element back to the pool.
+func (p *logsDataPoolType) Release(elem *LogsData) {
+	// Release nested resourceLogs recursively to their pool.
+	resourceLogsPool.ReleaseSlice(elem.resourceLogs)
+
+	// Zero-initialize the released element.
+	*elem = LogsData{}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, elem)
 }
 
 // ====================== Generated for message ResourceLogs ======================
@@ -191,8 +285,6 @@ func (m *ResourceLogs) decode() {
 	)
 }
 
-// Prepared keys for marshaling.
-
 func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal resource
@@ -212,6 +304,108 @@ func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 		ps.Raw(m.protoMessage.Bytes)
 	}
 	return nil
+}
+
+// Pool of ResourceLogs structs.
+type resourceLogsPoolType struct {
+	pool []*ResourceLogs
+	mux  sync.Mutex
+}
+
+var resourceLogsPool = resourceLogsPoolType{}
+
+// Get one element from the pool. Creates a new element if the pool is empty.
+func (p *resourceLogsPoolType) Get() *ResourceLogs {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have elements in the pool?
+	if len(p.pool) >= 1 {
+		// Get the last element.
+		r := p.pool[len(p.pool)-1]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-1]
+		return r
+	}
+
+	// Pool is empty, create a new element.
+	return &ResourceLogs{}
+}
+
+func (p *resourceLogsPoolType) GetSlice(count int) []*ResourceLogs {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have enough elements in the pool?
+	if len(p.pool) >= count {
+		// Cut the required slice from the end of the pool.
+		r := p.pool[len(p.pool)-count:]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-count]
+		return r
+	}
+
+	// Create a new slice.
+	r := make([]*ResourceLogs, count)
+
+	// Initialize with what remains in the pool.
+	i := 0
+	for ; i < len(p.pool); i++ {
+		r[i] = p.pool[i]
+	}
+	p.pool = nil
+
+	if i < count {
+		// Create remaining elements.
+		storage := make([]ResourceLogs, count-i)
+		j := 0
+		for ; i < count; i++ {
+			r[i] = &storage[j]
+			j++
+		}
+	}
+
+	return r
+}
+
+// ReleaseSlice releases a slice of elements back to the pool.
+func (p *resourceLogsPoolType) ReleaseSlice(slice []*ResourceLogs) {
+	for _, elem := range slice {
+		// Release nested resource recursively to their pool.
+		if elem.resource != nil {
+			resourcePool.Release(elem.resource)
+		}
+		// Release nested scopeLogs recursively to their pool.
+		scopeLogsPool.ReleaseSlice(elem.scopeLogs)
+
+		// Zero-initialize the released element.
+		*elem = ResourceLogs{}
+	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, slice...)
+}
+
+// Release an element back to the pool.
+func (p *resourceLogsPoolType) Release(elem *ResourceLogs) {
+	// Release nested resource recursively to their pool.
+	if elem.resource != nil {
+		resourcePool.Release(elem.resource)
+	}
+	// Release nested scopeLogs recursively to their pool.
+	scopeLogsPool.ReleaseSlice(elem.scopeLogs)
+
+	// Zero-initialize the released element.
+	*elem = ResourceLogs{}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, elem)
 }
 
 // ====================== Generated for message Resource ======================
@@ -297,7 +491,6 @@ func (m *Resource) decode() {
 	)
 }
 
-// Prepared keys for marshaling.
 var preparedResourceDroppedAttributesCount = molecule.PrepareUint32Field(2)
 
 func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
@@ -315,6 +508,100 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 		ps.Raw(m.protoMessage.Bytes)
 	}
 	return nil
+}
+
+// Pool of Resource structs.
+type resourcePoolType struct {
+	pool []*Resource
+	mux  sync.Mutex
+}
+
+var resourcePool = resourcePoolType{}
+
+// Get one element from the pool. Creates a new element if the pool is empty.
+func (p *resourcePoolType) Get() *Resource {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have elements in the pool?
+	if len(p.pool) >= 1 {
+		// Get the last element.
+		r := p.pool[len(p.pool)-1]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-1]
+		return r
+	}
+
+	// Pool is empty, create a new element.
+	return &Resource{}
+}
+
+func (p *resourcePoolType) GetSlice(count int) []*Resource {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have enough elements in the pool?
+	if len(p.pool) >= count {
+		// Cut the required slice from the end of the pool.
+		r := p.pool[len(p.pool)-count:]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-count]
+		return r
+	}
+
+	// Create a new slice.
+	r := make([]*Resource, count)
+
+	// Initialize with what remains in the pool.
+	i := 0
+	for ; i < len(p.pool); i++ {
+		r[i] = p.pool[i]
+	}
+	p.pool = nil
+
+	if i < count {
+		// Create remaining elements.
+		storage := make([]Resource, count-i)
+		j := 0
+		for ; i < count; i++ {
+			r[i] = &storage[j]
+			j++
+		}
+	}
+
+	return r
+}
+
+// ReleaseSlice releases a slice of elements back to the pool.
+func (p *resourcePoolType) ReleaseSlice(slice []*Resource) {
+	for _, elem := range slice {
+		// Release nested attributes recursively to their pool.
+		keyValuePool.ReleaseSlice(elem.attributes)
+
+		// Zero-initialize the released element.
+		*elem = Resource{}
+	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, slice...)
+}
+
+// Release an element back to the pool.
+func (p *resourcePoolType) Release(elem *Resource) {
+	// Release nested attributes recursively to their pool.
+	keyValuePool.ReleaseSlice(elem.attributes)
+
+	// Zero-initialize the released element.
+	*elem = Resource{}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, elem)
 }
 
 // ====================== Generated for message ScopeLogs ======================
@@ -390,8 +677,6 @@ func (m *ScopeLogs) decode() {
 	)
 }
 
-// Prepared keys for marshaling.
-
 func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal logRecords
@@ -405,6 +690,100 @@ func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 		ps.Raw(m.protoMessage.Bytes)
 	}
 	return nil
+}
+
+// Pool of ScopeLogs structs.
+type scopeLogsPoolType struct {
+	pool []*ScopeLogs
+	mux  sync.Mutex
+}
+
+var scopeLogsPool = scopeLogsPoolType{}
+
+// Get one element from the pool. Creates a new element if the pool is empty.
+func (p *scopeLogsPoolType) Get() *ScopeLogs {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have elements in the pool?
+	if len(p.pool) >= 1 {
+		// Get the last element.
+		r := p.pool[len(p.pool)-1]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-1]
+		return r
+	}
+
+	// Pool is empty, create a new element.
+	return &ScopeLogs{}
+}
+
+func (p *scopeLogsPoolType) GetSlice(count int) []*ScopeLogs {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have enough elements in the pool?
+	if len(p.pool) >= count {
+		// Cut the required slice from the end of the pool.
+		r := p.pool[len(p.pool)-count:]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-count]
+		return r
+	}
+
+	// Create a new slice.
+	r := make([]*ScopeLogs, count)
+
+	// Initialize with what remains in the pool.
+	i := 0
+	for ; i < len(p.pool); i++ {
+		r[i] = p.pool[i]
+	}
+	p.pool = nil
+
+	if i < count {
+		// Create remaining elements.
+		storage := make([]ScopeLogs, count-i)
+		j := 0
+		for ; i < count; i++ {
+			r[i] = &storage[j]
+			j++
+		}
+	}
+
+	return r
+}
+
+// ReleaseSlice releases a slice of elements back to the pool.
+func (p *scopeLogsPoolType) ReleaseSlice(slice []*ScopeLogs) {
+	for _, elem := range slice {
+		// Release nested logRecords recursively to their pool.
+		logRecordPool.ReleaseSlice(elem.logRecords)
+
+		// Zero-initialize the released element.
+		*elem = ScopeLogs{}
+	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, slice...)
+}
+
+// Release an element back to the pool.
+func (p *scopeLogsPoolType) Release(elem *ScopeLogs) {
+	// Release nested logRecords recursively to their pool.
+	logRecordPool.ReleaseSlice(elem.logRecords)
+
+	// Zero-initialize the released element.
+	*elem = ScopeLogs{}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, elem)
 }
 
 // ====================== Generated for message LogRecord ======================
@@ -502,7 +881,6 @@ func (m *LogRecord) decode() {
 	)
 }
 
-// Prepared keys for marshaling.
 var preparedLogRecordTimeUnixNano = molecule.PrepareFixed64Field(1)
 var preparedLogRecordDroppedAttributesCount = molecule.PrepareUint32Field(3)
 
@@ -523,6 +901,100 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 		ps.Raw(m.protoMessage.Bytes)
 	}
 	return nil
+}
+
+// Pool of LogRecord structs.
+type logRecordPoolType struct {
+	pool []*LogRecord
+	mux  sync.Mutex
+}
+
+var logRecordPool = logRecordPoolType{}
+
+// Get one element from the pool. Creates a new element if the pool is empty.
+func (p *logRecordPoolType) Get() *LogRecord {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have elements in the pool?
+	if len(p.pool) >= 1 {
+		// Get the last element.
+		r := p.pool[len(p.pool)-1]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-1]
+		return r
+	}
+
+	// Pool is empty, create a new element.
+	return &LogRecord{}
+}
+
+func (p *logRecordPoolType) GetSlice(count int) []*LogRecord {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have enough elements in the pool?
+	if len(p.pool) >= count {
+		// Cut the required slice from the end of the pool.
+		r := p.pool[len(p.pool)-count:]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-count]
+		return r
+	}
+
+	// Create a new slice.
+	r := make([]*LogRecord, count)
+
+	// Initialize with what remains in the pool.
+	i := 0
+	for ; i < len(p.pool); i++ {
+		r[i] = p.pool[i]
+	}
+	p.pool = nil
+
+	if i < count {
+		// Create remaining elements.
+		storage := make([]LogRecord, count-i)
+		j := 0
+		for ; i < count; i++ {
+			r[i] = &storage[j]
+			j++
+		}
+	}
+
+	return r
+}
+
+// ReleaseSlice releases a slice of elements back to the pool.
+func (p *logRecordPoolType) ReleaseSlice(slice []*LogRecord) {
+	for _, elem := range slice {
+		// Release nested attributes recursively to their pool.
+		keyValuePool.ReleaseSlice(elem.attributes)
+
+		// Zero-initialize the released element.
+		*elem = LogRecord{}
+	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, slice...)
+}
+
+// Release an element back to the pool.
+func (p *logRecordPoolType) Release(elem *LogRecord) {
+	// Release nested attributes recursively to their pool.
+	keyValuePool.ReleaseSlice(elem.attributes)
+
+	// Zero-initialize the released element.
+	*elem = LogRecord{}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, elem)
 }
 
 // ====================== Generated for message KeyValue ======================
@@ -574,7 +1046,6 @@ func (m *KeyValue) decode() {
 	)
 }
 
-// Prepared keys for marshaling.
 var preparedKeyValueKey = molecule.PrepareStringField(1)
 var preparedKeyValueValue = molecule.PrepareStringField(2)
 
@@ -589,4 +1060,94 @@ func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
 		ps.Raw(m.protoMessage.Bytes)
 	}
 	return nil
+}
+
+// Pool of KeyValue structs.
+type keyValuePoolType struct {
+	pool []*KeyValue
+	mux  sync.Mutex
+}
+
+var keyValuePool = keyValuePoolType{}
+
+// Get one element from the pool. Creates a new element if the pool is empty.
+func (p *keyValuePoolType) Get() *KeyValue {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have elements in the pool?
+	if len(p.pool) >= 1 {
+		// Get the last element.
+		r := p.pool[len(p.pool)-1]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-1]
+		return r
+	}
+
+	// Pool is empty, create a new element.
+	return &KeyValue{}
+}
+
+func (p *keyValuePoolType) GetSlice(count int) []*KeyValue {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have enough elements in the pool?
+	if len(p.pool) >= count {
+		// Cut the required slice from the end of the pool.
+		r := p.pool[len(p.pool)-count:]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-count]
+		return r
+	}
+
+	// Create a new slice.
+	r := make([]*KeyValue, count)
+
+	// Initialize with what remains in the pool.
+	i := 0
+	for ; i < len(p.pool); i++ {
+		r[i] = p.pool[i]
+	}
+	p.pool = nil
+
+	if i < count {
+		// Create remaining elements.
+		storage := make([]KeyValue, count-i)
+		j := 0
+		for ; i < count; i++ {
+			r[i] = &storage[j]
+			j++
+		}
+	}
+
+	return r
+}
+
+// ReleaseSlice releases a slice of elements back to the pool.
+func (p *keyValuePoolType) ReleaseSlice(slice []*KeyValue) {
+	for _, elem := range slice {
+
+		// Zero-initialize the released element.
+		*elem = KeyValue{}
+	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, slice...)
+}
+
+// Release an element back to the pool.
+func (p *keyValuePoolType) Release(elem *KeyValue) {
+
+	// Zero-initialize the released element.
+	*elem = KeyValue{}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, elem)
 }
