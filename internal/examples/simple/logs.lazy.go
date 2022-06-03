@@ -29,7 +29,7 @@ func (m *LogsData) Free() {
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagLogsDataResourceLogsDecoded = 2
 
-func (m *LogsData) GetResourceLogs() *[]*ResourceLogs {
+func (m *LogsData) GetResourceLogs() []*ResourceLogs {
 	if m.protoMessage.Flags&flagLogsDataResourceLogsDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.resourceLogs {
@@ -37,7 +37,7 @@ func (m *LogsData) GetResourceLogs() *[]*ResourceLogs {
 		}
 		m.protoMessage.Flags |= flagLogsDataResourceLogsDecoded
 	}
-	return &m.resourceLogs
+	return m.resourceLogs
 }
 
 func (m *LogsData) decode() {
@@ -108,22 +108,22 @@ type ResourceLogs struct {
 const resourceLogsResourceDecoded = 2
 const resourceLogsScopeLogsDecoded = 4
 
-func (m *ResourceLogs) GetResource() **Resource {
+func (m *ResourceLogs) GetResource() *Resource {
 	if m.protoMessage.Flags&resourceLogsResourceDecoded == 0 {
 		m.resource.decode()
 		m.protoMessage.Flags |= resourceLogsResourceDecoded
 	}
-	return &m.resource
+	return m.resource
 }
 
-func (m *ResourceLogs) GetScopeLogs() *[]*ScopeLogs {
+func (m *ResourceLogs) GetScopeLogs() []*ScopeLogs {
 	if m.protoMessage.Flags&resourceLogsScopeLogsDecoded == 0 {
 		for i := range m.scopeLogs {
 			m.scopeLogs[i].decode()
 		}
 		m.protoMessage.Flags |= resourceLogsScopeLogsDecoded
 	}
-	return &m.scopeLogs
+	return m.scopeLogs
 }
 
 func (m *ResourceLogs) decode() {
@@ -201,14 +201,14 @@ type Resource struct {
 
 const resourceAttributesDecoded = 2
 
-func (m *Resource) GetAttributes() *[]*KeyValue {
+func (m *Resource) GetAttributes() []*KeyValue {
 	if m.protoMessage.Flags&resourceAttributesDecoded == 0 {
 		for i := range m.attributes {
 			m.attributes[i].decode()
 		}
 		m.protoMessage.Flags |= resourceAttributesDecoded
 	}
-	return &m.attributes
+	return m.attributes
 }
 
 func (m *Resource) decode() {
@@ -278,14 +278,14 @@ type ScopeLogs struct {
 
 const scopeLogsLogRecordsDecoded = 2
 
-func (m *ScopeLogs) GetLogRecords() *[]*LogRecord {
+func (m *ScopeLogs) GetLogRecords() []*LogRecord {
 	if m.protoMessage.Flags&scopeLogsLogRecordsDecoded == 0 {
 		for i := range m.logRecords {
 			m.logRecords[i].decode()
 		}
 		m.protoMessage.Flags |= scopeLogsLogRecordsDecoded
 	}
-	return &m.logRecords
+	return m.logRecords
 }
 
 func (m *ScopeLogs) decode() {
@@ -346,14 +346,14 @@ type LogRecord struct {
 
 const logRecordAttributesDecoded = 2
 
-func (m *LogRecord) GetAttributes() *[]*KeyValue {
+func (m *LogRecord) GetAttributes() []*KeyValue {
 	if m.protoMessage.Flags&logRecordAttributesDecoded == 0 {
 		for i := range m.attributes {
 			m.attributes[i].decode()
 		}
 		m.protoMessage.Flags |= logRecordAttributesDecoded
 	}
-	return &m.attributes
+	return m.attributes
 }
 
 func (m *LogRecord) decode() {
