@@ -318,13 +318,11 @@ if err != nil {
 				g.o(
 					`
 // The slice is pre-allocated, assign to the appropriate index.
-*m.%s[%s] = %s{
-	protoMessage: lazyproto.ProtoMessage{
-		Parent: &m.protoMessage, Bytes: v,
-	},
-}
+elem := m.%s[%s]
 %s++
-`, field.GetName(), counterName, field.GetMessageType().GetName(), counterName,
+elem.protoMessage.Parent = &m.protoMessage
+elem.protoMessage.Bytes = v
+`, field.GetName(), counterName, counterName,
 				)
 			} else {
 				g.o(

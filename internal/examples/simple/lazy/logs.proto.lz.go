@@ -80,12 +80,10 @@ func (m *LogsData) decode() {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				*m.resourceLogs[resourceLogsCount] = ResourceLogs{
-					protoMessage: lazyproto.ProtoMessage{
-						Parent: &m.protoMessage, Bytes: v,
-					},
-				}
+				elem := m.resourceLogs[resourceLogsCount]
 				resourceLogsCount++
+				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Bytes = v
 			}
 			return true, nil
 		},
@@ -302,12 +300,10 @@ func (m *ResourceLogs) decode() {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				*m.scopeLogs[scopeLogsCount] = ScopeLogs{
-					protoMessage: lazyproto.ProtoMessage{
-						Parent: &m.protoMessage, Bytes: v,
-					},
-				}
+				elem := m.scopeLogs[scopeLogsCount]
 				scopeLogsCount++
+				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Bytes = v
 			}
 			return true, nil
 		},
@@ -518,12 +514,10 @@ func (m *Resource) decode() {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				*m.attributes[attributesCount] = KeyValue{
-					protoMessage: lazyproto.ProtoMessage{
-						Parent: &m.protoMessage, Bytes: v,
-					},
-				}
+				elem := m.attributes[attributesCount]
 				attributesCount++
+				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Bytes = v
 			case 2:
 				// Decode droppedAttributesCount.
 				v, err := value.AsUint32()
@@ -721,12 +715,10 @@ func (m *ScopeLogs) decode() {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				*m.logRecords[logRecordsCount] = LogRecord{
-					protoMessage: lazyproto.ProtoMessage{
-						Parent: &m.protoMessage, Bytes: v,
-					},
-				}
+				elem := m.logRecords[logRecordsCount]
 				logRecordsCount++
+				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Bytes = v
 			}
 			return true, nil
 		},
@@ -942,12 +934,10 @@ func (m *LogRecord) decode() {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				*m.attributes[attributesCount] = KeyValue{
-					protoMessage: lazyproto.ProtoMessage{
-						Parent: &m.protoMessage, Bytes: v,
-					},
-				}
+				elem := m.attributes[attributesCount]
 				attributesCount++
+				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Bytes = v
 			case 3:
 				// Decode droppedAttributesCount.
 				v, err := value.AsUint32()
