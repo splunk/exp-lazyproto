@@ -55,7 +55,7 @@ func (m *LogsData) decode() {
 
 	// Pre-allocate slices for repeated fields.
 	//m.resourceLogs = make([]ResourceLogs, 0, resourceLogsCount)
-	m.resourceLogs = resourceLogsPool.Get(resourceLogsCount)
+	m.resourceLogs = resourceLogsPool.GetSlice(resourceLogsCount)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.protoMessage.Bytes)

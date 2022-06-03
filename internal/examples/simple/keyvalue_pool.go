@@ -39,6 +39,10 @@ func (p *poolKeyValueType) GetSlice(count int) []*KeyValue {
 }
 
 func (p *poolKeyValueType) ReleaseSlice(attributes []*KeyValue) {
+	for _, elem := range attributes {
+		*elem = KeyValue{}
+	}
+
 	p.mux.Lock()
 	defer p.mux.Unlock()
 

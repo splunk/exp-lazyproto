@@ -292,6 +292,10 @@ func New%s(bytes []byte) *%s {
 		return err
 	}
 
+	if err := g.oPool(msg); err != nil {
+		return err
+	}
+
 	g.o("\n")
 
 	return nil
@@ -605,6 +609,10 @@ func (g *generator) oPrepareMarshalField(msg *Message, field *Field) {
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		g.o(preparedFieldDecl(msg, field, "Uint32"))
 	}
+}
+
+func (g *generator) oPool(msg *Message) error {
+	return g.lastErr
 }
 
 func preparedFieldDecl(msg *Message, field *Field, typeName string) string {

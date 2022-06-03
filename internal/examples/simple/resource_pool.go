@@ -60,5 +60,6 @@ func (p *ResourcePool) Release(resource *Resource) {
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
+
 	p.freed = append(p.freed, resource)
 }
