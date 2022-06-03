@@ -63,6 +63,8 @@ func (p *LogsDataPool) ReleaseSlice(rls []*LogsData) {
 func (p *LogsDataPool) Release(rls *LogsData) {
 	resourceLogsPool.ReleaseSlice(rls.resourceLogs)
 
+	*rls = LogsData{}
+
 	p.mux.Lock()
 	defer p.mux.Unlock()
 	logsDataPool.freed = append(logsDataPool.freed, rls)

@@ -320,7 +320,29 @@ func countAttrs(lazy *LogsData) int {
 	return attrCount
 }
 
-func touchAll(lazy *LogsData) {
+func countAttrsLazy(lazy *lazymsg.LogsData) int {
+	attrCount := 0
+	rls := lazy.ResourceLogs()
+	for _, rl := range rls {
+		resource := *rl.Resource()
+
+		attrs := resource.Attributes()
+		attrCount += len(attrs)
+
+		sls := rl.ScopeLogs()
+		for _, sl := range sls {
+			logRecords := sl.LogRecords()
+
+			for _, logRecord := range logRecords {
+				attrs2 := logRecord.Attributes()
+				attrCount += len(attrs2)
+			}
+		}
+	}
+	return attrCount
+}
+
+func touchAll(lazy *lazymsg.LogsData) {
 	rls := lazy.ResourceLogs()
 	for _, rl := range rls {
 		resource := *rl.Resource()
@@ -351,8 +373,8 @@ func BenchmarkLazyMarshalUnchanged(b *testing.B) {
 	require.NoError(b, err)
 	require.NotNil(b, marshalBytes)
 
-	lazy := NewLogsData(marshalBytes)
-	countAttrs(lazy)
+	lazy := lazymsg.NewLogsData(marshalBytes)
+	countAttrsLazy(lazy)
 
 	b.ResetTimer()
 
@@ -372,8 +394,8 @@ func BenchmarkLazyMarshalFullModified(b *testing.B) {
 	require.NoError(b, err)
 	require.NotNil(b, marshalBytes)
 
-	lazy := NewLogsData(marshalBytes)
-	countAttrs(lazy)
+	lazy := lazymsg.NewLogsData(marshalBytes)
+	countAttrsLazy(lazy)
 	touchAll(lazy)
 
 	b.ResetTimer()
@@ -387,6 +409,25 @@ func BenchmarkLazyMarshalFullModified(b *testing.B) {
 	}
 }
 
+//func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
+//	src := createLogsData()
+//
+//	bytes, err := gogolib.Marshal(src)
+//	require.NoError(b, err)
+//	require.NotNil(b, bytes)
+//
+//	b.ResetTimer()
+//
+//	for i := 0; i < b.N; i++ {
+//		lazy := NewLogsData(bytes)
+//
+//		// Traverse all data to get it loaded. This is the worst case.
+//		countAttrs(lazy)
+//
+//		lazy.Free()
+//	}
+//}
+
 func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
 	src := createLogsData()
 
@@ -397,10 +438,27 @@ func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		lazy := NewLogsData(bytes)
+		lazy := lazymsg.NewLogsData(bytes)
 
 		// Traverse all data to get it loaded. This is the worst case.
-		countAttrs(lazy)
+		countAttrsLazy(lazy)
+
+		lazy.Free()
+	}
+}
+
+func TestLazyGenUnmarshalAndReadAll(t *testing.T) {
+	src := createLogsData()
+
+	bytes, err := gogolib.Marshal(src)
+	require.NoError(t, err)
+	require.NotNil(t, bytes)
+
+	for i := 0; i < 2; i++ {
+		lazy := lazymsg.NewLogsData(bytes)
+
+		// Traverse all data to get it loaded. This is the worst case.
+		countAttrsLazy(lazy)
 
 		lazy.Free()
 	}
@@ -428,7 +486,29 @@ func BenchmarkLazyPassthroughNoReadOrModify(b *testing.B) {
 	}
 }
 
-func BenchmarkLazyGenPassthroughNoReadOrModify(b *testing.B) {
+//func BenchmarkLazyGenPassthroughNoReadOrModify(b *testing.B) {
+//	// This is the best case scenario for passthrough. We don't read or modify any
+//	// data, just unmarshal and marshal it exactly as it is.
+//
+//	src := createLogsData()
+//
+//	marshalBytes, err := gogolib.Marshal(src)
+//	require.NoError(b, err)
+//	require.NotNil(b, marshalBytes)
+//
+//	b.ResetTimer()
+//
+//	ps := molecule.NewProtoStream()
+//	for i := 0; i < b.N; i++ {
+//		lazy := lazymsg.NewLogsData(marshalBytes)
+//		ps.Reset()
+//		err = lazy.Marshal(ps)
+//		require.NoError(b, err)
+//		require.NotNil(b, ps.BufferBytes())
+//	}
+//}
+
+func BenchmarkLazyPassthroughFullReadNoModify(b *testing.B) {
 	// This is the best case scenario for passthrough. We don't read or modify any
 	// data, just unmarshal and marshal it exactly as it is.
 
@@ -445,29 +525,7 @@ func BenchmarkLazyGenPassthroughNoReadOrModify(b *testing.B) {
 		lazy := lazymsg.NewLogsData(marshalBytes)
 		ps.Reset()
 		err = lazy.Marshal(ps)
-		require.NoError(b, err)
-		require.NotNil(b, ps.BufferBytes())
-	}
-}
-
-func BenchmarkLazyPassthroughFullReadNoModify(b *testing.B) {
-	// This is the best case scenario for passthrough. We don't read or modify any
-	// data, just unmarshal and marshal it exactly as it is.
-
-	src := createLogsData()
-
-	marshalBytes, err := gogolib.Marshal(src)
-	require.NoError(b, err)
-	require.NotNil(b, marshalBytes)
-
-	b.ResetTimer()
-
-	ps := molecule.NewProtoStream()
-	for i := 0; i < b.N; i++ {
-		lazy := NewLogsData(marshalBytes)
-		ps.Reset()
-		err = lazy.Marshal(ps)
-		countAttrs(lazy)
+		countAttrsLazy(lazy)
 		require.NoError(b, err)
 		require.NotNil(b, ps.BufferBytes())
 		lazy.Free()
@@ -488,7 +546,7 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		lazy := NewLogsData(marshalBytes)
+		lazy := lazymsg.NewLogsData(marshalBytes)
 
 		// Touch all attrs
 		touchAll(lazy)
@@ -497,6 +555,33 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 		err = lazy.Marshal(ps)
 		require.NoError(b, err)
 		require.NotNil(b, ps.BufferBytes())
+
+		lazy.Free()
+	}
+}
+
+func TestLazyPassthroughFullModified(t *testing.T) {
+	// This is the worst case scenario. We read of data, so lazy loading has no
+	// performance benefit. We also modify all data, so we have to do full marshaling.
+
+	src := createLogsData()
+
+	marshalBytes, err := gogolib.Marshal(src)
+	require.NoError(t, err)
+	require.NotNil(t, marshalBytes)
+
+	ps := molecule.NewProtoStream()
+	for i := 0; i < 3; i++ {
+		lazy := lazymsg.NewLogsData(marshalBytes)
+
+		// Touch all attrs
+		touchAll(lazy)
+
+		ps.Reset()
+		err = lazy.Marshal(ps)
+		require.NoError(t, err)
+		require.NotNil(t, ps.BufferBytes())
+		assert.EqualValues(t, marshalBytes, ps.BufferBytes())
 
 		lazy.Free()
 	}

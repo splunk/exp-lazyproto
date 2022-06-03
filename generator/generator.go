@@ -318,7 +318,7 @@ if err != nil {
 				g.o(
 					`
 // The slice is pre-allocated, assign to the appropriate index.
-m.%s[%s] = &%s{
+*m.%s[%s] = %s{
 	protoMessage: lazyproto.ProtoMessage{
 		Parent: &m.protoMessage, Bytes: v,
 	},
@@ -329,12 +329,15 @@ m.%s[%s] = &%s{
 			} else {
 				g.o(
 					`
-m.%s = &%s{
+m.%s = %s.Get()
+*m.%s = %s{
 	protoMessage: lazyproto.ProtoMessage{
 		Parent: &m.protoMessage, Bytes: v,
 	},
 }
-`, field.GetName(), field.GetMessageType().GetName(),
+`,
+					field.GetName(), getPoolName(field.GetMessageType().GetName()),
+					field.GetName(), field.GetMessageType().GetName(),
 				)
 			}
 		}
@@ -603,34 +606,33 @@ func (p *%sType) Get() *%s {
 }
 
 func (p *%sType) GetSlice(count int) []*%s {
+	// Create a new slice.
+	r := make([]*%s, count)
+
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
 	// Have enough elements in the pool?
 	if len(p.pool) >= count {
-		// Cut the required slice from the end of the pool.
-		r := p.pool[len(p.pool)-count:]
+		// Copy the elements from the end of the pool.
+		copy(r, p.pool[len(p.pool)-count:])
+
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
+
 		return r
 	}
 
-	// Create a new slice.
-	r := make([]*%s, count)
-
 	// Initialize with what remains in the pool.
-	i := 0
-	for ; i < len(p.pool); i++ {
-		r[i] = p.pool[i]
-	}
+	copied := copy(r, p.pool)
 	p.pool = nil
 
-	if i < count {
+	if copied < count {
 		// Create remaining elements.
-		storage := make([]%s, count-i)
+		storage := make([]%s, count-copied)
 		j := 0
-		for ; i < count; i++ {
-			r[i] = &storage[j]
+		for ; copied < count; copied++ {
+			r[copied] = &storage[j]
 			j++
 		}
 	}
@@ -638,7 +640,8 @@ func (p *%sType) GetSlice(count int) []*%s {
 	return r
 }
 `,
-		msg.GetName(), poolName, msg.GetName(), poolName, poolName, poolName,
+		msg.GetName(), poolName, msg.GetName(), poolName, poolName,
+		poolName,
 		msg.GetName(), msg.GetName(), poolName, msg.GetName(), msg.GetName(),
 		msg.GetName(),
 	)

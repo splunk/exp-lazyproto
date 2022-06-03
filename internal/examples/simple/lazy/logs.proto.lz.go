@@ -80,7 +80,7 @@ func (m *LogsData) decode() {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				m.resourceLogs[resourceLogsCount] = &ResourceLogs{
+				*m.resourceLogs[resourceLogsCount] = ResourceLogs{
 					protoMessage: lazyproto.ProtoMessage{
 						Parent: &m.protoMessage, Bytes: v,
 					},
@@ -134,34 +134,33 @@ func (p *logsDataPoolType) Get() *LogsData {
 }
 
 func (p *logsDataPoolType) GetSlice(count int) []*LogsData {
+	// Create a new slice.
+	r := make([]*LogsData, count)
+
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
 	// Have enough elements in the pool?
 	if len(p.pool) >= count {
-		// Cut the required slice from the end of the pool.
-		r := p.pool[len(p.pool)-count:]
+		// Copy the elements from the end of the pool.
+		copy(r, p.pool[len(p.pool)-count:])
+
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
+
 		return r
 	}
 
-	// Create a new slice.
-	r := make([]*LogsData, count)
-
 	// Initialize with what remains in the pool.
-	i := 0
-	for ; i < len(p.pool); i++ {
-		r[i] = p.pool[i]
-	}
+	copied := copy(r, p.pool)
 	p.pool = nil
 
-	if i < count {
+	if copied < count {
 		// Create remaining elements.
-		storage := make([]LogsData, count-i)
+		storage := make([]LogsData, count-copied)
 		j := 0
-		for ; i < count; i++ {
-			r[i] = &storage[j]
+		for ; copied < count; copied++ {
+			r[copied] = &storage[j]
 			j++
 		}
 	}
@@ -290,7 +289,8 @@ func (m *ResourceLogs) decode() {
 				if err != nil {
 					return false, err
 				}
-				m.resource = &Resource{
+				m.resource = resourcePool.Get()
+				*m.resource = Resource{
 					protoMessage: lazyproto.ProtoMessage{
 						Parent: &m.protoMessage, Bytes: v,
 					},
@@ -302,7 +302,7 @@ func (m *ResourceLogs) decode() {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				m.scopeLogs[scopeLogsCount] = &ScopeLogs{
+				*m.scopeLogs[scopeLogsCount] = ScopeLogs{
 					protoMessage: lazyproto.ProtoMessage{
 						Parent: &m.protoMessage, Bytes: v,
 					},
@@ -362,34 +362,33 @@ func (p *resourceLogsPoolType) Get() *ResourceLogs {
 }
 
 func (p *resourceLogsPoolType) GetSlice(count int) []*ResourceLogs {
+	// Create a new slice.
+	r := make([]*ResourceLogs, count)
+
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
 	// Have enough elements in the pool?
 	if len(p.pool) >= count {
-		// Cut the required slice from the end of the pool.
-		r := p.pool[len(p.pool)-count:]
+		// Copy the elements from the end of the pool.
+		copy(r, p.pool[len(p.pool)-count:])
+
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
+
 		return r
 	}
 
-	// Create a new slice.
-	r := make([]*ResourceLogs, count)
-
 	// Initialize with what remains in the pool.
-	i := 0
-	for ; i < len(p.pool); i++ {
-		r[i] = p.pool[i]
-	}
+	copied := copy(r, p.pool)
 	p.pool = nil
 
-	if i < count {
+	if copied < count {
 		// Create remaining elements.
-		storage := make([]ResourceLogs, count-i)
+		storage := make([]ResourceLogs, count-copied)
 		j := 0
-		for ; i < count; i++ {
-			r[i] = &storage[j]
+		for ; copied < count; copied++ {
+			r[copied] = &storage[j]
 			j++
 		}
 	}
@@ -519,7 +518,7 @@ func (m *Resource) decode() {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				m.attributes[attributesCount] = &KeyValue{
+				*m.attributes[attributesCount] = KeyValue{
 					protoMessage: lazyproto.ProtoMessage{
 						Parent: &m.protoMessage, Bytes: v,
 					},
@@ -584,34 +583,33 @@ func (p *resourcePoolType) Get() *Resource {
 }
 
 func (p *resourcePoolType) GetSlice(count int) []*Resource {
+	// Create a new slice.
+	r := make([]*Resource, count)
+
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
 	// Have enough elements in the pool?
 	if len(p.pool) >= count {
-		// Cut the required slice from the end of the pool.
-		r := p.pool[len(p.pool)-count:]
+		// Copy the elements from the end of the pool.
+		copy(r, p.pool[len(p.pool)-count:])
+
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
+
 		return r
 	}
 
-	// Create a new slice.
-	r := make([]*Resource, count)
-
 	// Initialize with what remains in the pool.
-	i := 0
-	for ; i < len(p.pool); i++ {
-		r[i] = p.pool[i]
-	}
+	copied := copy(r, p.pool)
 	p.pool = nil
 
-	if i < count {
+	if copied < count {
 		// Create remaining elements.
-		storage := make([]Resource, count-i)
+		storage := make([]Resource, count-copied)
 		j := 0
-		for ; i < count; i++ {
-			r[i] = &storage[j]
+		for ; copied < count; copied++ {
+			r[copied] = &storage[j]
 			j++
 		}
 	}
@@ -723,7 +721,7 @@ func (m *ScopeLogs) decode() {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				m.logRecords[logRecordsCount] = &LogRecord{
+				*m.logRecords[logRecordsCount] = LogRecord{
 					protoMessage: lazyproto.ProtoMessage{
 						Parent: &m.protoMessage, Bytes: v,
 					},
@@ -777,34 +775,33 @@ func (p *scopeLogsPoolType) Get() *ScopeLogs {
 }
 
 func (p *scopeLogsPoolType) GetSlice(count int) []*ScopeLogs {
+	// Create a new slice.
+	r := make([]*ScopeLogs, count)
+
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
 	// Have enough elements in the pool?
 	if len(p.pool) >= count {
-		// Cut the required slice from the end of the pool.
-		r := p.pool[len(p.pool)-count:]
+		// Copy the elements from the end of the pool.
+		copy(r, p.pool[len(p.pool)-count:])
+
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
+
 		return r
 	}
 
-	// Create a new slice.
-	r := make([]*ScopeLogs, count)
-
 	// Initialize with what remains in the pool.
-	i := 0
-	for ; i < len(p.pool); i++ {
-		r[i] = p.pool[i]
-	}
+	copied := copy(r, p.pool)
 	p.pool = nil
 
-	if i < count {
+	if copied < count {
 		// Create remaining elements.
-		storage := make([]ScopeLogs, count-i)
+		storage := make([]ScopeLogs, count-copied)
 		j := 0
-		for ; i < count; i++ {
-			r[i] = &storage[j]
+		for ; copied < count; copied++ {
+			r[copied] = &storage[j]
 			j++
 		}
 	}
@@ -945,7 +942,7 @@ func (m *LogRecord) decode() {
 					return false, err
 				}
 				// The slice is pre-allocated, assign to the appropriate index.
-				m.attributes[attributesCount] = &KeyValue{
+				*m.attributes[attributesCount] = KeyValue{
 					protoMessage: lazyproto.ProtoMessage{
 						Parent: &m.protoMessage, Bytes: v,
 					},
@@ -1013,34 +1010,33 @@ func (p *logRecordPoolType) Get() *LogRecord {
 }
 
 func (p *logRecordPoolType) GetSlice(count int) []*LogRecord {
+	// Create a new slice.
+	r := make([]*LogRecord, count)
+
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
 	// Have enough elements in the pool?
 	if len(p.pool) >= count {
-		// Cut the required slice from the end of the pool.
-		r := p.pool[len(p.pool)-count:]
+		// Copy the elements from the end of the pool.
+		copy(r, p.pool[len(p.pool)-count:])
+
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
+
 		return r
 	}
 
-	// Create a new slice.
-	r := make([]*LogRecord, count)
-
 	// Initialize with what remains in the pool.
-	i := 0
-	for ; i < len(p.pool); i++ {
-		r[i] = p.pool[i]
-	}
+	copied := copy(r, p.pool)
 	p.pool = nil
 
-	if i < count {
+	if copied < count {
 		// Create remaining elements.
-		storage := make([]LogRecord, count-i)
+		storage := make([]LogRecord, count-copied)
 		j := 0
-		for ; i < count; i++ {
-			r[i] = &storage[j]
+		for ; copied < count; copied++ {
+			r[copied] = &storage[j]
 			j++
 		}
 	}
@@ -1190,34 +1186,33 @@ func (p *keyValuePoolType) Get() *KeyValue {
 }
 
 func (p *keyValuePoolType) GetSlice(count int) []*KeyValue {
+	// Create a new slice.
+	r := make([]*KeyValue, count)
+
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
 	// Have enough elements in the pool?
 	if len(p.pool) >= count {
-		// Cut the required slice from the end of the pool.
-		r := p.pool[len(p.pool)-count:]
+		// Copy the elements from the end of the pool.
+		copy(r, p.pool[len(p.pool)-count:])
+
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
+
 		return r
 	}
 
-	// Create a new slice.
-	r := make([]*KeyValue, count)
-
 	// Initialize with what remains in the pool.
-	i := 0
-	for ; i < len(p.pool); i++ {
-		r[i] = p.pool[i]
-	}
+	copied := copy(r, p.pool)
 	p.pool = nil
 
-	if i < count {
+	if copied < count {
 		// Create remaining elements.
-		storage := make([]KeyValue, count-i)
+		storage := make([]KeyValue, count-copied)
 		j := 0
-		for ; i < count; i++ {
-			r[i] = &storage[j]
+		for ; copied < count; copied++ {
+			r[copied] = &storage[j]
 			j++
 		}
 	}

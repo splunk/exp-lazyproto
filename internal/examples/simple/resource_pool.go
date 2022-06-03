@@ -47,7 +47,7 @@ func (p *ResourcePool) GetSlice(count int) []*Resource {
 
 func (p *ResourcePool) ReleaseSlice(records []*Resource) {
 	for _, resource := range records {
-		poolKeyValue.ReleaseSlice(resource.attributes)
+		keyValuePool.ReleaseSlice(resource.attributes)
 	}
 
 	p.mux.Lock()
@@ -56,7 +56,7 @@ func (p *ResourcePool) ReleaseSlice(records []*Resource) {
 }
 
 func (p *ResourcePool) Release(resource *Resource) {
-	poolKeyValue.ReleaseSlice(resource.attributes)
+	keyValuePool.ReleaseSlice(resource.attributes)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
