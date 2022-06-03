@@ -9,7 +9,7 @@ type poolKeyValueType struct {
 
 var poolKeyValue = poolKeyValueType{}
 
-func (p *poolKeyValueType) Get(count int) []*KeyValue {
+func (p *poolKeyValueType) GetSlice(count int) []*KeyValue {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 

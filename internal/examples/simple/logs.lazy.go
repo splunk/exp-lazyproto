@@ -22,6 +22,10 @@ func NewLogsData(bytes []byte) *LogsData {
 	return m
 }
 
+func (m *LogsData) Free() {
+	logsDataPool.Release(m)
+}
+
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagLogsDataResourceLogsDecoded = 2
 
@@ -217,7 +221,7 @@ func (m *Resource) decode() {
 			}
 		},
 	)
-	m.attributes = poolKeyValue.Get(attrCount)
+	m.attributes = poolKeyValue.GetSlice(attrCount)
 
 	attrIndex := 0
 	buf.Reset(m.protoMessage.Bytes)
@@ -296,7 +300,7 @@ func (m *ScopeLogs) decode() {
 		},
 	)
 	//m.logRecords = make([]LogRecord, 0, lrCount)
-	m.logRecords = logRecordPool.Get(lrCount)
+	m.logRecords = logRecordPool.GetSlice(lrCount)
 
 	lrIndex := 0
 	buf.Reset(m.protoMessage.Bytes)
@@ -362,7 +366,7 @@ func (m *LogRecord) decode() {
 			}
 		},
 	)
-	m.attributes = poolKeyValue.Get(attrCount)
+	m.attributes = poolKeyValue.GetSlice(attrCount)
 
 	attrIndex := 0
 	buf.Reset(m.protoMessage.Bytes)

@@ -153,7 +153,7 @@ func TestDecode(t *testing.T) {
 
 	assert.EqualValues(t, marshalledBytes, ps.BufferBytes())
 
-	logsDataPool.Release(lazy)
+	lazy.Free()
 }
 
 func TestLazyPassthrough(t *testing.T) {
@@ -170,7 +170,7 @@ func TestLazyPassthrough(t *testing.T) {
 	require.NoError(t, err)
 	assert.EqualValues(t, marshalBytes, ps.BufferBytes())
 
-	logsDataPool.Release(lazy)
+	lazy.Free()
 }
 
 func BenchmarkGogoMarshal(b *testing.B) {
@@ -401,7 +401,7 @@ func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
 		// Traverse all data to get it loaded. This is the worst case.
 		countAttrs(lazy)
 
-		logsDataPool.Release(lazy)
+		lazy.Free()
 	}
 }
 
@@ -447,7 +447,7 @@ func BenchmarkLazyPassthroughFullReadNoModify(b *testing.B) {
 		countAttrs(lazy)
 		require.NoError(b, err)
 		require.NotNil(b, ps.BufferBytes())
-		logsDataPool.Release(lazy)
+		lazy.Free()
 	}
 }
 
@@ -475,7 +475,7 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 		require.NoError(b, err)
 		require.NotNil(b, ps.BufferBytes())
 
-		logsDataPool.Release(lazy)
+		lazy.Free()
 	}
 }
 

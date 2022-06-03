@@ -9,7 +9,7 @@ type LogRecordPool struct {
 
 var logRecordPool = LogRecordPool{}
 
-func (p *LogRecordPool) Get(count int) []*LogRecord {
+func (p *LogRecordPool) GetSlice(count int) []*LogRecord {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
@@ -38,9 +38,11 @@ func (p *LogRecordPool) Get(count int) []*LogRecord {
 }
 
 func (p *LogRecordPool) ReleaseSlice(records []*LogRecord) {
+	//poolKeyValue.mux.Lock()
 	for _, logRecord := range records {
 		poolKeyValue.ReleaseSlice(logRecord.attributes)
 	}
+	//poolKeyValue.mux.Unlock()
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
