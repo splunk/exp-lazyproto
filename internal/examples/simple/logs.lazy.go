@@ -29,7 +29,7 @@ func (m *LogsData) Free() {
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagLogsDataResourceLogsDecoded = 2
 
-func (m *LogsData) GetResourceLogs() []*ResourceLogs {
+func (m *LogsData) ResourceLogs() []*ResourceLogs {
 	if m.protoMessage.Flags&flagLogsDataResourceLogsDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.resourceLogs {
@@ -108,7 +108,7 @@ type ResourceLogs struct {
 const resourceLogsResourceDecoded = 2
 const resourceLogsScopeLogsDecoded = 4
 
-func (m *ResourceLogs) GetResource() *Resource {
+func (m *ResourceLogs) Resource() *Resource {
 	if m.protoMessage.Flags&resourceLogsResourceDecoded == 0 {
 		m.resource.decode()
 		m.protoMessage.Flags |= resourceLogsResourceDecoded
@@ -116,7 +116,7 @@ func (m *ResourceLogs) GetResource() *Resource {
 	return m.resource
 }
 
-func (m *ResourceLogs) GetScopeLogs() []*ScopeLogs {
+func (m *ResourceLogs) ScopeLogs() []*ScopeLogs {
 	if m.protoMessage.Flags&resourceLogsScopeLogsDecoded == 0 {
 		for i := range m.scopeLogs {
 			m.scopeLogs[i].decode()
@@ -201,7 +201,7 @@ type Resource struct {
 
 const resourceAttributesDecoded = 2
 
-func (m *Resource) GetAttributes() []*KeyValue {
+func (m *Resource) Attributes() []*KeyValue {
 	if m.protoMessage.Flags&resourceAttributesDecoded == 0 {
 		for i := range m.attributes {
 			m.attributes[i].decode()
@@ -278,7 +278,7 @@ type ScopeLogs struct {
 
 const scopeLogsLogRecordsDecoded = 2
 
-func (m *ScopeLogs) GetLogRecords() []*LogRecord {
+func (m *ScopeLogs) LogRecords() []*LogRecord {
 	if m.protoMessage.Flags&scopeLogsLogRecordsDecoded == 0 {
 		for i := range m.logRecords {
 			m.logRecords[i].decode()
@@ -346,7 +346,7 @@ type LogRecord struct {
 
 const logRecordAttributesDecoded = 2
 
-func (m *LogRecord) GetAttributes() []*KeyValue {
+func (m *LogRecord) Attributes() []*KeyValue {
 	if m.protoMessage.Flags&logRecordAttributesDecoded == 0 {
 		for i := range m.attributes {
 			m.attributes[i].decode()

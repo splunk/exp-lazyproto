@@ -118,31 +118,31 @@ func TestDecode(t *testing.T) {
 
 	lazy := NewLogsData(marshalledBytes)
 
-	rl := lazy.GetResourceLogs()
+	rl := lazy.ResourceLogs()
 	require.Len(t, rl, 1)
 
-	resource := *rl[0].GetResource()
+	resource := *rl[0].Resource()
 	assert.EqualValues(t, 12, resource.DroppedAttributesCount)
 	require.NotNil(t, resource)
 
-	attrs := resource.GetAttributes()
+	attrs := resource.Attributes()
 	require.Len(t, attrs, 1)
 
 	kv1 := attrs[0]
 	require.EqualValues(t, "key1", kv1.key)
 	require.EqualValues(t, "value1", kv1.value)
 
-	sls := rl[0].GetScopeLogs()
+	sls := rl[0].ScopeLogs()
 	require.Len(t, sls, 1)
 
 	sl := sls[0]
-	logRecords := sl.GetLogRecords()
+	logRecords := sl.LogRecords()
 	require.Len(t, logRecords, 1)
 
 	logRecord := logRecords[0]
 	assert.EqualValues(t, 123, logRecord.timeUnixNano)
 	assert.EqualValues(t, 234, logRecord.droppedAttributesCount)
-	attrs2 := logRecord.GetAttributes()
+	attrs2 := logRecord.Attributes()
 	require.Len(t, attrs, 1)
 
 	kv2 := attrs2[0]
@@ -300,19 +300,19 @@ func BenchmarkGooglePasssthrough(b *testing.B) {
 
 func countAttrs(lazy *LogsData) int {
 	attrCount := 0
-	rls := lazy.GetResourceLogs()
+	rls := lazy.ResourceLogs()
 	for _, rl := range rls {
-		resource := *rl.GetResource()
+		resource := *rl.Resource()
 
-		attrs := resource.GetAttributes()
+		attrs := resource.Attributes()
 		attrCount += len(attrs)
 
-		sls := rl.GetScopeLogs()
+		sls := rl.ScopeLogs()
 		for _, sl := range sls {
-			logRecords := sl.GetLogRecords()
+			logRecords := sl.LogRecords()
 
 			for _, logRecord := range logRecords {
-				attrs2 := logRecord.GetAttributes()
+				attrs2 := logRecord.Attributes()
 				attrCount += len(attrs2)
 			}
 		}
@@ -321,21 +321,21 @@ func countAttrs(lazy *LogsData) int {
 }
 
 func touchAll(lazy *LogsData) {
-	rls := lazy.GetResourceLogs()
+	rls := lazy.ResourceLogs()
 	for _, rl := range rls {
-		resource := *rl.GetResource()
+		resource := *rl.Resource()
 
-		attrs := resource.GetAttributes()
+		attrs := resource.Attributes()
 		for i := range attrs {
 			attrs[i].SetKey(attrs[i].Key())
 		}
 
-		sls := rl.GetScopeLogs()
+		sls := rl.ScopeLogs()
 		for _, sl := range sls {
-			logRecords := sl.GetLogRecords()
+			logRecords := sl.LogRecords()
 
 			for _, logRecord := range logRecords {
-				attrs2 := logRecord.GetAttributes()
+				attrs2 := logRecord.Attributes()
 				for i := range attrs2 {
 					attrs2[i].SetKey(attrs2[i].Key())
 				}
