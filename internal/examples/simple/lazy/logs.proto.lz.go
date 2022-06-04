@@ -2,6 +2,7 @@ package simple
 
 import (
 	"sync"
+	"unsafe"
 
 	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 	"github.com/tigrannajaryan/molecule"
@@ -20,6 +21,7 @@ type LogsData struct {
 func NewLogsData(bytes []byte) *LogsData {
 	m := logsDataPool.Get()
 	m.protoMessage.Bytes = bytes
+	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
 	m.decode()
 	return m
 }
@@ -63,7 +65,9 @@ func (m *LogsData) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.resourceLogs = resourceLogsPool.GetSlice(resourceLogsCount)
+	resourceLogsSlice := m.protoMessage.Arena.Alloc(resourceLogsCount)
+	m.resourceLogs = unsafe.Slice((**ResourceLogs)(resourceLogsSlice), resourceLogsCount)
+	resourceLogsPool.GetSlice(m.resourceLogs)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.protoMessage.Bytes)
@@ -85,6 +89,7 @@ func (m *LogsData) decode() {
 				elem := m.resourceLogs[resourceLogsCount]
 				resourceLogsCount++
 				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Arena = m.protoMessage.Arena
 				elem.protoMessage.Bytes = v
 			}
 			return true, nil
@@ -135,9 +140,10 @@ func (p *logsDataPoolType) Get() *LogsData {
 	return &LogsData{}
 }
 
-func (p *logsDataPoolType) GetSlice(count int) []*LogsData {
+func (p *logsDataPoolType) GetSlice(r []*LogsData) {
 	// Create a new slice.
-	r := make([]*LogsData, count)
+	// r := make([]*LogsData, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -150,7 +156,7 @@ func (p *logsDataPoolType) GetSlice(count int) []*LogsData {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -167,7 +173,7 @@ func (p *logsDataPoolType) GetSlice(count int) []*LogsData {
 		}
 	}
 
-	return r
+	//return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -215,6 +221,7 @@ type ResourceLogs struct {
 func NewResourceLogs(bytes []byte) *ResourceLogs {
 	m := resourceLogsPool.Get()
 	m.protoMessage.Bytes = bytes
+	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
 	m.decode()
 	return m
 }
@@ -275,7 +282,9 @@ func (m *ResourceLogs) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.scopeLogs = scopeLogsPool.GetSlice(scopeLogsCount)
+	scopeLogsSlice := m.protoMessage.Arena.Alloc(scopeLogsCount)
+	m.scopeLogs = unsafe.Slice((**ScopeLogs)(scopeLogsSlice), scopeLogsCount)
+	scopeLogsPool.GetSlice(m.scopeLogs)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.protoMessage.Bytes)
@@ -295,6 +304,7 @@ func (m *ResourceLogs) decode() {
 				}
 				m.resource = resourcePool.Get()
 				m.resource.protoMessage.Parent = &m.protoMessage
+				m.resource.protoMessage.Arena = m.protoMessage.Arena
 				m.resource.protoMessage.Bytes = v
 			case 2:
 				// Decode scopeLogs.
@@ -306,6 +316,7 @@ func (m *ResourceLogs) decode() {
 				elem := m.scopeLogs[scopeLogsCount]
 				scopeLogsCount++
 				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Arena = m.protoMessage.Arena
 				elem.protoMessage.Bytes = v
 			}
 			return true, nil
@@ -363,9 +374,10 @@ func (p *resourceLogsPoolType) Get() *ResourceLogs {
 	return &ResourceLogs{}
 }
 
-func (p *resourceLogsPoolType) GetSlice(count int) []*ResourceLogs {
+func (p *resourceLogsPoolType) GetSlice(r []*ResourceLogs) {
 	// Create a new slice.
-	r := make([]*ResourceLogs, count)
+	// r := make([]*ResourceLogs, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -378,7 +390,7 @@ func (p *resourceLogsPoolType) GetSlice(count int) []*ResourceLogs {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -395,7 +407,7 @@ func (p *resourceLogsPoolType) GetSlice(count int) []*ResourceLogs {
 		}
 	}
 
-	return r
+	//return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -449,6 +461,7 @@ type Resource struct {
 func NewResource(bytes []byte) *Resource {
 	m := resourcePool.Get()
 	m.protoMessage.Bytes = bytes
+	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
 	m.decode()
 	return m
 }
@@ -503,7 +516,9 @@ func (m *Resource) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.attributes = keyValuePool.GetSlice(attributesCount)
+	attributesSlice := m.protoMessage.Arena.Alloc(attributesCount)
+	m.attributes = unsafe.Slice((**KeyValue)(attributesSlice), attributesCount)
+	keyValuePool.GetSlice(m.attributes)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.protoMessage.Bytes)
@@ -525,6 +540,7 @@ func (m *Resource) decode() {
 				elem := m.attributes[attributesCount]
 				attributesCount++
 				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Arena = m.protoMessage.Arena
 				elem.protoMessage.Bytes = v
 			case 2:
 				// Decode droppedAttributesCount.
@@ -587,9 +603,10 @@ func (p *resourcePoolType) Get() *Resource {
 	return &Resource{}
 }
 
-func (p *resourcePoolType) GetSlice(count int) []*Resource {
+func (p *resourcePoolType) GetSlice(r []*Resource) {
 	// Create a new slice.
-	r := make([]*Resource, count)
+	// r := make([]*Resource, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -602,7 +619,7 @@ func (p *resourcePoolType) GetSlice(count int) []*Resource {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -619,7 +636,7 @@ func (p *resourcePoolType) GetSlice(count int) []*Resource {
 		}
 	}
 
-	return r
+	//return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -666,6 +683,7 @@ type ScopeLogs struct {
 func NewScopeLogs(bytes []byte) *ScopeLogs {
 	m := scopeLogsPool.Get()
 	m.protoMessage.Bytes = bytes
+	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
 	m.decode()
 	return m
 }
@@ -709,7 +727,9 @@ func (m *ScopeLogs) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.logRecords = logRecordPool.GetSlice(logRecordsCount)
+	logRecordsSlice := m.protoMessage.Arena.Alloc(logRecordsCount)
+	m.logRecords = unsafe.Slice((**LogRecord)(logRecordsSlice), logRecordsCount)
+	logRecordPool.GetSlice(m.logRecords)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.protoMessage.Bytes)
@@ -731,6 +751,7 @@ func (m *ScopeLogs) decode() {
 				elem := m.logRecords[logRecordsCount]
 				logRecordsCount++
 				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Arena = m.protoMessage.Arena
 				elem.protoMessage.Bytes = v
 			}
 			return true, nil
@@ -781,9 +802,10 @@ func (p *scopeLogsPoolType) Get() *ScopeLogs {
 	return &ScopeLogs{}
 }
 
-func (p *scopeLogsPoolType) GetSlice(count int) []*ScopeLogs {
+func (p *scopeLogsPoolType) GetSlice(r []*ScopeLogs) {
 	// Create a new slice.
-	r := make([]*ScopeLogs, count)
+	// r := make([]*ScopeLogs, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -796,7 +818,7 @@ func (p *scopeLogsPoolType) GetSlice(count int) []*ScopeLogs {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -813,7 +835,7 @@ func (p *scopeLogsPoolType) GetSlice(count int) []*ScopeLogs {
 		}
 	}
 
-	return r
+	//return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -860,6 +882,7 @@ type LogRecord struct {
 func NewLogRecord(bytes []byte) *LogRecord {
 	m := logRecordPool.Get()
 	m.protoMessage.Bytes = bytes
+	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
 	m.decode()
 	return m
 }
@@ -925,7 +948,9 @@ func (m *LogRecord) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	m.attributes = keyValuePool.GetSlice(attributesCount)
+	attributesSlice := m.protoMessage.Arena.Alloc(attributesCount)
+	m.attributes = unsafe.Slice((**KeyValue)(attributesSlice), attributesCount)
+	keyValuePool.GetSlice(m.attributes)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(m.protoMessage.Bytes)
@@ -954,6 +979,7 @@ func (m *LogRecord) decode() {
 				elem := m.attributes[attributesCount]
 				attributesCount++
 				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Arena = m.protoMessage.Arena
 				elem.protoMessage.Bytes = v
 			case 3:
 				// Decode droppedAttributesCount.
@@ -1019,9 +1045,10 @@ func (p *logRecordPoolType) Get() *LogRecord {
 	return &LogRecord{}
 }
 
-func (p *logRecordPoolType) GetSlice(count int) []*LogRecord {
+func (p *logRecordPoolType) GetSlice(r []*LogRecord) {
 	// Create a new slice.
-	r := make([]*LogRecord, count)
+	// r := make([]*LogRecord, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -1034,7 +1061,7 @@ func (p *logRecordPoolType) GetSlice(count int) []*LogRecord {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -1051,7 +1078,7 @@ func (p *logRecordPoolType) GetSlice(count int) []*LogRecord {
 		}
 	}
 
-	return r
+	//return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -1097,6 +1124,7 @@ type KeyValue struct {
 func NewKeyValue(bytes []byte) *KeyValue {
 	m := keyValuePool.Get()
 	m.protoMessage.Bytes = bytes
+	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
 	m.decode()
 	return m
 }
@@ -1196,9 +1224,10 @@ func (p *keyValuePoolType) Get() *KeyValue {
 	return &KeyValue{}
 }
 
-func (p *keyValuePoolType) GetSlice(count int) []*KeyValue {
+func (p *keyValuePoolType) GetSlice(r []*KeyValue) {
 	// Create a new slice.
-	r := make([]*KeyValue, count)
+	// r := make([]*KeyValue, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -1211,7 +1240,7 @@ func (p *keyValuePoolType) GetSlice(count int) []*KeyValue {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -1228,7 +1257,7 @@ func (p *keyValuePoolType) GetSlice(count int) []*KeyValue {
 		}
 	}
 
-	return r
+	//return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.

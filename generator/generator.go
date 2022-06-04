@@ -84,6 +84,7 @@ func (g *generator) oFile(fdescr *desc.FileDescriptor) error {
 		`
 import (
 	"sync"
+	"unsafe"
 
 	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 	"github.com/tigrannajaryan/molecule"
@@ -200,6 +201,7 @@ func (g *generator) oMessage(msg *Message) error {
 func NewMessageName(bytes []byte) *MessageName {
 	m := messagePool.Get()
 	m.protoMessage.Bytes = bytes
+	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
 	m.decode()
 	return m
 }
@@ -313,6 +315,7 @@ if err != nil {
 elem := m.fieldName[%[1]s]
 %[1]s++
 elem.protoMessage.Parent = &m.protoMessage
+elem.protoMessage.Arena = m.protoMessage.Arena
 elem.protoMessage.Bytes = v`, counterName,
 				)
 			} else {
@@ -320,6 +323,7 @@ elem.protoMessage.Bytes = v`, counterName,
 					`
 m.fieldName = fieldTypeMessagePool.Get()
 m.fieldName.protoMessage.Parent = &m.protoMessage
+m.fieldName.protoMessage.Arena = m.protoMessage.Arena
 m.fieldName.protoMessage.Bytes = v`,
 				)
 			}
@@ -364,8 +368,15 @@ func (g *generator) oRepeatedFieldCounts(msg *Message) {
 
 	for _, field := range fields {
 		g.setField(field)
-		counterName := field.GetName() + "Count"
-		g.o("m.fieldName = fieldTypeMessagePool.GetSlice(%s)", counterName)
+		//counterName := field.GetName() + "Count"
+		//g.o(
+		//	"m.fieldName = fieldTypeMessagePool.GetSlice(m.protoMessage.Arena.Alloc(%[1]s))",
+		//	counterName,
+		//)
+		g.o("fieldNameSlice := m.protoMessage.Arena.Alloc(fieldNameCount)")
+		g.o("m.fieldName = unsafe.Slice((**FieldMessageTypeName)(fieldNameSlice), fieldNameCount)")
+		g.o("fieldTypeMessagePool.GetSlice(m.fieldName)")
+
 	}
 	g.o("")
 	g.o("// Reset the buffer to start iterating over the fields again")
@@ -578,9 +589,10 @@ func (p *messagePoolType) Get() *MessageName {
 	return &MessageName{}
 }
 
-func (p *messagePoolType) GetSlice(count int) []*MessageName {
+func (p *messagePoolType) GetSlice(r []*MessageName) {
 	// Create a new slice.
-	r := make([]*MessageName, count)
+	// r := make([]*MessageName, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -593,7 +605,7 @@ func (p *messagePoolType) GetSlice(count int) []*MessageName {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -610,7 +622,7 @@ func (p *messagePoolType) GetSlice(count int) []*MessageName {
 		}
 	}
 
-	return r
+	//return r
 }`,
 	)
 
