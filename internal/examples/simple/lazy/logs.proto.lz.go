@@ -2,7 +2,6 @@ package simple
 
 import (
 	"sync"
-	"unsafe"
 
 	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 	"github.com/tigrannajaryan/molecule"
@@ -21,7 +20,6 @@ type LogsData struct {
 func NewLogsData(bytes []byte) *LogsData {
 	m := logsDataPool.Get()
 	m.protoMessage.Bytes = bytes
-	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
 	m.decode()
 	return m
 }
@@ -65,8 +63,7 @@ func (m *LogsData) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	resourceLogsSlice := m.protoMessage.Arena.Alloc(resourceLogsCount)
-	m.resourceLogs = unsafe.Slice((**ResourceLogs)(resourceLogsSlice), resourceLogsCount)
+	m.resourceLogs = make([]*ResourceLogs, resourceLogsCount)
 	resourceLogsPool.GetSlice(m.resourceLogs)
 
 	// Reset the buffer to start iterating over the fields again
@@ -89,7 +86,6 @@ func (m *LogsData) decode() {
 				elem := m.resourceLogs[resourceLogsCount]
 				resourceLogsCount++
 				elem.protoMessage.Parent = &m.protoMessage
-				elem.protoMessage.Arena = m.protoMessage.Arena
 				elem.protoMessage.Bytes = v
 			}
 			return true, nil
@@ -221,7 +217,6 @@ type ResourceLogs struct {
 func NewResourceLogs(bytes []byte) *ResourceLogs {
 	m := resourceLogsPool.Get()
 	m.protoMessage.Bytes = bytes
-	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
 	m.decode()
 	return m
 }
@@ -282,8 +277,7 @@ func (m *ResourceLogs) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	scopeLogsSlice := m.protoMessage.Arena.Alloc(scopeLogsCount)
-	m.scopeLogs = unsafe.Slice((**ScopeLogs)(scopeLogsSlice), scopeLogsCount)
+	m.scopeLogs = make([]*ScopeLogs, scopeLogsCount)
 	scopeLogsPool.GetSlice(m.scopeLogs)
 
 	// Reset the buffer to start iterating over the fields again
@@ -303,9 +297,9 @@ func (m *ResourceLogs) decode() {
 					return false, err
 				}
 				m.resource = resourcePool.Get()
-				m.resource.protoMessage.Parent = &m.protoMessage
-				m.resource.protoMessage.Arena = m.protoMessage.Arena
-				m.resource.protoMessage.Bytes = v
+				elem := m.resource
+				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Bytes = v
 			case 2:
 				// Decode scopeLogs.
 				v, err := value.AsBytesUnsafe()
@@ -316,7 +310,6 @@ func (m *ResourceLogs) decode() {
 				elem := m.scopeLogs[scopeLogsCount]
 				scopeLogsCount++
 				elem.protoMessage.Parent = &m.protoMessage
-				elem.protoMessage.Arena = m.protoMessage.Arena
 				elem.protoMessage.Bytes = v
 			}
 			return true, nil
@@ -461,7 +454,6 @@ type Resource struct {
 func NewResource(bytes []byte) *Resource {
 	m := resourcePool.Get()
 	m.protoMessage.Bytes = bytes
-	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
 	m.decode()
 	return m
 }
@@ -516,8 +508,7 @@ func (m *Resource) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	attributesSlice := m.protoMessage.Arena.Alloc(attributesCount)
-	m.attributes = unsafe.Slice((**KeyValue)(attributesSlice), attributesCount)
+	m.attributes = make([]*KeyValue, attributesCount)
 	keyValuePool.GetSlice(m.attributes)
 
 	// Reset the buffer to start iterating over the fields again
@@ -540,7 +531,6 @@ func (m *Resource) decode() {
 				elem := m.attributes[attributesCount]
 				attributesCount++
 				elem.protoMessage.Parent = &m.protoMessage
-				elem.protoMessage.Arena = m.protoMessage.Arena
 				elem.protoMessage.Bytes = v
 			case 2:
 				// Decode droppedAttributesCount.
@@ -683,7 +673,6 @@ type ScopeLogs struct {
 func NewScopeLogs(bytes []byte) *ScopeLogs {
 	m := scopeLogsPool.Get()
 	m.protoMessage.Bytes = bytes
-	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
 	m.decode()
 	return m
 }
@@ -727,8 +716,7 @@ func (m *ScopeLogs) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	logRecordsSlice := m.protoMessage.Arena.Alloc(logRecordsCount)
-	m.logRecords = unsafe.Slice((**LogRecord)(logRecordsSlice), logRecordsCount)
+	m.logRecords = make([]*LogRecord, logRecordsCount)
 	logRecordPool.GetSlice(m.logRecords)
 
 	// Reset the buffer to start iterating over the fields again
@@ -751,7 +739,6 @@ func (m *ScopeLogs) decode() {
 				elem := m.logRecords[logRecordsCount]
 				logRecordsCount++
 				elem.protoMessage.Parent = &m.protoMessage
-				elem.protoMessage.Arena = m.protoMessage.Arena
 				elem.protoMessage.Bytes = v
 			}
 			return true, nil
@@ -882,7 +869,6 @@ type LogRecord struct {
 func NewLogRecord(bytes []byte) *LogRecord {
 	m := logRecordPool.Get()
 	m.protoMessage.Bytes = bytes
-	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
 	m.decode()
 	return m
 }
@@ -948,8 +934,7 @@ func (m *LogRecord) decode() {
 	)
 
 	// Pre-allocate slices for repeated fields.
-	attributesSlice := m.protoMessage.Arena.Alloc(attributesCount)
-	m.attributes = unsafe.Slice((**KeyValue)(attributesSlice), attributesCount)
+	m.attributes = make([]*KeyValue, attributesCount)
 	keyValuePool.GetSlice(m.attributes)
 
 	// Reset the buffer to start iterating over the fields again
@@ -979,7 +964,6 @@ func (m *LogRecord) decode() {
 				elem := m.attributes[attributesCount]
 				attributesCount++
 				elem.protoMessage.Parent = &m.protoMessage
-				elem.protoMessage.Arena = m.protoMessage.Arena
 				elem.protoMessage.Bytes = v
 			case 3:
 				// Decode droppedAttributesCount.
@@ -1124,7 +1108,6 @@ type KeyValue struct {
 func NewKeyValue(bytes []byte) *KeyValue {
 	m := keyValuePool.Get()
 	m.protoMessage.Bytes = bytes
-	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
 	m.decode()
 	return m
 }
