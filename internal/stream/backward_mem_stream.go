@@ -1,6 +1,8 @@
 package stream
 
-import "io"
+import (
+	"io"
+)
 
 const firstBufSize = 4096
 
@@ -37,6 +39,19 @@ func (s *BackwardMemStream) WriteTo(out io.Writer) error {
 
 func (s *BackwardMemStream) Len() int {
 	return s.readyBufsLen + len(s.curBuf) - s.lastWritten
+}
+
+type PreparedFixed64Key byte
+
+// Fixed64Prepared writes a value of fixed64 to the stream.
+func (s *BackwardMemStream) Fixed64Prepared(fieldKey PreparedFixed64Key, value uint64) {
+	if value == 0 {
+		return
+	}
+
+	// Write in backward order.
+	s.writeFixed64(value)
+	s.writeByte(byte(fieldKey))
 }
 
 // PreparedKey of string,bytes or embedded wire type.
@@ -131,6 +146,21 @@ func (s *BackwardMemStream) allocNewBuf() {
 	s.curBuf = make([]byte, s.nextBufSize)
 	s.lastWritten = s.nextBufSize
 	s.nextBufSize *= 2
+}
+
+func (s *BackwardMemStream) writeFixed64(v uint64) {
+	if s.lastWritten < 8 {
+		s.allocNewBuf()
+	}
+	s.curBuf[s.lastWritten-8] = byte(v >> 0)
+	s.curBuf[s.lastWritten-7] = byte(v >> 8)
+	s.curBuf[s.lastWritten-6] = byte(v >> 16)
+	s.curBuf[s.lastWritten-5] = byte(v >> 24)
+	s.curBuf[s.lastWritten-4] = byte(v >> 32)
+	s.curBuf[s.lastWritten-3] = byte(v >> 40)
+	s.curBuf[s.lastWritten-2] = byte(v >> 48)
+	s.curBuf[s.lastWritten-1] = byte(v >> 56)
+	s.lastWritten -= 8
 }
 
 func (s *BackwardMemStream) writeVarint(v uint64) {
