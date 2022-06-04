@@ -1,7 +1,10 @@
 package stream
 
 import (
+	"bytes"
 	"io"
+
+	"google.golang.org/protobuf/encoding/protowire"
 )
 
 const firstBufSize = 4096
@@ -37,11 +40,59 @@ func (s *BackwardMemStream) WriteTo(out io.Writer) error {
 	return nil
 }
 
+func (s *BackwardMemStream) BufferBytes() []byte {
+	destBytes := make([]byte, 0, s.Len())
+	destBuf := bytes.NewBuffer(destBytes)
+	err := s.WriteTo(destBuf)
+	if err != nil {
+		panic(err)
+	}
+	return destBuf.Bytes()
+}
+
 func (s *BackwardMemStream) Len() int {
 	return s.readyBufsLen + len(s.curBuf) - s.lastWritten
 }
 
+type PreparedUint32Key byte
 type PreparedFixed64Key byte
+
+// PreparedKey of string,bytes or embedded wire type.
+type PreparedKey byte
+
+func PrepareField(fieldNumber int, wireType protowire.Type) PreparedKey {
+	b := protowire.AppendVarint([]byte{}, uint64(fieldNumber)<<3+uint64(wireType))
+	if len(b) > 1 {
+		panic("fieldNumber too high, max field number 15 is supported by PrepareField")
+	}
+	return PreparedKey(b[0])
+}
+
+func PrepareStringField(fieldNumber int) PreparedKey {
+	return PrepareField(fieldNumber, protowire.BytesType)
+}
+
+func PrepareEmbeddedField(fieldNumber int) PreparedKey {
+	return PrepareField(fieldNumber, protowire.BytesType)
+}
+
+func PrepareUint32Field(fieldNumber int) PreparedUint32Key {
+	return PreparedUint32Key(PrepareField(fieldNumber, protowire.VarintType))
+}
+func PrepareFixed64Field(fieldNumber int) PreparedFixed64Key {
+	return PreparedFixed64Key(PrepareField(fieldNumber, protowire.Fixed64Type))
+}
+
+// Uint32Prepared writes a value of uint32 to the stream.
+func (s *BackwardMemStream) Uint32Prepared(fieldKey PreparedUint32Key, value uint32) {
+	if value == 0 {
+		return
+	}
+	// Write in backward order.
+	s.writeFixed64(uint64(value))
+	s.writeByte(byte(fieldKey))
+	return
+}
 
 // Fixed64Prepared writes a value of fixed64 to the stream.
 func (s *BackwardMemStream) Fixed64Prepared(fieldKey PreparedFixed64Key, value uint64) {
@@ -54,9 +105,6 @@ func (s *BackwardMemStream) Fixed64Prepared(fieldKey PreparedFixed64Key, value u
 	s.writeByte(byte(fieldKey))
 }
 
-// PreparedKey of string,bytes or embedded wire type.
-type PreparedKey byte
-
 // StringPrepared writes a string to the stream.
 func (s *BackwardMemStream) StringPrepared(key PreparedKey, value string) {
 	vlen := len(value)
@@ -65,7 +113,7 @@ func (s *BackwardMemStream) StringPrepared(key PreparedKey, value string) {
 	}
 
 	// Write in backward order.
-	s.writeBytes([]byte(value))
+	s.Raw([]byte(value))
 	s.writeVarint(uint64(vlen))
 	s.writeByte(byte(key))
 }
@@ -97,7 +145,8 @@ func (s *BackwardMemStream) appendReadyBuf(b []byte) {
 	s.readyBufsLen += len(b)
 }
 
-func (s *BackwardMemStream) writeBytes(b []byte) {
+// Raw writes the byte sequence as is. Used to write prepared embedded byte sequences.
+func (s *BackwardMemStream) Raw(b []byte) {
 	if len(b) >= firstBufSize {
 		// Lots of bytes, just make it a ready buffer itself.
 		// First we need to push current accumulated buffer:

@@ -113,10 +113,10 @@ func TestDecode(t *testing.T) {
 			},
 		},
 	}
-	marshalledBytes, err := gogolib.Marshal(src)
+	goldenMarshalBytes, err := gogolib.Marshal(src)
 	require.NoError(t, err)
 
-	lazy := NewLogsData(marshalledBytes)
+	lazy := NewLogsData(goldenMarshalBytes)
 
 	rl := lazy.ResourceLogs()
 	require.Len(t, rl, 1)
@@ -152,7 +152,9 @@ func TestDecode(t *testing.T) {
 	ps := molecule.NewProtoStream()
 	lazy.Marshal(ps)
 
-	assert.EqualValues(t, marshalledBytes, ps.BufferBytes())
+	lazyBytes, err := ps.BufferBytes()
+	assert.NoError(t, err)
+	assert.EqualValues(t, goldenMarshalBytes, lazyBytes)
 
 	lazy.Free()
 }
@@ -160,16 +162,19 @@ func TestDecode(t *testing.T) {
 func TestLazyPassthrough(t *testing.T) {
 	src := createLogsData()
 
-	marshalBytes, err := gogolib.Marshal(src)
+	goldenMarshalBytes, err := gogolib.Marshal(src)
 	require.NoError(t, err)
-	require.NotNil(t, marshalBytes)
+	require.NotNil(t, goldenMarshalBytes)
 
 	ps := molecule.NewProtoStream()
-	lazy := NewLogsData(marshalBytes)
+	lazy := NewLogsData(goldenMarshalBytes)
 	ps.Reset()
 	err = lazy.Marshal(ps)
 	require.NoError(t, err)
-	assert.EqualValues(t, marshalBytes, ps.BufferBytes())
+
+	lazyBytes, err := ps.BufferBytes()
+	assert.NoError(t, err)
+	assert.EqualValues(t, goldenMarshalBytes, lazyBytes)
 
 	lazy.Free()
 }
@@ -369,11 +374,11 @@ func touchAll(lazy *lazymsg.LogsData) {
 func BenchmarkLazyMarshalUnchanged(b *testing.B) {
 	src := createLogsData()
 
-	marshalBytes, err := gogolib.Marshal(src)
+	goldenMarshalBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
-	require.NotNil(b, marshalBytes)
+	require.NotNil(b, goldenMarshalBytes)
 
-	lazy := lazymsg.NewLogsData(marshalBytes)
+	lazy := lazymsg.NewLogsData(goldenMarshalBytes)
 	countAttrsLazy(lazy)
 
 	b.ResetTimer()
@@ -383,18 +388,21 @@ func BenchmarkLazyMarshalUnchanged(b *testing.B) {
 		ps.Reset()
 		err = lazy.Marshal(ps)
 		require.NoError(b, err)
-		require.NotNil(b, ps.BufferBytes())
+
+		lazyBytes, err := ps.BufferBytes()
+		assert.NoError(b, err)
+		assert.EqualValues(b, goldenMarshalBytes, lazyBytes)
 	}
 }
 
 func BenchmarkLazyMarshalFullModified(b *testing.B) {
 	src := createLogsData()
 
-	marshalBytes, err := gogolib.Marshal(src)
+	goldenMarshalBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
-	require.NotNil(b, marshalBytes)
+	require.NotNil(b, goldenMarshalBytes)
 
-	lazy := lazymsg.NewLogsData(marshalBytes)
+	lazy := lazymsg.NewLogsData(goldenMarshalBytes)
 	countAttrsLazy(lazy)
 	touchAll(lazy)
 
@@ -405,7 +413,10 @@ func BenchmarkLazyMarshalFullModified(b *testing.B) {
 		ps.Reset()
 		err = lazy.Marshal(ps)
 		require.NoError(b, err)
-		require.EqualValues(b, len(marshalBytes), len(ps.BufferBytes()))
+
+		lazyBytes, err := ps.BufferBytes()
+		assert.NoError(b, err)
+		assert.EqualValues(b, goldenMarshalBytes, lazyBytes)
 	}
 }
 
@@ -470,19 +481,22 @@ func BenchmarkLazyPassthroughNoReadOrModify(b *testing.B) {
 
 	src := createLogsData()
 
-	marshalBytes, err := gogolib.Marshal(src)
+	goldenMarshalBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
-	require.NotNil(b, marshalBytes)
+	require.NotNil(b, goldenMarshalBytes)
 
 	b.ResetTimer()
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		lazy := NewLogsData(marshalBytes)
+		lazy := NewLogsData(goldenMarshalBytes)
 		ps.Reset()
 		err = lazy.Marshal(ps)
 		require.NoError(b, err)
-		require.NotNil(b, ps.BufferBytes())
+
+		lazyBytes, err := ps.BufferBytes()
+		assert.NoError(b, err)
+		assert.EqualValues(b, goldenMarshalBytes, lazyBytes)
 	}
 }
 
@@ -514,20 +528,24 @@ func BenchmarkLazyPassthroughFullReadNoModify(b *testing.B) {
 
 	src := createLogsData()
 
-	marshalBytes, err := gogolib.Marshal(src)
+	goldenMarshalBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
-	require.NotNil(b, marshalBytes)
+	require.NotNil(b, goldenMarshalBytes)
 
 	b.ResetTimer()
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		lazy := lazymsg.NewLogsData(marshalBytes)
+		lazy := lazymsg.NewLogsData(goldenMarshalBytes)
 		ps.Reset()
 		err = lazy.Marshal(ps)
 		countAttrsLazy(lazy)
 		require.NoError(b, err)
-		require.NotNil(b, ps.BufferBytes())
+
+		lazyBytes, err := ps.BufferBytes()
+		assert.NoError(b, err)
+		assert.EqualValues(b, goldenMarshalBytes, lazyBytes)
+
 		lazy.Free()
 	}
 }
@@ -538,15 +556,15 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 
 	src := createLogsData()
 
-	marshalBytes, err := gogolib.Marshal(src)
+	goldenMarshalBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
-	require.NotNil(b, marshalBytes)
+	require.NotNil(b, goldenMarshalBytes)
 
 	b.ResetTimer()
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		lazy := lazymsg.NewLogsData(marshalBytes)
+		lazy := lazymsg.NewLogsData(goldenMarshalBytes)
 
 		// Touch all attrs
 		touchAll(lazy)
@@ -554,7 +572,10 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 		ps.Reset()
 		err = lazy.Marshal(ps)
 		require.NoError(b, err)
-		require.NotNil(b, ps.BufferBytes())
+
+		lazyBytes, err := ps.BufferBytes()
+		assert.NoError(b, err)
+		assert.EqualValues(b, goldenMarshalBytes, lazyBytes)
 
 		lazy.Free()
 	}
@@ -566,13 +587,13 @@ func TestLazyPassthroughFullModified(t *testing.T) {
 
 	src := createLogsData()
 
-	marshalBytes, err := gogolib.Marshal(src)
+	goldenMarshalBytes, err := gogolib.Marshal(src)
 	require.NoError(t, err)
-	require.NotNil(t, marshalBytes)
+	require.NotNil(t, goldenMarshalBytes)
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < 3; i++ {
-		lazy := lazymsg.NewLogsData(marshalBytes)
+		lazy := lazymsg.NewLogsData(goldenMarshalBytes)
 
 		// Touch all attrs
 		touchAll(lazy)
@@ -580,8 +601,10 @@ func TestLazyPassthroughFullModified(t *testing.T) {
 		ps.Reset()
 		err = lazy.Marshal(ps)
 		require.NoError(t, err)
-		require.NotNil(t, ps.BufferBytes())
-		assert.EqualValues(t, marshalBytes, ps.BufferBytes())
+
+		lazyBytes, err := ps.BufferBytes()
+		assert.NoError(t, err)
+		assert.EqualValues(t, goldenMarshalBytes, lazyBytes)
 
 		lazy.Free()
 	}

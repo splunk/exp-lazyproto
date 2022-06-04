@@ -63,7 +63,7 @@ func TestBackwardMemStreamBytes(t *testing.T) {
 						b[j] = byte(i % 256)
 						i--
 					}
-					s.writeBytes(b)
+					s.Raw(b)
 				}
 				var destBytes []byte
 				destBuf := bytes.NewBuffer(destBytes)
