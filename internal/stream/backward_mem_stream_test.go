@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protowire"
 )
 
 func TestBackwardMemStreamByte(t *testing.T) {
@@ -19,7 +20,7 @@ func TestBackwardMemStreamByte(t *testing.T) {
 			strconv.Itoa(byteCount), func(t *testing.T) {
 				s := NewBackwardMemStream()
 				for i := byteCount - 1; i >= 0; i-- {
-					s.Byte(byte(i % 256))
+					s.writeByte(byte(i % 256))
 				}
 				var destBytes []byte
 				destBuf := bytes.NewBuffer(destBytes)
@@ -62,7 +63,7 @@ func TestBackwardMemStreamBytes(t *testing.T) {
 						b[j] = byte(i % 256)
 						i--
 					}
-					s.Bytes(b)
+					s.writeBytes(b)
 				}
 				var destBytes []byte
 				destBuf := bytes.NewBuffer(destBytes)
@@ -78,5 +79,61 @@ func TestBackwardMemStreamBytes(t *testing.T) {
 				}
 			},
 		)
+	}
+}
+
+func TestBackwardMemStreamVarint(t *testing.T) {
+	vals := []uint64{
+		0, 1, 2,
+		127, 128, 129,
+		1<<14 - 1, 1 << 14, 1<<14 + 1,
+		1<<21 - 1, 1 << 21, 1<<21 + 1,
+		1<<28 - 1, 1 << 28, 1<<28 + 1,
+		1<<35 - 1, 1 << 35, 1<<35 + 1,
+		1<<42 - 1, 1 << 42, 1<<42 + 1,
+		1<<49 - 1, 1 << 49, 1<<49 + 1,
+		1<<56 - 1, 1 << 56, 1<<56 + 1,
+		1<<63 - 1, 1 << 63, 1<<63 + 1,
+	}
+
+	for _, val := range vals {
+		t.Run(
+			strconv.FormatUint(val, 10), func(t *testing.T) {
+				s := NewBackwardMemStream()
+				s.writeVarint(val)
+
+				var destBytes []byte
+				destBuf := bytes.NewBuffer(destBytes)
+				err := s.WriteTo(destBuf)
+				assert.NoError(t, err)
+
+				destBytes = destBuf.Bytes()
+
+				var checkBuf []byte
+				checkBuf = protowire.AppendVarint(checkBuf, val)
+
+				assert.EqualValues(t, checkBuf, destBytes)
+			},
+		)
+	}
+}
+
+const varintTestRange = 100000
+
+func BenchmarkBackwardMemStreamVarint(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		s := NewBackwardMemStream()
+		for v := uint64(0); v < varintTestRange; v++ {
+			s.writeVarint(v)
+		}
+	}
+}
+
+func BenchmarkGoogleProtobufVarint(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		var s []byte
+		for v := uint64(0); v < varintTestRange; v++ {
+			s = protowire.AppendVarint(s, v)
+		}
 	}
 }
