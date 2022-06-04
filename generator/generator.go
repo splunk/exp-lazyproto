@@ -318,11 +318,8 @@ elem.protoMessage.Bytes = v
 				g.o(
 					`
 m.fieldName = fieldTypeMessagePool.Get()
-*m.fieldName = FieldMessageTypeName{
-	protoMessage: lazyproto.ProtoMessage{
-		Parent: &m.protoMessage, Bytes: v,
-	},
-}
+m.fieldName.protoMessage.Parent = &m.protoMessage
+m.fieldName.protoMessage.Bytes = v
 `,
 				)
 			}

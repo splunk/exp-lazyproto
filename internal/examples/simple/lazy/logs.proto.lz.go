@@ -292,11 +292,8 @@ func (m *ResourceLogs) decode() {
 					return false, err
 				}
 				m.resource = resourcePool.Get()
-				*m.resource = Resource{
-					protoMessage: lazyproto.ProtoMessage{
-						Parent: &m.protoMessage, Bytes: v,
-					},
-				}
+				m.resource.protoMessage.Parent = &m.protoMessage
+				m.resource.protoMessage.Bytes = v
 			case 2:
 				// Decode scopeLogs.
 				v, err := value.AsBytesUnsafe()
