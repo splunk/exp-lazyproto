@@ -257,7 +257,8 @@ molecule.MessageEach(
 	g.i(-1)
 
 	g.o(
-		`			}
+		`
+			}
 			return true, nil
 		},
 	)
@@ -270,7 +271,8 @@ molecule.MessageEach(
 
 func (g *generator) oFieldDecodePrimitive(field *Field, asType string) {
 	g.o(
-		`v, err := value.As%s()
+		`
+v, err := value.As%s()
 if err != nil {
 	return false, err
 }
