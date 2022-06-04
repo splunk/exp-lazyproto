@@ -6,7 +6,7 @@ type ProtoMessage struct {
 	Bytes  []byte
 	Flags  uint64
 	Parent *ProtoMessage
-	//Arena  *PointerSliceArena
+	Arena  *PointerSliceArena
 }
 
 func (m *ProtoMessage) MarkModified() {

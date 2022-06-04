@@ -34,8 +34,6 @@ type generator struct {
 	field        *Field
 	templateData map[string]string
 	spaces       int
-
-	useSliceArena bool
 }
 
 func (g *generator) processFile(inputFilePath string) error {
@@ -82,16 +80,18 @@ func (g *generator) oFile(fdescr *desc.FileDescriptor) error {
 
 	g.o("package %s", fdescr.GetPackage())
 	g.o("")
-	g.o("import (")
-	g.o(`	"sync"`)
-	if g.useSliceArena {
-		g.o(`	"unsafe"`)
-	}
-	g.o("")
-	g.o(`	lazyproto "github.com/tigrannajaryan/exp-lazyproto"`)
-	g.o(`	"github.com/tigrannajaryan/molecule"`)
-	g.o(`	"github.com/tigrannajaryan/molecule/src/codec"`)
-	g.o(`)`)
+	g.o(
+		`
+import (
+	"sync"
+	"unsafe"
+
+	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
+	"github.com/tigrannajaryan/molecule"
+	"github.com/tigrannajaryan/molecule/src/codec"
+)
+`,
+	)
 
 	return nil
 }
@@ -196,19 +196,20 @@ func (g *generator) oMessage(msg *Message) error {
 	g.o("}")
 	g.o("")
 
-	g.o("func NewMessageName(bytes []byte) *MessageName {")
-	g.o("	m := messagePool.Get()")
-	g.o("	m.protoMessage.Bytes = bytes")
-	if g.useSliceArena {
-		g.o("	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(0)")
-	}
-	g.o("	m.decode()")
-	g.o("	return m")
-	g.o("}")
-	g.o("")
-	g.o("func (m *MessageName) Free() {")
-	g.o("	messagePool.Release(m)")
-	g.o("}")
+	g.o(
+		`
+func NewMessageName(bytes []byte) *MessageName {
+	m := messagePool.Get()
+	m.protoMessage.Bytes = bytes
+	m.protoMessage.Arena = lazyproto.NewPointerSliceArena(len(bytes)/16 + 1)
+	m.decode()
+	return m
+}
+
+func (m *MessageName) Free() {
+	messagePool.Release(m)
+}`,
+	)
 
 	if err := g.oFieldsAccessors(msg); err != nil {
 		return err
@@ -312,22 +313,19 @@ if err != nil {
 					`
 // The slice is pre-allocated, assign to the appropriate index.
 elem := m.fieldName[%[1]s]
-%[1]s++`, counterName,
+%[1]s++
+elem.protoMessage.Parent = &m.protoMessage
+elem.protoMessage.Arena = m.protoMessage.Arena
+elem.protoMessage.Bytes = v`, counterName,
 				)
 			} else {
 				g.o(
 					`
 m.fieldName = fieldTypeMessagePool.Get()
-elem := m.fieldName`,
+m.fieldName.protoMessage.Parent = &m.protoMessage
+m.fieldName.protoMessage.Arena = m.protoMessage.Arena
+m.fieldName.protoMessage.Bytes = v`,
 				)
-			}
-			g.o(
-				`
-elem.protoMessage.Parent = &m.protoMessage
-elem.protoMessage.Bytes = v`,
-			)
-			if g.useSliceArena {
-				g.o("elem.protoMessage.Arena = m.protoMessage.Arena")
 			}
 		}
 		g.i(-1)
@@ -375,12 +373,8 @@ func (g *generator) oRepeatedFieldCounts(msg *Message) {
 		//	"m.fieldName = fieldTypeMessagePool.GetSlice(m.protoMessage.Arena.Alloc(%[1]s))",
 		//	counterName,
 		//)
-		if g.useSliceArena {
-			g.o("fieldNameSlice := m.protoMessage.Arena.Alloc(fieldNameCount)")
-			g.o("m.fieldName = unsafe.Slice((**FieldMessageTypeName)(fieldNameSlice), fieldNameCount)")
-		} else {
-			g.o("m.fieldName = make([]*FieldMessageTypeName, fieldNameCount)")
-		}
+		g.o("fieldNameSlice := m.protoMessage.Arena.Alloc(fieldNameCount)")
+		g.o("m.fieldName = unsafe.Slice((**FieldMessageTypeName)(fieldNameSlice), fieldNameCount)")
 		g.o("fieldTypeMessagePool.GetSlice(m.fieldName)")
 
 	}
