@@ -70,6 +70,7 @@ func (m *LogsData) decode() {
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	resourceLogsCount = 0
+
 	// Iterate and decode the fields.
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -281,6 +282,7 @@ func (m *ResourceLogs) decode() {
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	scopeLogsCount = 0
+
 	// Iterate and decode the fields.
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -508,6 +510,7 @@ func (m *Resource) decode() {
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	attributesCount = 0
+
 	// Iterate and decode the fields.
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -713,6 +716,7 @@ func (m *ScopeLogs) decode() {
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	logRecordsCount = 0
+
 	// Iterate and decode the fields.
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -928,6 +932,7 @@ func (m *LogRecord) decode() {
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	attributesCount = 0
+
 	// Iterate and decode the fields.
 	molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
