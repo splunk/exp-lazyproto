@@ -22,7 +22,8 @@ func TestProtoStreamByte(t *testing.T) {
 					s.writeByte(byte(i % 256))
 				}
 
-				destBytes := s.BufferBytes()
+				destBytes, err := s.BufferBytes()
+				assert.NoError(t, err)
 				assert.Len(t, destBytes, byteCount)
 				for i := 0; i < byteCount; i++ {
 					assert.Equal(t, byte(i%256), destBytes[i])
@@ -61,7 +62,8 @@ func TestProtoStreamBytes(t *testing.T) {
 					s.Raw(b)
 				}
 
-				destBytes := s.BufferBytes()
+				destBytes, err := s.BufferBytes()
+				assert.NoError(t, err)
 				require.Len(
 					t, destBytes, byteCount, "Incorrect length of resulting bytes",
 				)
@@ -93,7 +95,8 @@ func TestProtoStreamVarint(t *testing.T) {
 				s := NewProtoStream()
 				s.writeVarint(val)
 
-				destBytes := s.BufferBytes()
+				destBytes, err := s.BufferBytes()
+				assert.NoError(t, err)
 
 				var checkBuf []byte
 				checkBuf = protowire.AppendVarint(checkBuf, val)

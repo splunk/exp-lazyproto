@@ -7,7 +7,6 @@ import (
 	gogomsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/gogo/gen/logs"
 	googlemsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/google/gen/logs"
 	lazymsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/lazy"
-	"github.com/tigrannajaryan/exp-lazyproto/internal/protostream"
 	googlelib "google.golang.org/protobuf/proto"
 
 	"github.com/stretchr/testify/assert"
@@ -167,7 +166,7 @@ func TestLazyPassthrough(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, goldenMarshalBytes)
 
-	ps := protostream.NewProtoStream()
+	ps := molecule.NewProtoStream()
 	lazy := lazymsg.NewLogsData(goldenMarshalBytes)
 	ps.Reset()
 	err = lazy.Marshal(ps)
@@ -384,7 +383,7 @@ func BenchmarkLazyMarshalUnchanged(b *testing.B) {
 
 	b.ResetTimer()
 
-	ps := protostream.NewProtoStream()
+	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
 		ps.Reset()
 		err = lazy.Marshal(ps)
@@ -409,7 +408,7 @@ func BenchmarkLazyMarshalFullModified(b *testing.B) {
 
 	b.ResetTimer()
 
-	ps := protostream.NewProtoStream()
+	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
 		ps.Reset()
 		err = lazy.Marshal(ps)
@@ -488,7 +487,7 @@ func BenchmarkLazyPassthroughNoReadOrModify(b *testing.B) {
 
 	b.ResetTimer()
 
-	ps := protostream.NewProtoStream()
+	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
 		lazy := lazymsg.NewLogsData(goldenMarshalBytes)
 		ps.Reset()
@@ -513,7 +512,7 @@ func BenchmarkLazyPassthroughNoReadOrModify(b *testing.B) {
 //
 //	b.ResetTimer()
 //
-//	ps := protostream.NewProtoStream()
+//	ps := molecule.NewProtoStream()
 //	for i := 0; i < b.N; i++ {
 //		lazy := lazymsg.NewLogsData(marshalBytes)
 //		ps.Reset()
@@ -535,7 +534,7 @@ func BenchmarkLazyPassthroughFullReadNoModify(b *testing.B) {
 
 	b.ResetTimer()
 
-	ps := protostream.NewProtoStream()
+	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
 		lazy := lazymsg.NewLogsData(goldenMarshalBytes)
 		ps.Reset()
@@ -563,7 +562,7 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 
 	b.ResetTimer()
 
-	ps := protostream.NewProtoStream()
+	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
 		lazy := lazymsg.NewLogsData(goldenMarshalBytes)
 
@@ -592,7 +591,7 @@ func TestLazyPassthroughFullModified(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, goldenMarshalBytes)
 
-	ps := protostream.NewProtoStream()
+	ps := molecule.NewProtoStream()
 	for i := 0; i < 3; i++ {
 		lazy := lazymsg.NewLogsData(goldenMarshalBytes)
 
@@ -617,7 +616,7 @@ func TestLazyPassthroughFullModified(t *testing.T) {
 //		value: "val",
 //	}
 //
-//	ps := protostream.NewProtoStream()
+//	ps := molecule.NewProtoStream()
 //	for i := 0; i < b.N; i++ {
 //		ps.Reset()
 //		kv.Marshal(ps)
@@ -635,7 +634,7 @@ func TestLazyPassthroughFullModified(t *testing.T) {
 //		DroppedAttributesCount: 0,
 //	}
 //
-//	ps := protostream.NewProtoStream()
+//	ps := molecule.NewProtoStream()
 //	for i := 0; i < b.N; i++ {
 //		ps.Reset()
 //		res.Marshal(ps)
@@ -651,7 +650,7 @@ func TestLazyPassthroughFullModified(t *testing.T) {
 //		attributes: []*KeyValue{&kv},
 //	}
 //
-//	ps := protostream.NewProtoStream()
+//	ps := molecule.NewProtoStream()
 //	for i := 0; i < b.N; i++ {
 //		ps.Reset()
 //		lr.Marshal(ps)
@@ -668,7 +667,7 @@ func BenchmarkAppendVarintProtowire(b *testing.B) {
 
 //func BenchmarkWriteUint32(b *testing.B) {
 //	val := uint32(123)
-//	ps := protostream.NewProtoStream()
+//	ps := molecule.NewProtoStream()
 //	for i := 0; i < b.N; i++ {
 //		ps.Reset()
 //		ps.Uint32(1, val)
@@ -677,7 +676,7 @@ func BenchmarkAppendVarintProtowire(b *testing.B) {
 //
 //func BenchmarkWriteUint32Prepared(b *testing.B) {
 //	val := uint32(123)
-//	ps := protostream.NewProtoStream()
+//	ps := molecule.NewProtoStream()
 //	k := molecule.PrepareUint32Field(1)
 //	for i := 0; i < b.N; i++ {
 //		ps.Reset()

@@ -34,6 +34,8 @@ type generator struct {
 	field        *Field
 	templateData map[string]string
 	spaces       int
+
+	useSizedMarshaler bool
 }
 
 func (g *generator) processFile(inputFilePath string) error {
@@ -86,12 +88,15 @@ import (
 	"sync"
 
 	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
-	"github.com/tigrannajaryan/exp-lazyproto/internal/protostream"
 	"github.com/tigrannajaryan/molecule"
 	"github.com/tigrannajaryan/molecule/src/codec"
 )
 `,
 	)
+
+	if g.useSizedMarshaler {
+		g.o(`import "github.com/tigrannajaryan/exp-lazyproto/internal/protostream"`)
+	}
 
 	return nil
 }
@@ -474,7 +479,11 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 	}
 
 	g.o("")
-	g.o("func (m *MessageName) Marshal(ps *protostream.ProtoStream) error {")
+	if g.useSizedMarshaler {
+		g.o("func (m *MessageName) Marshal(ps *protostream.ProtoStream) error {")
+	} else {
+		g.o("func (m *MessageName) Marshal(ps *molecule.ProtoStream) error {")
+	}
 	g.i(1)
 	g.o("if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {")
 	g.i(1)
@@ -532,16 +541,16 @@ func (g *generator) oMarshalField(msg *Message, field *Field) {
 func (g *generator) oPrepareMarshalField(msg *Message, field *Field) {
 	switch field.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		g.o(preparedFieldDecl(msg, field, "String"))
+		g.o(g.preparedFieldDecl(msg, field, "String"))
 
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
-		g.o(preparedFieldDecl(msg, field, "Fixed64"))
+		g.o(g.preparedFieldDecl(msg, field, "Fixed64"))
 
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
-		g.o(preparedFieldDecl(msg, field, "Uint32"))
+		g.o(g.preparedFieldDecl(msg, field, "Uint32"))
 
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		g.o(preparedFieldDecl(msg, field, "Embedded"))
+		g.o(g.preparedFieldDecl(msg, field, "Embedded"))
 	}
 }
 
@@ -700,9 +709,18 @@ func (p *messagePoolType) Release(elem *MessageName) {`,
 	)
 }
 
-func preparedFieldDecl(msg *Message, field *Field, typeName string) string {
-	return fmt.Sprintf(
-		"var prepared%s%s = protostream.Prepare%sField(%d)", msg.GetName(),
-		field.GetCapitalName(), typeName, field.GetNumber(),
-	)
+func (g *generator) preparedFieldDecl(
+	msg *Message, field *Field, typeName string,
+) string {
+	if g.useSizedMarshaler {
+		return fmt.Sprintf(
+			"var prepared%s%s = protostream.Prepare%sField(%d)", msg.GetName(),
+			field.GetCapitalName(), typeName, field.GetNumber(),
+		)
+	} else {
+		return fmt.Sprintf(
+			"var prepared%s%s = molecule.Prepare%sField(%d)", msg.GetName(),
+			field.GetCapitalName(), typeName, field.GetNumber(),
+		)
+	}
 }
