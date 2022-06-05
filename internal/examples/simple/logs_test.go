@@ -142,7 +142,8 @@ func TestDecode(t *testing.T) {
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(t, err)
 
-	lazy := lazymsg.NewLogsData(goldenWireBytes)
+	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+	require.NoError(t, err)
 
 	rl := lazy.ResourceLogs()
 	require.Len(t, rl, 1)
@@ -193,7 +194,9 @@ func TestLazyPassthrough(t *testing.T) {
 	require.NotNil(t, goldenWireBytes)
 
 	ps := molecule.NewProtoStream()
-	lazy := lazymsg.NewLogsData(goldenWireBytes)
+	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+	require.NoError(t, err)
+
 	ps.Reset()
 	err = lazy.Marshal(ps)
 	require.NoError(t, err)
@@ -286,7 +289,9 @@ func BenchmarkLazyMarshalUnchanged(b *testing.B) {
 	require.NoError(b, err)
 	require.NotNil(b, goldenWireBytes)
 
-	lazy := lazymsg.NewLogsData(goldenWireBytes)
+	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+	require.NoError(b, err)
+
 	countAttrsLazy(lazy)
 
 	b.ResetTimer()
@@ -310,7 +315,9 @@ func BenchmarkLazyMarshalFullModified(b *testing.B) {
 	require.NoError(b, err)
 	require.NotNil(b, goldenWireBytes)
 
-	lazy := lazymsg.NewLogsData(goldenWireBytes)
+	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+	require.NoError(b, err)
+
 	countAttrsLazy(lazy)
 	touchAll(lazy)
 
@@ -387,14 +394,15 @@ func BenchmarkGogoUnmarshal(b *testing.B) {
 func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
 	src := createLogsData()
 
-	bytes, err := gogolib.Marshal(src)
+	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
-	require.NotNil(b, bytes)
+	require.NotNil(b, goldenWireBytes)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		lazy := lazymsg.NewLogsData(bytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(b, err)
 
 		// Traverse all data to get it loaded. This is the worst case.
 		countAttrsLazy(lazy)
@@ -406,12 +414,13 @@ func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
 func TestLazyUnmarshalAndReadAll(t *testing.T) {
 	src := createLogsData()
 
-	bytes, err := gogolib.Marshal(src)
+	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(t, err)
-	require.NotNil(t, bytes)
+	require.NotNil(t, goldenWireBytes)
 
 	for i := 0; i < 2; i++ {
-		lazy := lazymsg.NewLogsData(bytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(t, err)
 
 		// Traverse all data to get it loaded. This is the worst case.
 		countAttrsLazy(lazy)
@@ -474,7 +483,9 @@ func BenchmarkLazyPassthroughNoReadOrModify(b *testing.B) {
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		lazy := lazymsg.NewLogsData(goldenWireBytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(b, err)
+
 		ps.Reset()
 		err = lazy.Marshal(ps)
 		require.NoError(b, err)
@@ -499,7 +510,9 @@ func BenchmarkLazyPassthroughFullReadNoModify(b *testing.B) {
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		lazy := lazymsg.NewLogsData(goldenWireBytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(b, err)
+
 		ps.Reset()
 		err = lazy.Marshal(ps)
 		countAttrsLazy(lazy)
@@ -527,7 +540,8 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		lazy := lazymsg.NewLogsData(goldenWireBytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(b, err)
 
 		// Touch all attrs
 		touchAll(lazy)
@@ -556,7 +570,8 @@ func TestLazyPassthroughFullModified(t *testing.T) {
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < 3; i++ {
-		lazy := lazymsg.NewLogsData(goldenWireBytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(t, err)
 
 		// Touch all attrs
 		touchAll(lazy)
@@ -619,7 +634,8 @@ func BenchmarkLazyInspectScopeAttr(b *testing.B) {
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		inputMsg := lazymsg.NewLogsData(goldenWireBytes)
+		inputMsg, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(b, err)
 
 		foundCount := 0
 		for _, rl := range inputMsg.ResourceLogs() {
@@ -702,7 +718,8 @@ func BenchmarkLazyFilterScopeAttr(b *testing.B) {
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		inputMsg := lazymsg.NewLogsData(goldenWireBytes)
+		inputMsg, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(b, err)
 
 		foundCount := 0
 		for _, rl := range inputMsg.ResourceLogs() {
@@ -788,7 +805,8 @@ func BenchmarkLazyBatch(b *testing.B) {
 		var resourceLogs []*lazymsg.ResourceLogs
 
 		for j := 0; j < 10; j++ {
-			inputMsg[j] = lazymsg.NewLogsData(inputWireBytes)
+			inputMsg[j], err = lazymsg.UnmarshalLogsData(inputWireBytes)
+			require.NoError(b, err)
 
 			resourceLogs = append(
 				resourceLogs, inputMsg[j].ResourceLogs()...,

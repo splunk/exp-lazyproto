@@ -209,11 +209,11 @@ func (g *generator) oMessage(msg *Message) error {
 
 	g.o(
 		`
-func New$MessageName(bytes []byte) *$MessageName {
+func Unmarshal$MessageName(bytes []byte) (*$MessageName, error) {
 	m := $messagePool.Get()
 	m.protoMessage.Bytes = bytes
 	m.decode()
-	return m
+	return m, nil
 }
 
 func (m *$MessageName) Free() {

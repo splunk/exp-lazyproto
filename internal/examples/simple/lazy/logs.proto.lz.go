@@ -17,11 +17,11 @@ type LogsData struct {
 	resourceLogs []*ResourceLogs
 }
 
-func NewLogsData(bytes []byte) *LogsData {
+func UnmarshalLogsData(bytes []byte) (*LogsData, error) {
 	m := logsDataPool.Get()
 	m.protoMessage.Bytes = bytes
 	m.decode()
-	return m
+	return m, nil
 }
 
 func (m *LogsData) Free() {
@@ -245,11 +245,11 @@ type ResourceLogs struct {
 	schemaUrl string
 }
 
-func NewResourceLogs(bytes []byte) *ResourceLogs {
+func UnmarshalResourceLogs(bytes []byte) (*ResourceLogs, error) {
 	m := resourceLogsPool.Get()
 	m.protoMessage.Bytes = bytes
 	m.decode()
-	return m
+	return m, nil
 }
 
 func (m *ResourceLogs) Free() {
@@ -541,11 +541,11 @@ type Resource struct {
 	droppedAttributesCount uint32
 }
 
-func NewResource(bytes []byte) *Resource {
+func UnmarshalResource(bytes []byte) (*Resource, error) {
 	m := resourcePool.Get()
 	m.protoMessage.Bytes = bytes
 	m.decode()
-	return m
+	return m, nil
 }
 
 func (m *Resource) Free() {
@@ -680,9 +680,7 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedResourceAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedResourceDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedResourceDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -795,11 +793,11 @@ type ScopeLogs struct {
 	schemaUrl string
 }
 
-func NewScopeLogs(bytes []byte) *ScopeLogs {
+func UnmarshalScopeLogs(bytes []byte) (*ScopeLogs, error) {
 	m := scopeLogsPool.Get()
 	m.protoMessage.Bytes = bytes
 	m.decode()
-	return m
+	return m, nil
 }
 
 func (m *ScopeLogs) Free() {
@@ -1093,11 +1091,11 @@ type InstrumentationScope struct {
 	droppedAttributesCount uint32
 }
 
-func NewInstrumentationScope(bytes []byte) *InstrumentationScope {
+func UnmarshalInstrumentationScope(bytes []byte) (*InstrumentationScope, error) {
 	m := instrumentationScopePool.Get()
 	m.protoMessage.Bytes = bytes
 	m.decode()
-	return m
+	return m, nil
 }
 
 func (m *InstrumentationScope) Free() {
@@ -1278,9 +1276,7 @@ func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedInstrumentationScopeAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -1395,11 +1391,11 @@ type LogRecord struct {
 	spanId                 []byte
 }
 
-func NewLogRecord(bytes []byte) *LogRecord {
+func UnmarshalLogRecord(bytes []byte) (*LogRecord, error) {
 	m := logRecordPool.Get()
 	m.protoMessage.Bytes = bytes
 	m.decode()
-	return m
+	return m, nil
 }
 
 func (m *LogRecord) Free() {
@@ -1666,9 +1662,7 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedLogRecordAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount)
 		// Marshal flags
 		ps.Fixed32Prepared(preparedLogRecordFlags, m.flags)
 		// Marshal traceId
@@ -1783,11 +1777,11 @@ type KeyValue struct {
 	value        string
 }
 
-func NewKeyValue(bytes []byte) *KeyValue {
+func UnmarshalKeyValue(bytes []byte) (*KeyValue, error) {
 	m := keyValuePool.Get()
 	m.protoMessage.Bytes = bytes
 	m.decode()
-	return m
+	return m, nil
 }
 
 func (m *KeyValue) Free() {
