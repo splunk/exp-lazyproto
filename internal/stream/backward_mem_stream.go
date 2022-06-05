@@ -7,9 +7,9 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 )
 
-const firstBufSize = 4096
+const firstBufSize = 40 * 4096
 
-type BackwardMemStream struct {
+type ProtoStream struct {
 	curBuf      []byte
 	lastWritten int
 	nextBufSize int
@@ -18,15 +18,22 @@ type BackwardMemStream struct {
 	readyBufsLen int
 }
 
-func NewBackwardMemStream() *BackwardMemStream {
-	s := &BackwardMemStream{}
+func NewProtoStream() *ProtoStream {
+	s := &ProtoStream{}
 	s.curBuf = make([]byte, firstBufSize)
 	s.lastWritten = firstBufSize
 	s.nextBufSize = firstBufSize * 2
+	s.Reset()
 	return s
 }
 
-func (s *BackwardMemStream) WriteTo(out io.Writer) error {
+func (s *ProtoStream) Reset() {
+	s.lastWritten = len(s.curBuf)
+	s.readyBufs = nil
+	s.readyBufsLen = 0
+}
+
+func (s *ProtoStream) WriteTo(out io.Writer) error {
 	_, err := out.Write(s.curBuf[s.lastWritten:])
 	if err != nil {
 		return err
@@ -40,17 +47,21 @@ func (s *BackwardMemStream) WriteTo(out io.Writer) error {
 	return nil
 }
 
-func (s *BackwardMemStream) BufferBytes() []byte {
+func (s *ProtoStream) BufferBytes() ([]byte, error) {
+	if s.readyBufs == nil {
+		return s.curBuf[s.lastWritten:], nil
+	}
+
 	destBytes := make([]byte, 0, s.Len())
 	destBuf := bytes.NewBuffer(destBytes)
 	err := s.WriteTo(destBuf)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return destBuf.Bytes()
+	return destBuf.Bytes(), nil
 }
 
-func (s *BackwardMemStream) Len() int {
+func (s *ProtoStream) Len() int {
 	return s.readyBufsLen + len(s.curBuf) - s.lastWritten
 }
 
@@ -84,18 +95,17 @@ func PrepareFixed64Field(fieldNumber int) PreparedFixed64Key {
 }
 
 // Uint32Prepared writes a value of uint32 to the stream.
-func (s *BackwardMemStream) Uint32Prepared(fieldKey PreparedUint32Key, value uint32) {
+func (s *ProtoStream) Uint32Prepared(fieldKey PreparedUint32Key, value uint32) {
 	if value == 0 {
 		return
 	}
 	// Write in backward order.
-	s.writeFixed64(uint64(value))
+	s.writeVarint(uint64(value))
 	s.writeByte(byte(fieldKey))
-	return
 }
 
 // Fixed64Prepared writes a value of fixed64 to the stream.
-func (s *BackwardMemStream) Fixed64Prepared(fieldKey PreparedFixed64Key, value uint64) {
+func (s *ProtoStream) Fixed64Prepared(fieldKey PreparedFixed64Key, value uint64) {
 	if value == 0 {
 		return
 	}
@@ -106,33 +116,91 @@ func (s *BackwardMemStream) Fixed64Prepared(fieldKey PreparedFixed64Key, value u
 }
 
 // StringPrepared writes a string to the stream.
-func (s *BackwardMemStream) StringPrepared(key PreparedKey, value string) {
+func (s *ProtoStream) StringPrepared(key PreparedKey, value string) {
 	vlen := len(value)
 	if vlen == 0 {
 		return
 	}
 
 	// Write in backward order.
-	s.Raw([]byte(value))
-	s.writeVarint(uint64(vlen))
-	s.writeByte(byte(key))
+	//s.rawString(value)
+
+	if vlen < s.lastWritten {
+		s.lastWritten -= vlen
+		copy(s.curBuf[s.lastWritten:], value)
+	} else {
+		bytesFit := s.lastWritten
+		s.lastWritten = 0
+		bytesRemaining := vlen - bytesFit
+		copy(s.curBuf, value[bytesRemaining:])
+
+		s.allocNewBuf()
+
+		if bytesRemaining > 0 {
+			s.lastWritten -= bytesRemaining
+			copy(s.curBuf[s.lastWritten:], value[:bytesRemaining])
+		}
+	}
+
+	if s.lastWritten < 11 {
+		s.allocNewBuf()
+	}
+
+	if vlen < 1<<7 {
+		s.curBuf[s.lastWritten-1] = byte(vlen)
+		s.curBuf[s.lastWritten-2] = byte(key)
+		s.lastWritten -= 2
+		return
+	}
+
+	//s.writeVarint(uint64(vlen))
+	//if vlen < 1<<7 {
+	//	s.lastWritten--
+	//	s.curBuf[s.lastWritten] = byte(vlen)
+	//} else {
+	s._writeVarintAbove127(uint64(vlen))
+	//}
+
+	//s.writeByte(byte(key))
+	s.lastWritten--
+	s.curBuf[s.lastWritten] = byte(key)
 }
 
 type EmbeddedToken int
 
-func (s *BackwardMemStream) BeginEmbedded() EmbeddedToken {
+func (s *ProtoStream) BeginEmbedded() EmbeddedToken {
 	return EmbeddedToken(s.Len())
 }
 
-func (s *BackwardMemStream) EndEmbedded(beginToken EmbeddedToken, fieldKey PreparedKey) {
+func (s *ProtoStream) EndEmbeddedPrepared(
+	beginToken EmbeddedToken, fieldKey PreparedKey,
+) {
 	embeddedSize := s.Len() - int(beginToken)
 
 	// Write in backward order.
-	s.writeVarint(uint64(embeddedSize))
-	s.writeByte(byte(fieldKey))
+	//s.writeVarint(uint64(embeddedSize))
+	//s.writeByte(byte(fieldKey))
+
+	if s.lastWritten < 11 {
+		s.allocNewBuf()
+	}
+
+	//s.writeVarint(uint64(vlen))
+	if embeddedSize < 1<<7 {
+		s.curBuf[s.lastWritten-1] = byte(embeddedSize)
+		s.curBuf[s.lastWritten-2] = byte(fieldKey)
+		s.lastWritten -= 2
+		return
+	}
+
+	s._writeVarintAbove127(uint64(embeddedSize))
+
+	//s.writeByte(byte(key))
+	s.lastWritten--
+	s.curBuf[s.lastWritten] = byte(fieldKey)
 }
 
-func (s *BackwardMemStream) writeByte(b byte) {
+func (s *ProtoStream) writeByte(b byte) {
 	if s.lastWritten == 0 {
 		s.allocNewBuf()
 	}
@@ -140,13 +208,13 @@ func (s *BackwardMemStream) writeByte(b byte) {
 	s.curBuf[s.lastWritten] = b
 }
 
-func (s *BackwardMemStream) appendReadyBuf(b []byte) {
+func (s *ProtoStream) appendReadyBuf(b []byte) {
 	s.readyBufs = append(s.readyBufs, b)
 	s.readyBufsLen += len(b)
 }
 
 // Raw writes the byte sequence as is. Used to write prepared embedded byte sequences.
-func (s *BackwardMemStream) Raw(b []byte) {
+func (s *ProtoStream) Raw(b []byte) {
 	if len(b) >= firstBufSize {
 		// Lots of bytes, just make it a ready buffer itself.
 		// First we need to push current accumulated buffer:
@@ -157,7 +225,7 @@ func (s *BackwardMemStream) Raw(b []byte) {
 			// for future writes.
 			s.curBuf = s.curBuf[:s.lastWritten:s.lastWritten]
 		} else {
-			// No more free same in the current buffer, just allocate a new one.
+			// No more free space in the current buffer, just allocate a new one.
 			s.curBuf = make([]byte, firstBufSize)
 			s.lastWritten = firstBufSize
 		}
@@ -188,7 +256,11 @@ func (s *BackwardMemStream) Raw(b []byte) {
 	}
 }
 
-func (s *BackwardMemStream) allocNewBuf() {
+// Raw writes the byte sequence as is. Used to write prepared embedded byte sequences.
+func (s *ProtoStream) rawString(b string) {
+}
+
+func (s *ProtoStream) allocNewBuf() {
 	s.appendReadyBuf(s.curBuf[s.lastWritten:])
 
 	// Double the buf size on every new allocation to have constant amortized cost.
@@ -197,7 +269,7 @@ func (s *BackwardMemStream) allocNewBuf() {
 	s.nextBufSize *= 2
 }
 
-func (s *BackwardMemStream) writeFixed64(v uint64) {
+func (s *ProtoStream) writeFixed64(v uint64) {
 	if s.lastWritten < 8 {
 		s.allocNewBuf()
 	}
@@ -212,15 +284,36 @@ func (s *BackwardMemStream) writeFixed64(v uint64) {
 	s.lastWritten -= 8
 }
 
-func (s *BackwardMemStream) writeVarint(v uint64) {
+func (s *ProtoStream) writeVarint(v uint64) {
+	if s.lastWritten > 0 && v < 1<<7 {
+		s.lastWritten -= 1
+		s.curBuf[s.lastWritten] = byte(v)
+		return
+	}
 	if s.lastWritten < 10 {
 		s.allocNewBuf()
 	}
+	s._writeVarintAbove127(v)
+}
+
+func (s *ProtoStream) writeVarintNoBufSizeCheck(v uint64) {
+	if v < 1<<7 {
+		s.lastWritten--
+		s.curBuf[s.lastWritten] = byte(v)
+		return
+	}
+	s._writeVarintAbove127(v)
+}
+
+func (s *ProtoStream) _writeVarintAbove127(v uint64) {
+	//if s.lastWritten < 10 {
+	//	s.allocNewBuf()
+	//}
 
 	switch {
-	case v < 1<<7:
-		s.curBuf[s.lastWritten-1] = byte(v)
-		s.lastWritten -= 1
+	//case v < 1<<7:
+	//	s.curBuf[s.lastWritten-1] = byte(v)
+	//	s.lastWritten -= 1
 
 	case v < 1<<14:
 		s.curBuf[s.lastWritten-2] = byte((v>>0)&0x7f | 0x80)

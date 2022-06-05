@@ -18,7 +18,7 @@ func TestBackwardMemStreamByte(t *testing.T) {
 	for _, byteCount := range byteCounts {
 		t.Run(
 			strconv.Itoa(byteCount), func(t *testing.T) {
-				s := NewBackwardMemStream()
+				s := NewProtoStream()
 				for i := byteCount - 1; i >= 0; i-- {
 					s.writeByte(byte(i % 256))
 				}
@@ -45,7 +45,7 @@ func TestBackwardMemStreamBytes(t *testing.T) {
 		t.Run(
 			strconv.Itoa(byteCount), func(t *testing.T) {
 
-				s := NewBackwardMemStream()
+				s := NewProtoStream()
 				for i := byteCount - 1; i >= 0; {
 					maxChunkSize := byteCount + 1
 					if maxChunkSize > 10000 {
@@ -99,7 +99,7 @@ func TestBackwardMemStreamVarint(t *testing.T) {
 	for _, val := range vals {
 		t.Run(
 			strconv.FormatUint(val, 10), func(t *testing.T) {
-				s := NewBackwardMemStream()
+				s := NewProtoStream()
 				s.writeVarint(val)
 
 				var destBytes []byte
@@ -122,7 +122,7 @@ const varintTestRange = 100000
 
 func BenchmarkBackwardMemStreamVarint(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		s := NewBackwardMemStream()
+		s := NewProtoStream()
 		for v := uint64(0); v < varintTestRange; v++ {
 			s.writeVarint(v)
 		}

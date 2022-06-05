@@ -269,7 +269,7 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 		for _, attr := range m.attributes {
 			token := ps.BeginEmbedded()
 			attr.Marshal(ps)
-			//ps.EndEmbedded(token, 1)
+			//ps.EndEmbeddedPrepared(token, 1)
 			ps.EndEmbeddedPrepared(token, resourceAttrKeyPrepared)
 		}
 		ps.Uint32Prepared(resourceDroppedKeyPrepared, m.DroppedAttributesCount)

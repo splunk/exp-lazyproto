@@ -88,6 +88,7 @@ import (
 	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 	"github.com/tigrannajaryan/molecule"
 	"github.com/tigrannajaryan/molecule/src/codec"
+	protostream "github.com/tigrannajaryan/exp-lazyproto/internal/stream"
 )
 `,
 	)
@@ -473,11 +474,13 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 	}
 
 	g.o("")
-	g.o("func (m *MessageName) Marshal(ps *molecule.ProtoStream) error {")
+	g.o("func (m *MessageName) Marshal(ps *protostream.ProtoStream) error {")
 	g.i(1)
 	g.o("if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {")
 	g.i(1)
-	for _, field := range msg.Fields {
+	//for _, field := range msg.Fields {
+	for i := len(msg.Fields) - 1; i >= 0; i-- {
+		field := msg.Fields[i]
 		g.setField(field)
 		g.oMarshalField(msg, field)
 	}
@@ -514,7 +517,8 @@ func (g *generator) oMarshalField(msg *Message, field *Field) {
 
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		if field.IsRepeated() {
-			g.o("for _, elem := range m.fieldName {")
+			g.o("for i:=len(m.fieldName)-1; i>=0; i-- {")
+			g.o("   elem := m.fieldName[i]")
 			g.o("	token := ps.BeginEmbedded()")
 			g.o("	elem.Marshal(ps)")
 			g.o("	ps.EndEmbeddedPrepared(token, %s)", embeddedFieldName(msg, field))
@@ -701,7 +705,7 @@ func (p *messagePoolType) Release(elem *MessageName) {`,
 
 func preparedFieldDecl(msg *Message, field *Field, typeName string) string {
 	return fmt.Sprintf(
-		"var prepared%s%s = molecule.Prepare%sField(%d)", msg.GetName(),
+		"var prepared%s%s = protostream.Prepare%sField(%d)", msg.GetName(),
 		field.GetCapitalName(), typeName, field.GetNumber(),
 	)
 }
