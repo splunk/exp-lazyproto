@@ -1386,6 +1386,7 @@ type LogRecord struct {
 	severityText           string
 	attributes             []*KeyValue
 	droppedAttributesCount uint32
+	flags                  uint32
 }
 
 func NewLogRecord(bytes []byte) *LogRecord {
@@ -1504,6 +1505,19 @@ func (m *LogRecord) SetDroppedAttributesCount(v uint32) {
 	}
 }
 
+func (m *LogRecord) Flags() uint32 {
+	return m.flags
+}
+
+func (m *LogRecord) SetFlags(v uint32) {
+	m.flags = v
+
+	// Mark this message modified, if not already.
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
 func (m *LogRecord) decode() {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
@@ -1569,6 +1583,13 @@ func (m *LogRecord) decode() {
 					return false, err
 				}
 				m.droppedAttributesCount = v
+			case 8:
+				// Decode flags.
+				v, err := value.AsFixed32()
+				if err != nil {
+					return false, err
+				}
+				m.flags = v
 			}
 			return true, nil
 		},
@@ -1580,6 +1601,7 @@ var preparedLogRecordObservedTimeUnixNano = molecule.PrepareFixed64Field(11)
 var preparedLogRecordSeverityText = molecule.PrepareStringField(3)
 var preparedLogRecordAttributes = molecule.PrepareEmbeddedField(6)
 var preparedLogRecordDroppedAttributesCount = molecule.PrepareUint32Field(7)
+var preparedLogRecordFlags = molecule.PrepareFixed32Field(8)
 
 func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
@@ -1597,6 +1619,8 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 		}
 		// Marshal droppedAttributesCount
 		ps.Uint32Prepared(preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount)
+		// Marshal flags
+		ps.Fixed32Prepared(preparedLogRecordFlags, m.flags)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)

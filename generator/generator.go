@@ -162,6 +162,8 @@ func (g *generator) convertType(field *Field) string {
 	switch field.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 		s += "uint64"
+	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
+		s += "uint32"
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		s += "uint32"
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
@@ -296,6 +298,9 @@ func (g *generator) oFieldDecode(fields []*Field) string {
 		case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 			g.oFieldDecodePrimitive(field, "Fixed64")
 
+		case descriptor.FieldDescriptorProto_TYPE_FIXED32:
+			g.oFieldDecodePrimitive(field, "Fixed32")
+
 		case descriptor.FieldDescriptorProto_TYPE_UINT32:
 			g.oFieldDecodePrimitive(field, "Uint32")
 
@@ -329,6 +334,9 @@ m.$fieldName.protoMessage.Parent = &m.protoMessage
 m.$fieldName.protoMessage.Bytes = v`,
 				)
 			}
+
+		default:
+			panic(fmt.Sprintf("Unsupported field type %v", field.GetType()))
 		}
 		g.i(-1)
 	}
@@ -470,7 +478,7 @@ func (g *generator) oFieldSetter(msg *Message, field *Field) error {
 		g.o("")
 		g.o("	// Make sure the field's Parent points to this message.")
 		if field.IsRepeated() {
-			g.o("	for _,elem := range m.$fieldName {")
+			g.o("	for _, elem := range m.$fieldName {")
 			g.o("		elem.protoMessage.Parent = &m.protoMessage")
 			g.o("	}")
 		} else {
@@ -495,7 +503,7 @@ func (g *generator) oFieldSliceMethods() error {
 	g.o(
 		`
 func (m *$MessageName) $FieldNameRemoveIf(f func(*$FieldMessageTypeName) bool) {
-	// Call getter to load the field. 
+	// Call getter to load the field.
 	m.$FieldName()
 
 	newLen := 0
@@ -518,8 +526,7 @@ func (m *$MessageName) $FieldNameRemoveIf(f func(*$FieldMessageTypeName) bool) {
 			m.protoMessage.MarkModified()
 		}
 	}
-}
-`,
+}`,
 	)
 	return g.lastErr
 }
@@ -571,6 +578,9 @@ func (g *generator) oMarshalField(msg *Message, field *Field) {
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 		g.oMarshalPreparedField(msg, field, "Fixed64")
 
+	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
+		g.oMarshalPreparedField(msg, field, "Fixed32")
+
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		g.oMarshalPreparedField(msg, field, "Uint32")
 
@@ -587,6 +597,9 @@ func (g *generator) oMarshalField(msg *Message, field *Field) {
 			g.o("	ps.EndEmbeddedPrepared(token, %s)", embeddedFieldName(msg, field))
 		}
 		g.o("}")
+
+	default:
+		panic(fmt.Sprintf("Unsupported field type %v", field.GetType()))
 	}
 }
 
@@ -598,11 +611,17 @@ func (g *generator) oPrepareMarshalField(msg *Message, field *Field) {
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 		g.o(g.preparedFieldDecl(msg, field, "Fixed64"))
 
+	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
+		g.o(g.preparedFieldDecl(msg, field, "Fixed32"))
+
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		g.o(g.preparedFieldDecl(msg, field, "Uint32"))
 
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		g.o(g.preparedFieldDecl(msg, field, "Embedded"))
+
+	default:
+		panic(fmt.Sprintf("Unsupported field type %v", field.GetType()))
 	}
 }
 

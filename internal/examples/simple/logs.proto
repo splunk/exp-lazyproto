@@ -48,6 +48,7 @@ message LogRecord {
   string severity_text = 3;
   repeated KeyValue attributes = 6;
   uint32 dropped_attributes_count = 7;
+  fixed32 flags = 8;
 }
 
 message KeyValue {
