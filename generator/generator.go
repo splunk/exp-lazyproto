@@ -464,6 +464,19 @@ func (g *generator) oFieldSetter(msg *Message, field *Field) error {
 	g.o("")
 	g.o("func (m *$MessageName) Set$FieldName(v %s) {", g.convertType(field))
 	g.o("	m.$fieldName = v")
+	if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+		g.o("")
+		g.o("	// Make sure the field's Parent points to this message.")
+		if field.IsRepeated() {
+			g.o("	for _,elem := range m.$fieldName {")
+			g.o("		elem.protoMessage.Parent = &m.protoMessage")
+			g.o("	}")
+		} else {
+			g.o("	m.$fieldName.protoMessage.Parent = &m.protoMessage")
+		}
+	}
+	g.o("")
+	g.o("	// Mark this message modified, if not already.")
 	g.o("	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {")
 	g.o("		m.protoMessage.MarkModified()")
 	g.o("	}")

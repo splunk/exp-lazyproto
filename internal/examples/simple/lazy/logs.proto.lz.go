@@ -44,6 +44,13 @@ func (m *LogsData) ResourceLogs() []*ResourceLogs {
 
 func (m *LogsData) SetResourceLogs(v []*ResourceLogs) {
 	m.resourceLogs = v
+
+	// Make sure the field's Parent points to this message.
+	for _, elem := range m.resourceLogs {
+		elem.protoMessage.Parent = &m.protoMessage
+	}
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -241,6 +248,11 @@ func (m *ResourceLogs) Resource() *Resource {
 
 func (m *ResourceLogs) SetResource(v *Resource) {
 	m.resource = v
+
+	// Make sure the field's Parent points to this message.
+	m.resource.protoMessage.Parent = &m.protoMessage
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -259,6 +271,13 @@ func (m *ResourceLogs) ScopeLogs() []*ScopeLogs {
 
 func (m *ResourceLogs) SetScopeLogs(v []*ScopeLogs) {
 	m.scopeLogs = v
+
+	// Make sure the field's Parent points to this message.
+	for _, elem := range m.scopeLogs {
+		elem.protoMessage.Parent = &m.protoMessage
+	}
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -270,6 +289,8 @@ func (m *ResourceLogs) SchemaUrl() string {
 
 func (m *ResourceLogs) SetSchemaUrl(v string) {
 	m.schemaUrl = v
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -497,6 +518,13 @@ func (m *Resource) Attributes() []*KeyValue {
 
 func (m *Resource) SetAttributes(v []*KeyValue) {
 	m.attributes = v
+
+	// Make sure the field's Parent points to this message.
+	for _, elem := range m.attributes {
+		elem.protoMessage.Parent = &m.protoMessage
+	}
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -508,6 +536,8 @@ func (m *Resource) DroppedAttributesCount() uint32 {
 
 func (m *Resource) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -575,7 +605,9 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedResourceAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(preparedResourceDroppedAttributesCount, m.droppedAttributesCount)
+		ps.Uint32Prepared(
+			preparedResourceDroppedAttributesCount, m.droppedAttributesCount,
+		)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -716,6 +748,11 @@ func (m *ScopeLogs) Scope() *InstrumentationScope {
 
 func (m *ScopeLogs) SetScope(v *InstrumentationScope) {
 	m.scope = v
+
+	// Make sure the field's Parent points to this message.
+	m.scope.protoMessage.Parent = &m.protoMessage
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -734,6 +771,13 @@ func (m *ScopeLogs) LogRecords() []*LogRecord {
 
 func (m *ScopeLogs) SetLogRecords(v []*LogRecord) {
 	m.logRecords = v
+
+	// Make sure the field's Parent points to this message.
+	for _, elem := range m.logRecords {
+		elem.protoMessage.Parent = &m.protoMessage
+	}
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -745,6 +789,8 @@ func (m *ScopeLogs) SchemaUrl() string {
 
 func (m *ScopeLogs) SetSchemaUrl(v string) {
 	m.schemaUrl = v
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -967,6 +1013,8 @@ func (m *InstrumentationScope) Name() string {
 
 func (m *InstrumentationScope) SetName(v string) {
 	m.name = v
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -978,6 +1026,8 @@ func (m *InstrumentationScope) Version() string {
 
 func (m *InstrumentationScope) SetVersion(v string) {
 	m.version = v
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -996,6 +1046,13 @@ func (m *InstrumentationScope) Attributes() []*KeyValue {
 
 func (m *InstrumentationScope) SetAttributes(v []*KeyValue) {
 	m.attributes = v
+
+	// Make sure the field's Parent points to this message.
+	for _, elem := range m.attributes {
+		elem.protoMessage.Parent = &m.protoMessage
+	}
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -1007,6 +1064,8 @@ func (m *InstrumentationScope) DroppedAttributesCount() uint32 {
 
 func (m *InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -1094,7 +1153,9 @@ func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedInstrumentationScopeAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount)
+		ps.Uint32Prepared(
+			preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount,
+		)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -1226,6 +1287,8 @@ func (m *LogRecord) TimeUnixNano() uint64 {
 
 func (m *LogRecord) SetTimeUnixNano(v uint64) {
 	m.timeUnixNano = v
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -1237,6 +1300,8 @@ func (m *LogRecord) ObservedTimeUnixNano() uint64 {
 
 func (m *LogRecord) SetObservedTimeUnixNano(v uint64) {
 	m.observedTimeUnixNano = v
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -1248,6 +1313,8 @@ func (m *LogRecord) SeverityText() string {
 
 func (m *LogRecord) SetSeverityText(v string) {
 	m.severityText = v
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -1266,6 +1333,13 @@ func (m *LogRecord) Attributes() []*KeyValue {
 
 func (m *LogRecord) SetAttributes(v []*KeyValue) {
 	m.attributes = v
+
+	// Make sure the field's Parent points to this message.
+	for _, elem := range m.attributes {
+		elem.protoMessage.Parent = &m.protoMessage
+	}
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -1277,6 +1351,8 @@ func (m *LogRecord) DroppedAttributesCount() uint32 {
 
 func (m *LogRecord) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -1374,7 +1450,9 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedLogRecordAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount)
+		ps.Uint32Prepared(
+			preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount,
+		)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -1500,6 +1578,8 @@ func (m *KeyValue) Key() string {
 
 func (m *KeyValue) SetKey(v string) {
 	m.key = v
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -1511,6 +1591,8 @@ func (m *KeyValue) Value() string {
 
 func (m *KeyValue) SetValue(v string) {
 	m.value = v
+
+	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
