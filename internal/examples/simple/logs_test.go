@@ -58,6 +58,11 @@ func createScopedLogs(n int) *gogomsg.ScopeLogs {
 		},
 	}
 
+	if n%2 == 0 {
+		// Give half of the scopes a different attribute value.
+		sl.Scope.Attributes[0].Value = "false"
+	}
+
 	for i := 0; i < 10; i++ {
 		sl.LogRecords = append(sl.LogRecords, createLogRecord(i))
 	}
@@ -595,7 +600,7 @@ func BenchmarkGogoInspectScopeAttr(b *testing.B) {
 				}
 			}
 		}
-		assert.Equal(b, 100, foundCount)
+		assert.Equal(b, 50, foundCount)
 
 		destBytes, err := gogolib.Marshal(&lazy)
 		require.NoError(b, err)
@@ -629,7 +634,7 @@ func BenchmarkLazyInspectScopeAttr(b *testing.B) {
 				}
 			}
 		}
-		assert.Equal(b, 100, foundCount)
+		assert.Equal(b, 50, foundCount)
 
 		ps.Reset()
 		err = inputMsg.Marshal(ps)
@@ -638,6 +643,93 @@ func BenchmarkLazyInspectScopeAttr(b *testing.B) {
 		lazyBytes, err := ps.BufferBytes()
 		assert.NoError(b, err)
 		assert.EqualValues(b, goldenWireBytes, lazyBytes)
+
+		inputMsg.Free()
+	}
+}
+
+func BenchmarkGogoFilterScopeAttr(b *testing.B) {
+	src := createLogsData()
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var lazy gogomsg.LogsData
+		err := gogolib.Unmarshal(goldenWireBytes, &lazy)
+		require.NoError(b, err)
+
+		foundCount := 0
+		for _, rl := range lazy.ResourceLogs {
+			for j := 0; j < len(rl.ScopeLogs); j++ {
+				sl := rl.ScopeLogs[j]
+				if sl.Scope == nil {
+					continue
+				}
+				found := false
+				for _, attr := range sl.Scope.Attributes {
+					if attr.Key == "otel.profiling" && attr.Value == "true" {
+						foundCount++
+						found = true
+						break
+					}
+				}
+				if found {
+					rl.ScopeLogs = append(rl.ScopeLogs[:j], rl.ScopeLogs[j+1:]...)
+					j--
+				}
+			}
+		}
+		assert.Equal(b, 50, foundCount)
+
+		destBytes, err := gogolib.Marshal(&lazy)
+		require.NoError(b, err)
+		assert.NotNil(b, destBytes)
+	}
+}
+
+func BenchmarkLazyFilterScopeAttr(b *testing.B) {
+	src := createLogsData()
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	b.ResetTimer()
+
+	ps := molecule.NewProtoStream()
+	for i := 0; i < b.N; i++ {
+		inputMsg := lazymsg.NewLogsData(goldenWireBytes)
+
+		foundCount := 0
+		for _, rl := range inputMsg.ResourceLogs() {
+			rl.ScopeLogsRemoveIf(
+				func(sl *lazymsg.ScopeLogs) bool {
+					if sl.Scope() == nil {
+						return false
+					}
+					for _, attr := range sl.Scope().Attributes() {
+						if attr.Key() == "otel.profiling" && attr.Value() == "true" {
+							foundCount++
+							return true
+						}
+					}
+					return false
+				},
+			)
+		}
+		assert.Equal(b, 50, foundCount)
+
+		ps.Reset()
+		err = inputMsg.Marshal(ps)
+		require.NoError(b, err)
+
+		lazyBytes, err := ps.BufferBytes()
+		assert.NoError(b, err)
+		assert.NotNil(b, lazyBytes)
 
 		inputMsg.Free()
 	}

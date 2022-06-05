@@ -114,8 +114,10 @@ func (g *generator) setField(field *Field) {
 
 	if field.GetMessageType() != nil {
 		g.templateData["$fieldTypeMessagePool"] = getPoolName(field.GetMessageType().GetName())
+		g.templateData["$FieldMessageTypeName"] = field.GetMessageType().GetName()
 	} else {
 		g.templateData["$fieldTypeMessagePool"] = "$fieldTypeMessagePool not defined for " + field.GetName()
+		g.templateData["$FieldMessageTypeName"] = "$FieldMessageTypeName not defined for " + field.GetName()
 	}
 }
 
@@ -482,6 +484,43 @@ func (g *generator) oFieldSetter(msg *Message, field *Field) error {
 	g.o("	}")
 	g.o("}")
 
+	if field.IsRepeated() {
+		g.oFieldSliceMethods()
+	}
+
+	return g.lastErr
+}
+
+func (g *generator) oFieldSliceMethods() error {
+	g.o(
+		`
+func (m *$MessageName) $FieldNameRemoveIf(f func(*$FieldMessageTypeName) bool) {
+	// Call getter to load the field. 
+	m.$FieldName()
+
+	newLen := 0
+	for i := 0; i < len(m.$fieldName); i++ {
+		if f(m.$fieldName[i]) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		m.$fieldName[newLen] = m.$fieldName[i]
+		newLen++
+	}
+	if newLen != len(m.$fieldName) {
+		m.$fieldName = m.$fieldName[:newLen]
+		// Mark this message modified, if not already.
+		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+			m.protoMessage.MarkModified()
+		}
+	}
+}
+`,
+	)
 	return g.lastErr
 }
 

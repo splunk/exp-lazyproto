@@ -55,6 +55,31 @@ func (m *LogsData) SetResourceLogs(v []*ResourceLogs) {
 		m.protoMessage.MarkModified()
 	}
 }
+func (m *LogsData) ResourceLogsRemoveIf(f func(*ResourceLogs) bool) {
+	// Call getter to load the field.
+	m.ResourceLogs()
+
+	newLen := 0
+	for i := 0; i < len(m.resourceLogs); i++ {
+		if f(m.resourceLogs[i]) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		m.resourceLogs[newLen] = m.resourceLogs[i]
+		newLen++
+	}
+	if newLen != len(m.resourceLogs) {
+		m.resourceLogs = m.resourceLogs[:newLen]
+		// Mark this message modified, if not already.
+		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+			m.protoMessage.MarkModified()
+		}
+	}
+}
 
 func (m *LogsData) decode() {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
@@ -280,6 +305,31 @@ func (m *ResourceLogs) SetScopeLogs(v []*ScopeLogs) {
 	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
+	}
+}
+func (m *ResourceLogs) ScopeLogsRemoveIf(f func(*ScopeLogs) bool) {
+	// Call getter to load the field.
+	m.ScopeLogs()
+
+	newLen := 0
+	for i := 0; i < len(m.scopeLogs); i++ {
+		if f(m.scopeLogs[i]) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		m.scopeLogs[newLen] = m.scopeLogs[i]
+		newLen++
+	}
+	if newLen != len(m.scopeLogs) {
+		m.scopeLogs = m.scopeLogs[:newLen]
+		// Mark this message modified, if not already.
+		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+			m.protoMessage.MarkModified()
+		}
 	}
 }
 
@@ -529,6 +579,31 @@ func (m *Resource) SetAttributes(v []*KeyValue) {
 		m.protoMessage.MarkModified()
 	}
 }
+func (m *Resource) AttributesRemoveIf(f func(*KeyValue) bool) {
+	// Call getter to load the field.
+	m.Attributes()
+
+	newLen := 0
+	for i := 0; i < len(m.attributes); i++ {
+		if f(m.attributes[i]) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		m.attributes[newLen] = m.attributes[i]
+		newLen++
+	}
+	if newLen != len(m.attributes) {
+		m.attributes = m.attributes[:newLen]
+		// Mark this message modified, if not already.
+		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+			m.protoMessage.MarkModified()
+		}
+	}
+}
 
 func (m *Resource) DroppedAttributesCount() uint32 {
 	return m.droppedAttributesCount
@@ -605,9 +680,7 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedResourceAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedResourceDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedResourceDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -780,6 +853,31 @@ func (m *ScopeLogs) SetLogRecords(v []*LogRecord) {
 	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
+	}
+}
+func (m *ScopeLogs) LogRecordsRemoveIf(f func(*LogRecord) bool) {
+	// Call getter to load the field.
+	m.LogRecords()
+
+	newLen := 0
+	for i := 0; i < len(m.logRecords); i++ {
+		if f(m.logRecords[i]) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		m.logRecords[newLen] = m.logRecords[i]
+		newLen++
+	}
+	if newLen != len(m.logRecords) {
+		m.logRecords = m.logRecords[:newLen]
+		// Mark this message modified, if not already.
+		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+			m.protoMessage.MarkModified()
+		}
 	}
 }
 
@@ -1057,6 +1155,31 @@ func (m *InstrumentationScope) SetAttributes(v []*KeyValue) {
 		m.protoMessage.MarkModified()
 	}
 }
+func (m *InstrumentationScope) AttributesRemoveIf(f func(*KeyValue) bool) {
+	// Call getter to load the field.
+	m.Attributes()
+
+	newLen := 0
+	for i := 0; i < len(m.attributes); i++ {
+		if f(m.attributes[i]) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		m.attributes[newLen] = m.attributes[i]
+		newLen++
+	}
+	if newLen != len(m.attributes) {
+		m.attributes = m.attributes[:newLen]
+		// Mark this message modified, if not already.
+		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+			m.protoMessage.MarkModified()
+		}
+	}
+}
 
 func (m *InstrumentationScope) DroppedAttributesCount() uint32 {
 	return m.droppedAttributesCount
@@ -1153,9 +1276,7 @@ func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedInstrumentationScopeAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -1344,6 +1465,31 @@ func (m *LogRecord) SetAttributes(v []*KeyValue) {
 		m.protoMessage.MarkModified()
 	}
 }
+func (m *LogRecord) AttributesRemoveIf(f func(*KeyValue) bool) {
+	// Call getter to load the field.
+	m.Attributes()
+
+	newLen := 0
+	for i := 0; i < len(m.attributes); i++ {
+		if f(m.attributes[i]) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		m.attributes[newLen] = m.attributes[i]
+		newLen++
+	}
+	if newLen != len(m.attributes) {
+		m.attributes = m.attributes[:newLen]
+		// Mark this message modified, if not already.
+		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+			m.protoMessage.MarkModified()
+		}
+	}
+}
 
 func (m *LogRecord) DroppedAttributesCount() uint32 {
 	return m.droppedAttributesCount
@@ -1450,9 +1596,7 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedLogRecordAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
