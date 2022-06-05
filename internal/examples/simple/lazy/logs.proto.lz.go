@@ -20,7 +20,9 @@ type LogsData struct {
 func UnmarshalLogsData(bytes []byte) (*LogsData, error) {
 	m := logsDataPool.Get()
 	m.protoMessage.Bytes = bytes
-	m.decode()
+	if err := m.decode(); err != nil {
+		return nil, err
+	}
 	return m, nil
 }
 
@@ -35,7 +37,8 @@ func (m *LogsData) ResourceLogs() []*ResourceLogs {
 	if m.protoMessage.Flags&flagLogsDataResourceLogsDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.resourceLogs {
-			m.resourceLogs[i].decode()
+			// TODO: decide how to handle decoding errors.
+			_ = m.resourceLogs[i].decode()
 		}
 		m.protoMessage.Flags |= flagLogsDataResourceLogsDecoded
 	}
@@ -81,18 +84,21 @@ func (m *LogsData) ResourceLogsRemoveIf(f func(*ResourceLogs) bool) {
 	}
 }
 
-func (m *LogsData) decode() {
+func (m *LogsData) decode() error {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	// Count all repeated fields. We need one counter per field.
 	resourceLogsCount := 0
-	molecule.MessageFieldNums(
+	err := molecule.MessageFieldNums(
 		buf, func(fieldNum int32) {
 			if fieldNum == 1 {
 				resourceLogsCount++
 			}
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	// Pre-allocate slices for repeated fields.
 	m.resourceLogs = resourceLogsPool.GetSlice(resourceLogsCount)
@@ -104,7 +110,7 @@ func (m *LogsData) decode() {
 	resourceLogsCount = 0
 
 	// Iterate and decode the fields.
-	molecule.MessageEach(
+	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
@@ -122,6 +128,10 @@ func (m *LogsData) decode() {
 			return true, nil
 		},
 	)
+	if err2 != nil {
+		return err2
+	}
+	return nil
 }
 
 var preparedLogsDataResourceLogs = molecule.PrepareEmbeddedField(1)
@@ -131,7 +141,9 @@ func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
 		// Marshal resourceLogs
 		for _, elem := range m.resourceLogs {
 			token := ps.BeginEmbedded()
-			elem.Marshal(ps)
+			if err := elem.Marshal(ps); err != nil {
+				return err
+			}
 			ps.EndEmbeddedPrepared(token, preparedLogsDataResourceLogs)
 		}
 	} else {
@@ -248,7 +260,9 @@ type ResourceLogs struct {
 func UnmarshalResourceLogs(bytes []byte) (*ResourceLogs, error) {
 	m := resourceLogsPool.Get()
 	m.protoMessage.Bytes = bytes
-	m.decode()
+	if err := m.decode(); err != nil {
+		return nil, err
+	}
 	return m, nil
 }
 
@@ -264,7 +278,8 @@ func (m *ResourceLogs) Resource() *Resource {
 	if m.protoMessage.Flags&flagResourceLogsResourceDecoded == 0 {
 		// Decode nested message(s).
 		if m.resource != nil {
-			m.resource.decode()
+			// TODO: decide how to handle decoding errors.
+			_ = m.resource.decode()
 		}
 		m.protoMessage.Flags |= flagResourceLogsResourceDecoded
 	}
@@ -287,7 +302,8 @@ func (m *ResourceLogs) ScopeLogs() []*ScopeLogs {
 	if m.protoMessage.Flags&flagResourceLogsScopeLogsDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.scopeLogs {
-			m.scopeLogs[i].decode()
+			// TODO: decide how to handle decoding errors.
+			_ = m.scopeLogs[i].decode()
 		}
 		m.protoMessage.Flags |= flagResourceLogsScopeLogsDecoded
 	}
@@ -346,18 +362,21 @@ func (m *ResourceLogs) SetSchemaUrl(v string) {
 	}
 }
 
-func (m *ResourceLogs) decode() {
+func (m *ResourceLogs) decode() error {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	// Count all repeated fields. We need one counter per field.
 	scopeLogsCount := 0
-	molecule.MessageFieldNums(
+	err := molecule.MessageFieldNums(
 		buf, func(fieldNum int32) {
 			if fieldNum == 2 {
 				scopeLogsCount++
 			}
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	// Pre-allocate slices for repeated fields.
 	m.scopeLogs = scopeLogsPool.GetSlice(scopeLogsCount)
@@ -369,7 +388,7 @@ func (m *ResourceLogs) decode() {
 	scopeLogsCount = 0
 
 	// Iterate and decode the fields.
-	molecule.MessageEach(
+	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
@@ -403,6 +422,10 @@ func (m *ResourceLogs) decode() {
 			return true, nil
 		},
 	)
+	if err2 != nil {
+		return err2
+	}
+	return nil
 }
 
 var preparedResourceLogsResource = molecule.PrepareEmbeddedField(1)
@@ -414,13 +437,17 @@ func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 		// Marshal resource
 		if m.resource != nil {
 			token := ps.BeginEmbedded()
-			m.resource.Marshal(ps)
+			if err := m.resource.Marshal(ps); err != nil {
+				return err
+			}
 			ps.EndEmbeddedPrepared(token, preparedResourceLogsResource)
 		}
 		// Marshal scopeLogs
 		for _, elem := range m.scopeLogs {
 			token := ps.BeginEmbedded()
-			elem.Marshal(ps)
+			if err := elem.Marshal(ps); err != nil {
+				return err
+			}
 			ps.EndEmbeddedPrepared(token, preparedResourceLogsScopeLogs)
 		}
 		// Marshal schemaUrl
@@ -544,7 +571,9 @@ type Resource struct {
 func UnmarshalResource(bytes []byte) (*Resource, error) {
 	m := resourcePool.Get()
 	m.protoMessage.Bytes = bytes
-	m.decode()
+	if err := m.decode(); err != nil {
+		return nil, err
+	}
 	return m, nil
 }
 
@@ -559,7 +588,8 @@ func (m *Resource) Attributes() []*KeyValue {
 	if m.protoMessage.Flags&flagResourceAttributesDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.attributes {
-			m.attributes[i].decode()
+			// TODO: decide how to handle decoding errors.
+			_ = m.attributes[i].decode()
 		}
 		m.protoMessage.Flags |= flagResourceAttributesDecoded
 	}
@@ -618,18 +648,21 @@ func (m *Resource) SetDroppedAttributesCount(v uint32) {
 	}
 }
 
-func (m *Resource) decode() {
+func (m *Resource) decode() error {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
-	molecule.MessageFieldNums(
+	err := molecule.MessageFieldNums(
 		buf, func(fieldNum int32) {
 			if fieldNum == 1 {
 				attributesCount++
 			}
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	// Pre-allocate slices for repeated fields.
 	m.attributes = keyValuePool.GetSlice(attributesCount)
@@ -641,7 +674,7 @@ func (m *Resource) decode() {
 	attributesCount = 0
 
 	// Iterate and decode the fields.
-	molecule.MessageEach(
+	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
@@ -666,6 +699,10 @@ func (m *Resource) decode() {
 			return true, nil
 		},
 	)
+	if err2 != nil {
+		return err2
+	}
+	return nil
 }
 
 var preparedResourceAttributes = molecule.PrepareEmbeddedField(1)
@@ -676,7 +713,9 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 		// Marshal attributes
 		for _, elem := range m.attributes {
 			token := ps.BeginEmbedded()
-			elem.Marshal(ps)
+			if err := elem.Marshal(ps); err != nil {
+				return err
+			}
 			ps.EndEmbeddedPrepared(token, preparedResourceAttributes)
 		}
 		// Marshal droppedAttributesCount
@@ -796,7 +835,9 @@ type ScopeLogs struct {
 func UnmarshalScopeLogs(bytes []byte) (*ScopeLogs, error) {
 	m := scopeLogsPool.Get()
 	m.protoMessage.Bytes = bytes
-	m.decode()
+	if err := m.decode(); err != nil {
+		return nil, err
+	}
 	return m, nil
 }
 
@@ -812,7 +853,8 @@ func (m *ScopeLogs) Scope() *InstrumentationScope {
 	if m.protoMessage.Flags&flagScopeLogsScopeDecoded == 0 {
 		// Decode nested message(s).
 		if m.scope != nil {
-			m.scope.decode()
+			// TODO: decide how to handle decoding errors.
+			_ = m.scope.decode()
 		}
 		m.protoMessage.Flags |= flagScopeLogsScopeDecoded
 	}
@@ -835,7 +877,8 @@ func (m *ScopeLogs) LogRecords() []*LogRecord {
 	if m.protoMessage.Flags&flagScopeLogsLogRecordsDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.logRecords {
-			m.logRecords[i].decode()
+			// TODO: decide how to handle decoding errors.
+			_ = m.logRecords[i].decode()
 		}
 		m.protoMessage.Flags |= flagScopeLogsLogRecordsDecoded
 	}
@@ -894,18 +937,21 @@ func (m *ScopeLogs) SetSchemaUrl(v string) {
 	}
 }
 
-func (m *ScopeLogs) decode() {
+func (m *ScopeLogs) decode() error {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	// Count all repeated fields. We need one counter per field.
 	logRecordsCount := 0
-	molecule.MessageFieldNums(
+	err := molecule.MessageFieldNums(
 		buf, func(fieldNum int32) {
 			if fieldNum == 2 {
 				logRecordsCount++
 			}
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	// Pre-allocate slices for repeated fields.
 	m.logRecords = logRecordPool.GetSlice(logRecordsCount)
@@ -917,7 +963,7 @@ func (m *ScopeLogs) decode() {
 	logRecordsCount = 0
 
 	// Iterate and decode the fields.
-	molecule.MessageEach(
+	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
@@ -951,6 +997,10 @@ func (m *ScopeLogs) decode() {
 			return true, nil
 		},
 	)
+	if err2 != nil {
+		return err2
+	}
+	return nil
 }
 
 var preparedScopeLogsScope = molecule.PrepareEmbeddedField(1)
@@ -962,13 +1012,17 @@ func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 		// Marshal scope
 		if m.scope != nil {
 			token := ps.BeginEmbedded()
-			m.scope.Marshal(ps)
+			if err := m.scope.Marshal(ps); err != nil {
+				return err
+			}
 			ps.EndEmbeddedPrepared(token, preparedScopeLogsScope)
 		}
 		// Marshal logRecords
 		for _, elem := range m.logRecords {
 			token := ps.BeginEmbedded()
-			elem.Marshal(ps)
+			if err := elem.Marshal(ps); err != nil {
+				return err
+			}
 			ps.EndEmbeddedPrepared(token, preparedScopeLogsLogRecords)
 		}
 		// Marshal schemaUrl
@@ -1094,7 +1148,9 @@ type InstrumentationScope struct {
 func UnmarshalInstrumentationScope(bytes []byte) (*InstrumentationScope, error) {
 	m := instrumentationScopePool.Get()
 	m.protoMessage.Bytes = bytes
-	m.decode()
+	if err := m.decode(); err != nil {
+		return nil, err
+	}
 	return m, nil
 }
 
@@ -1135,7 +1191,8 @@ func (m *InstrumentationScope) Attributes() []*KeyValue {
 	if m.protoMessage.Flags&flagInstrumentationScopeAttributesDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.attributes {
-			m.attributes[i].decode()
+			// TODO: decide how to handle decoding errors.
+			_ = m.attributes[i].decode()
 		}
 		m.protoMessage.Flags |= flagInstrumentationScopeAttributesDecoded
 	}
@@ -1194,18 +1251,21 @@ func (m *InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 	}
 }
 
-func (m *InstrumentationScope) decode() {
+func (m *InstrumentationScope) decode() error {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
-	molecule.MessageFieldNums(
+	err := molecule.MessageFieldNums(
 		buf, func(fieldNum int32) {
 			if fieldNum == 3 {
 				attributesCount++
 			}
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	// Pre-allocate slices for repeated fields.
 	m.attributes = keyValuePool.GetSlice(attributesCount)
@@ -1217,7 +1277,7 @@ func (m *InstrumentationScope) decode() {
 	attributesCount = 0
 
 	// Iterate and decode the fields.
-	molecule.MessageEach(
+	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
@@ -1256,6 +1316,10 @@ func (m *InstrumentationScope) decode() {
 			return true, nil
 		},
 	)
+	if err2 != nil {
+		return err2
+	}
+	return nil
 }
 
 var preparedInstrumentationScopeName = molecule.PrepareStringField(1)
@@ -1272,7 +1336,9 @@ func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 		// Marshal attributes
 		for _, elem := range m.attributes {
 			token := ps.BeginEmbedded()
-			elem.Marshal(ps)
+			if err := elem.Marshal(ps); err != nil {
+				return err
+			}
 			ps.EndEmbeddedPrepared(token, preparedInstrumentationScopeAttributes)
 		}
 		// Marshal droppedAttributesCount
@@ -1394,7 +1460,9 @@ type LogRecord struct {
 func UnmarshalLogRecord(bytes []byte) (*LogRecord, error) {
 	m := logRecordPool.Get()
 	m.protoMessage.Bytes = bytes
-	m.decode()
+	if err := m.decode(); err != nil {
+		return nil, err
+	}
 	return m, nil
 }
 
@@ -1448,7 +1516,8 @@ func (m *LogRecord) Attributes() []*KeyValue {
 	if m.protoMessage.Flags&flagLogRecordAttributesDecoded == 0 {
 		// Decode nested message(s).
 		for i := range m.attributes {
-			m.attributes[i].decode()
+			// TODO: decide how to handle decoding errors.
+			_ = m.attributes[i].decode()
 		}
 		m.protoMessage.Flags |= flagLogRecordAttributesDecoded
 	}
@@ -1546,18 +1615,21 @@ func (m *LogRecord) SetSpanId(v []byte) {
 	}
 }
 
-func (m *LogRecord) decode() {
+func (m *LogRecord) decode() error {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
-	molecule.MessageFieldNums(
+	err := molecule.MessageFieldNums(
 		buf, func(fieldNum int32) {
 			if fieldNum == 6 {
 				attributesCount++
 			}
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	// Pre-allocate slices for repeated fields.
 	m.attributes = keyValuePool.GetSlice(attributesCount)
@@ -1569,7 +1641,7 @@ func (m *LogRecord) decode() {
 	attributesCount = 0
 
 	// Iterate and decode the fields.
-	molecule.MessageEach(
+	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
@@ -1636,6 +1708,10 @@ func (m *LogRecord) decode() {
 			return true, nil
 		},
 	)
+	if err2 != nil {
+		return err2
+	}
+	return nil
 }
 
 var preparedLogRecordTimeUnixNano = molecule.PrepareFixed64Field(1)
@@ -1658,7 +1734,9 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 		// Marshal attributes
 		for _, elem := range m.attributes {
 			token := ps.BeginEmbedded()
-			elem.Marshal(ps)
+			if err := elem.Marshal(ps); err != nil {
+				return err
+			}
 			ps.EndEmbeddedPrepared(token, preparedLogRecordAttributes)
 		}
 		// Marshal droppedAttributesCount
@@ -1780,7 +1858,9 @@ type KeyValue struct {
 func UnmarshalKeyValue(bytes []byte) (*KeyValue, error) {
 	m := keyValuePool.Get()
 	m.protoMessage.Bytes = bytes
-	m.decode()
+	if err := m.decode(); err != nil {
+		return nil, err
+	}
 	return m, nil
 }
 
@@ -1814,11 +1894,11 @@ func (m *KeyValue) SetValue(v string) {
 	}
 }
 
-func (m *KeyValue) decode() {
+func (m *KeyValue) decode() error {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
 	// Iterate and decode the fields.
-	molecule.MessageEach(
+	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
@@ -1839,6 +1919,10 @@ func (m *KeyValue) decode() {
 			return true, nil
 		},
 	)
+	if err2 != nil {
+		return err2
+	}
+	return nil
 }
 
 var preparedKeyValueKey = molecule.PrepareStringField(1)

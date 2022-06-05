@@ -212,7 +212,9 @@ func (g *generator) oMessage(msg *Message) error {
 func Unmarshal$MessageName(bytes []byte) (*$MessageName, error) {
 	m := $messagePool.Get()
 	m.protoMessage.Bytes = bytes
-	m.decode()
+	if err := m.decode(); err != nil {
+		return nil, err
+	}
 	return m, nil
 }
 
@@ -246,7 +248,7 @@ func (g *generator) oMsgDecodeFunc(msg *Message) error {
 	g.o("")
 	g.o(
 		`
-func (m *$MessageName) decode() {
+func (m *$MessageName) decode() error {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)`,
 	)
 
@@ -257,7 +259,7 @@ func (m *$MessageName) decode() {
 	g.o(
 		`
 // Iterate and decode the fields.
-molecule.MessageEach(
+err2 := molecule.MessageEach(
 	buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 		switch fieldNum {`,
 	)
@@ -274,6 +276,10 @@ molecule.MessageEach(
 			return true, nil
 		},
 	)
+	if err2 != nil {
+		return err2
+	}
+	return nil
 }
 `,
 	)
@@ -366,7 +372,7 @@ func (g *generator) oRepeatedFieldCounts(msg *Message) {
 		g.o("%s := 0", counterName)
 	}
 
-	g.o("molecule.MessageFieldNums(")
+	g.o("err := molecule.MessageFieldNums(")
 	g.o("	buf, func(fieldNum int32) {")
 	for _, field := range fields {
 		g.setField(field)
@@ -379,6 +385,9 @@ func (g *generator) oRepeatedFieldCounts(msg *Message) {
 	}
 	g.o("	},")
 	g.o(")")
+	g.o("if err != nil {")
+	g.o("	return err")
+	g.o("}")
 
 	g.o("")
 	g.o("// Pre-allocate slices for repeated fields.")
@@ -455,11 +464,13 @@ func (g *generator) oFieldGetter(msg *Message, field *Field) error {
 		g.o("// Decode nested message(s).")
 		if field.IsRepeated() {
 			g.o("for i := range m.$fieldName {")
-			g.o("	m.$fieldName[i].decode()")
+			g.o("	// TODO: decide how to handle decoding errors.")
+			g.o("	_ = m.$fieldName[i].decode()")
 			g.o("}")
 		} else {
 			g.o("if m.$fieldName != nil {")
-			g.o("	m.$fieldName.decode()")
+			g.o("	// TODO: decide how to handle decoding errors.")
+			g.o("	_ = m.$fieldName.decode()")
 			g.o("}")
 		}
 		g.i(-1)
@@ -598,12 +609,16 @@ func (g *generator) oMarshalField(msg *Message, field *Field) {
 		if field.IsRepeated() {
 			g.o("for _, elem := range m.$fieldName {")
 			g.o("	token := ps.BeginEmbedded()")
-			g.o("	elem.Marshal(ps)")
+			g.o("	if err := elem.Marshal(ps); err != nil {")
+			g.o("		return err")
+			g.o("	}")
 			g.o("	ps.EndEmbeddedPrepared(token, %s)", embeddedFieldName(msg, field))
 		} else {
 			g.o("if m.$fieldName != nil {")
 			g.o("	token := ps.BeginEmbedded()")
-			g.o("	m.$fieldName.Marshal(ps)")
+			g.o("	if err := m.$fieldName.Marshal(ps); err != nil {")
+			g.o("		return err")
+			g.o("	}")
 			g.o("	ps.EndEmbeddedPrepared(token, %s)", embeddedFieldName(msg, field))
 		}
 		g.o("}")
