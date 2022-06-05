@@ -719,7 +719,9 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedResourceAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(preparedResourceDroppedAttributesCount, m.droppedAttributesCount)
+		ps.Uint32Prepared(
+			preparedResourceDroppedAttributesCount, m.droppedAttributesCount,
+		)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -1342,7 +1344,9 @@ func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedInstrumentationScopeAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount)
+		ps.Uint32Prepared(
+			preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount,
+		)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -1740,7 +1744,9 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedLogRecordAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount)
+		ps.Uint32Prepared(
+			preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount,
+		)
 		// Marshal flags
 		ps.Fixed32Prepared(preparedLogRecordFlags, m.flags)
 		// Marshal traceId

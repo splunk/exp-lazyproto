@@ -287,7 +287,7 @@ err2 := molecule.MessageEach(
 	return g.lastErr
 }
 
-func (g *generator) oFieldDecodePrimitive(field *Field, asType string) {
+func (g *generator) oFieldDecodePrimitive(asType string) {
 	g.o(
 		`
 v, err := value.As%s()
@@ -306,19 +306,19 @@ func (g *generator) oFieldDecode(fields []*Field) string {
 		g.o("// Decode $fieldName.")
 		switch field.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_FIXED64:
-			g.oFieldDecodePrimitive(field, "Fixed64")
+			g.oFieldDecodePrimitive("Fixed64")
 
 		case descriptor.FieldDescriptorProto_TYPE_FIXED32:
-			g.oFieldDecodePrimitive(field, "Fixed32")
+			g.oFieldDecodePrimitive("Fixed32")
 
 		case descriptor.FieldDescriptorProto_TYPE_UINT32:
-			g.oFieldDecodePrimitive(field, "Uint32")
+			g.oFieldDecodePrimitive("Uint32")
 
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			g.oFieldDecodePrimitive(field, "StringUnsafe")
+			g.oFieldDecodePrimitive("StringUnsafe")
 
 		case descriptor.FieldDescriptorProto_TYPE_BYTES:
-			g.oFieldDecodePrimitive(field, "BytesUnsafe")
+			g.oFieldDecodePrimitive("BytesUnsafe")
 
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			g.o(
@@ -431,7 +431,7 @@ func (g *generator) oFieldsAccessors(msg *Message) error {
 				g.o("// Bitmasks that indicate that the particular nested message is decoded.")
 			}
 
-			g.o("const %s = 0x%016X", g.fieldFlagName(msg, field), bitMask)
+			g.o("const %s = 0x%016X", g.fieldFlagName(), bitMask)
 			bitMask *= 2
 			firstFlag = false
 		}
@@ -439,30 +439,30 @@ func (g *generator) oFieldsAccessors(msg *Message) error {
 
 	for _, field := range msg.Fields {
 		g.setField(field)
-		if err := g.oFieldGetter(msg, field); err != nil {
+		if err := g.oFieldGetter(); err != nil {
 			return err
 		}
-		if err := g.oFieldSetter(msg, field); err != nil {
+		if err := g.oFieldSetter(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (g *generator) fieldFlagName(msg *Message, field *Field) string {
-	return fmt.Sprintf("flag%s%sDecoded", msg.GetName(), field.GetCapitalName())
+func (g *generator) fieldFlagName() string {
+	return fmt.Sprintf("flag%s%sDecoded", g.msg.GetName(), g.field.GetCapitalName())
 }
 
-func (g *generator) oFieldGetter(msg *Message, field *Field) error {
+func (g *generator) oFieldGetter() error {
 	g.o("")
-	g.o("func (m *$MessageName) $FieldName() %s {", g.convertType(field))
+	g.o("func (m *$MessageName) $FieldName() %s {", g.convertType(g.field))
 
-	if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		g.i(1)
-		g.o("if m.protoMessage.Flags&%s == 0 {", g.fieldFlagName(msg, field))
+		g.o("if m.protoMessage.Flags&%s == 0 {", g.fieldFlagName())
 		g.i(1)
 		g.o("// Decode nested message(s).")
-		if field.IsRepeated() {
+		if g.field.IsRepeated() {
 			g.o("for i := range m.$fieldName {")
 			g.o("	// TODO: decide how to handle decoding errors.")
 			g.o("	_ = m.$fieldName[i].decode()")
@@ -475,7 +475,7 @@ func (g *generator) oFieldGetter(msg *Message, field *Field) error {
 		}
 		g.i(-1)
 
-		g.o("	m.protoMessage.Flags |= %s", g.fieldFlagName(msg, field))
+		g.o("	m.protoMessage.Flags |= %s", g.fieldFlagName())
 		g.o("}")
 		g.i(-1)
 	}
@@ -488,14 +488,14 @@ func (g *generator) oFieldGetter(msg *Message, field *Field) error {
 	return g.lastErr
 }
 
-func (g *generator) oFieldSetter(msg *Message, field *Field) error {
+func (g *generator) oFieldSetter() error {
 	g.o("")
-	g.o("func (m *$MessageName) Set$FieldName(v %s) {", g.convertType(field))
+	g.o("func (m *$MessageName) Set$FieldName(v %s) {", g.convertType(g.field))
 	g.o("	m.$fieldName = v")
-	if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		g.o("")
 		g.o("	// Make sure the field's Parent points to this message.")
-		if field.IsRepeated() {
+		if g.field.IsRepeated() {
 			g.o("	for _, elem := range m.$fieldName {")
 			g.o("		elem.protoMessage.Parent = &m.protoMessage")
 			g.o("	}")
@@ -510,8 +510,10 @@ func (g *generator) oFieldSetter(msg *Message, field *Field) error {
 	g.o("	}")
 	g.o("}")
 
-	if field.IsRepeated() {
-		g.oFieldSliceMethods()
+	if g.field.IsRepeated() {
+		if err := g.oFieldSliceMethods(); err != nil {
+			return err
+		}
 	}
 
 	return g.lastErr
@@ -566,7 +568,7 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 	g.i(1)
 	for _, field := range msg.Fields {
 		g.setField(field)
-		g.oMarshalField(msg, field)
+		g.oMarshalField()
 	}
 	g.i(-1)
 	g.o("} else {")
@@ -583,48 +585,52 @@ func embeddedFieldName(msg *Message, field *Field) string {
 	return fmt.Sprintf("prepared%s%s", msg.GetName(), field.GetCapitalName())
 }
 
-func (g *generator) oMarshalPreparedField(msg *Message, field *Field, typeName string) {
+func (g *generator) oMarshalPreparedField(typeName string) {
 	g.o("ps.%sPrepared(prepared$MessageName$FieldName, m.$fieldName)", typeName)
 }
 
-func (g *generator) oMarshalField(msg *Message, field *Field) {
+func (g *generator) oMarshalField() {
 	g.o("// Marshal $fieldName")
-	switch field.GetType() {
+	switch g.field.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		g.oMarshalPreparedField(msg, field, "String")
+		g.oMarshalPreparedField("String")
 
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
-		g.oMarshalPreparedField(msg, field, "Bytes")
+		g.oMarshalPreparedField("Bytes")
 
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
-		g.oMarshalPreparedField(msg, field, "Fixed64")
+		g.oMarshalPreparedField("Fixed64")
 
 	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
-		g.oMarshalPreparedField(msg, field, "Fixed32")
+		g.oMarshalPreparedField("Fixed32")
 
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
-		g.oMarshalPreparedField(msg, field, "Uint32")
+		g.oMarshalPreparedField("Uint32")
 
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		if field.IsRepeated() {
+		if g.field.IsRepeated() {
 			g.o("for _, elem := range m.$fieldName {")
 			g.o("	token := ps.BeginEmbedded()")
 			g.o("	if err := elem.Marshal(ps); err != nil {")
 			g.o("		return err")
 			g.o("	}")
-			g.o("	ps.EndEmbeddedPrepared(token, %s)", embeddedFieldName(msg, field))
+			g.o(
+				"	ps.EndEmbeddedPrepared(token, %s)", embeddedFieldName(g.msg, g.field),
+			)
 		} else {
 			g.o("if m.$fieldName != nil {")
 			g.o("	token := ps.BeginEmbedded()")
 			g.o("	if err := m.$fieldName.Marshal(ps); err != nil {")
 			g.o("		return err")
 			g.o("	}")
-			g.o("	ps.EndEmbeddedPrepared(token, %s)", embeddedFieldName(msg, field))
+			g.o(
+				"	ps.EndEmbeddedPrepared(token, %s)", embeddedFieldName(g.msg, g.field),
+			)
 		}
 		g.o("}")
 
 	default:
-		g.lastErr = fmt.Errorf("unsupported field type %v", field.GetType())
+		g.lastErr = fmt.Errorf("unsupported field type %v", g.field.GetType())
 	}
 }
 
