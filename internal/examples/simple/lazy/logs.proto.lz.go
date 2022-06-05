@@ -1387,6 +1387,8 @@ type LogRecord struct {
 	attributes             []*KeyValue
 	droppedAttributesCount uint32
 	flags                  uint32
+	traceId                []byte
+	spanId                 []byte
 }
 
 func NewLogRecord(bytes []byte) *LogRecord {
@@ -1518,6 +1520,32 @@ func (m *LogRecord) SetFlags(v uint32) {
 	}
 }
 
+func (m *LogRecord) TraceId() []byte {
+	return m.traceId
+}
+
+func (m *LogRecord) SetTraceId(v []byte) {
+	m.traceId = v
+
+	// Mark this message modified, if not already.
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *LogRecord) SpanId() []byte {
+	return m.spanId
+}
+
+func (m *LogRecord) SetSpanId(v []byte) {
+	m.spanId = v
+
+	// Mark this message modified, if not already.
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
 func (m *LogRecord) decode() {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
@@ -1590,6 +1618,20 @@ func (m *LogRecord) decode() {
 					return false, err
 				}
 				m.flags = v
+			case 9:
+				// Decode traceId.
+				v, err := value.AsBytesUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.traceId = v
+			case 10:
+				// Decode spanId.
+				v, err := value.AsBytesUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.spanId = v
 			}
 			return true, nil
 		},
@@ -1602,6 +1644,8 @@ var preparedLogRecordSeverityText = molecule.PrepareStringField(3)
 var preparedLogRecordAttributes = molecule.PrepareEmbeddedField(6)
 var preparedLogRecordDroppedAttributesCount = molecule.PrepareUint32Field(7)
 var preparedLogRecordFlags = molecule.PrepareFixed32Field(8)
+var preparedLogRecordTraceId = molecule.PrepareBytesField(9)
+var preparedLogRecordSpanId = molecule.PrepareBytesField(10)
 
 func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
@@ -1621,6 +1665,10 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 		ps.Uint32Prepared(preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount)
 		// Marshal flags
 		ps.Fixed32Prepared(preparedLogRecordFlags, m.flags)
+		// Marshal traceId
+		ps.BytesPrepared(preparedLogRecordTraceId, m.traceId)
+		// Marshal spanId
+		ps.BytesPrepared(preparedLogRecordSpanId, m.spanId)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)

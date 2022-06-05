@@ -168,8 +168,12 @@ func (g *generator) convertType(field *Field) string {
 		s += "uint32"
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		s += "string"
-	default:
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		s += "[]byte"
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		s += "*" + field.GetMessageType().GetName()
+	default:
+		panic(fmt.Sprintf("Unsupported field type %v", field.GetType()))
 	}
 	return s
 }
@@ -306,6 +310,9 @@ func (g *generator) oFieldDecode(fields []*Field) string {
 
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
 			g.oFieldDecodePrimitive(field, "StringUnsafe")
+
+		case descriptor.FieldDescriptorProto_TYPE_BYTES:
+			g.oFieldDecodePrimitive(field, "BytesUnsafe")
 
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			g.o(
@@ -575,6 +582,9 @@ func (g *generator) oMarshalField(msg *Message, field *Field) {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		g.oMarshalPreparedField(msg, field, "String")
 
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		g.oMarshalPreparedField(msg, field, "Bytes")
+
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 		g.oMarshalPreparedField(msg, field, "Fixed64")
 
@@ -607,6 +617,9 @@ func (g *generator) oPrepareMarshalField(msg *Message, field *Field) {
 	switch field.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		g.o(g.preparedFieldDecl(msg, field, "String"))
+
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		g.o(g.preparedFieldDecl(msg, field, "Bytes"))
 
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 		g.o(g.preparedFieldDecl(msg, field, "Fixed64"))

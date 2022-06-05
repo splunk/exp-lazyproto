@@ -49,6 +49,8 @@ message LogRecord {
   repeated KeyValue attributes = 6;
   uint32 dropped_attributes_count = 7;
   fixed32 flags = 8;
+  bytes trace_id = 9;
+  bytes span_id = 10;
 }
 
 message KeyValue {
