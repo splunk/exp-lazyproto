@@ -173,7 +173,7 @@ func (g *generator) convertType(field *Field) string {
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		s += "*" + field.GetMessageType().GetName()
 	default:
-		panic(fmt.Sprintf("Unsupported field type %v", field.GetType()))
+		g.lastErr = fmt.Errorf("unsupported field type %v", field.GetType())
 	}
 	return s
 }
@@ -343,7 +343,7 @@ m.$fieldName.protoMessage.Bytes = v`,
 			}
 
 		default:
-			panic(fmt.Sprintf("Unsupported field type %v", field.GetType()))
+			g.lastErr = fmt.Errorf("unsupported field type %v", field.GetType())
 		}
 		g.i(-1)
 	}
@@ -609,7 +609,7 @@ func (g *generator) oMarshalField(msg *Message, field *Field) {
 		g.o("}")
 
 	default:
-		panic(fmt.Sprintf("Unsupported field type %v", field.GetType()))
+		g.lastErr = fmt.Errorf("unsupported field type %v", field.GetType())
 	}
 }
 
@@ -634,7 +634,7 @@ func (g *generator) oPrepareMarshalField(msg *Message, field *Field) {
 		g.o(g.preparedFieldDecl(msg, field, "Embedded"))
 
 	default:
-		panic(fmt.Sprintf("Unsupported field type %v", field.GetType()))
+		g.lastErr = fmt.Errorf("unsupported field type %v", field.GetType())
 	}
 }
 
