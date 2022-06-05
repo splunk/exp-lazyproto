@@ -74,6 +74,7 @@ type ResourceLogs struct {
 	Resource *Resource `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
 	// List of ScopeLogs
 	ScopeLogs []*ScopeLogs `protobuf:"bytes,2,rep,name=scope_logs,json=scopeLogs,proto3" json:"scope_logs,omitempty"`
+	SchemaUrl string       `protobuf:"bytes,3,opt,name=schema_url,json=schemaUrl,proto3" json:"schema_url,omitempty"`
 }
 
 func (m *ResourceLogs) Reset()         { *m = ResourceLogs{} }
@@ -121,6 +122,13 @@ func (m *ResourceLogs) GetScopeLogs() []*ScopeLogs {
 		return m.ScopeLogs
 	}
 	return nil
+}
+
+func (m *ResourceLogs) GetSchemaUrl() string {
+	if m != nil {
+		return m.SchemaUrl
+	}
+	return ""
 }
 
 type Resource struct {
@@ -177,8 +185,11 @@ func (m *Resource) GetDroppedAttributesCount() uint32 {
 
 // A collection of Logs produced by a Scope.
 type ScopeLogs struct {
+	Scope *InstrumentationScope `protobuf:"bytes,1,opt,name=scope,proto3" json:"scope,omitempty"`
 	// A list of log records.
-	LogRecords []*LogRecord `protobuf:"bytes,1,rep,name=log_records,json=logRecords,proto3" json:"log_records,omitempty"`
+	LogRecords []*LogRecord `protobuf:"bytes,2,rep,name=log_records,json=logRecords,proto3" json:"log_records,omitempty"`
+	// This schema_url applies to all logs in the "logs" field.
+	SchemaUrl string `protobuf:"bytes,3,opt,name=schema_url,json=schemaUrl,proto3" json:"schema_url,omitempty"`
 }
 
 func (m *ScopeLogs) Reset()         { *m = ScopeLogs{} }
@@ -214,11 +225,93 @@ func (m *ScopeLogs) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ScopeLogs proto.InternalMessageInfo
 
+func (m *ScopeLogs) GetScope() *InstrumentationScope {
+	if m != nil {
+		return m.Scope
+	}
+	return nil
+}
+
 func (m *ScopeLogs) GetLogRecords() []*LogRecord {
 	if m != nil {
 		return m.LogRecords
 	}
 	return nil
+}
+
+func (m *ScopeLogs) GetSchemaUrl() string {
+	if m != nil {
+		return m.SchemaUrl
+	}
+	return ""
+}
+
+type InstrumentationScope struct {
+	Name                   string      `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Version                string      `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	Attributes             []*KeyValue `protobuf:"bytes,3,rep,name=attributes,proto3" json:"attributes,omitempty"`
+	DroppedAttributesCount uint32      `protobuf:"varint,4,opt,name=dropped_attributes_count,json=droppedAttributesCount,proto3" json:"dropped_attributes_count,omitempty"`
+}
+
+func (m *InstrumentationScope) Reset()         { *m = InstrumentationScope{} }
+func (m *InstrumentationScope) String() string { return proto.CompactTextString(m) }
+func (*InstrumentationScope) ProtoMessage()    {}
+func (*InstrumentationScope) Descriptor() ([]byte, []int) {
+	return fileDescriptor_782e6d65c19305b4, []int{4}
+}
+func (m *InstrumentationScope) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *InstrumentationScope) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_InstrumentationScope.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *InstrumentationScope) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InstrumentationScope.Merge(m, src)
+}
+func (m *InstrumentationScope) XXX_Size() int {
+	return m.Size()
+}
+func (m *InstrumentationScope) XXX_DiscardUnknown() {
+	xxx_messageInfo_InstrumentationScope.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_InstrumentationScope proto.InternalMessageInfo
+
+func (m *InstrumentationScope) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *InstrumentationScope) GetVersion() string {
+	if m != nil {
+		return m.Version
+	}
+	return ""
+}
+
+func (m *InstrumentationScope) GetAttributes() []*KeyValue {
+	if m != nil {
+		return m.Attributes
+	}
+	return nil
+}
+
+func (m *InstrumentationScope) GetDroppedAttributesCount() uint32 {
+	if m != nil {
+		return m.DroppedAttributesCount
+	}
+	return 0
 }
 
 type LogRecord struct {
@@ -231,7 +324,7 @@ func (m *LogRecord) Reset()         { *m = LogRecord{} }
 func (m *LogRecord) String() string { return proto.CompactTextString(m) }
 func (*LogRecord) ProtoMessage()    {}
 func (*LogRecord) Descriptor() ([]byte, []int) {
-	return fileDescriptor_782e6d65c19305b4, []int{4}
+	return fileDescriptor_782e6d65c19305b4, []int{5}
 }
 func (m *LogRecord) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -290,7 +383,7 @@ func (m *KeyValue) Reset()         { *m = KeyValue{} }
 func (m *KeyValue) String() string { return proto.CompactTextString(m) }
 func (*KeyValue) ProtoMessage()    {}
 func (*KeyValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_782e6d65c19305b4, []int{5}
+	return fileDescriptor_782e6d65c19305b4, []int{6}
 }
 func (m *KeyValue) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -338,6 +431,7 @@ func init() {
 	proto.RegisterType((*ResourceLogs)(nil), "simple.ResourceLogs")
 	proto.RegisterType((*Resource)(nil), "simple.Resource")
 	proto.RegisterType((*ScopeLogs)(nil), "simple.ScopeLogs")
+	proto.RegisterType((*InstrumentationScope)(nil), "simple.InstrumentationScope")
 	proto.RegisterType((*LogRecord)(nil), "simple.LogRecord")
 	proto.RegisterType((*KeyValue)(nil), "simple.KeyValue")
 }
@@ -345,30 +439,35 @@ func init() {
 func init() { proto.RegisterFile("logs.proto", fileDescriptor_782e6d65c19305b4) }
 
 var fileDescriptor_782e6d65c19305b4 = []byte{
-	// 360 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x92, 0xbf, 0x4e, 0xf3, 0x30,
-	0x14, 0xc5, 0xeb, 0x56, 0x5f, 0x95, 0xdc, 0xb6, 0x9f, 0x8a, 0x55, 0xa1, 0x4c, 0x51, 0x15, 0x31,
-	0x74, 0x40, 0x05, 0x85, 0x05, 0x26, 0xc4, 0xbf, 0x89, 0x8a, 0xc1, 0x08, 0x06, 0x96, 0x28, 0x4d,
-	0xad, 0x28, 0x22, 0xb5, 0x23, 0xdb, 0xa9, 0xda, 0xb7, 0xe0, 0x05, 0x78, 0x1f, 0xc6, 0x8e, 0x8c,
-	0xa8, 0x7d, 0x11, 0x64, 0x37, 0x09, 0x51, 0x07, 0x16, 0xb6, 0x6b, 0xff, 0x8e, 0xef, 0x39, 0xf7,
-	0x26, 0x00, 0x29, 0x8f, 0xe5, 0x38, 0x13, 0x5c, 0x71, 0xdc, 0x96, 0xc9, 0x3c, 0x4b, 0xa9, 0x77,
-	0x07, 0xd6, 0x84, 0xc7, 0xf2, 0x36, 0x54, 0x21, 0xbe, 0x80, 0x9e, 0xa0, 0x92, 0xe7, 0x22, 0xa2,
-	0x81, 0x96, 0x3a, 0x68, 0xd8, 0x1a, 0x75, 0xfc, 0xc1, 0x78, 0xa7, 0x1d, 0x93, 0x02, 0xea, 0x07,
-	0xa4, 0x2b, 0x6a, 0x27, 0x8f, 0x41, 0xb7, 0x4e, 0xf1, 0x31, 0x58, 0x25, 0x77, 0xd0, 0x10, 0x8d,
-	0x3a, 0x7e, 0x7f, 0xbf, 0x0b, 0xa9, 0x14, 0xf8, 0x14, 0x40, 0x46, 0x3c, 0x2b, 0x5c, 0x9b, 0xc6,
-	0xf5, 0xa0, 0xd4, 0x3f, 0x6a, 0x62, 0x2c, 0x6d, 0x59, 0x96, 0xde, 0x02, 0x2c, 0x52, 0x7b, 0x1d,
-	0x2a, 0x25, 0x92, 0x69, 0xae, 0x68, 0x99, 0xb9, 0x72, 0xbb, 0xa7, 0xab, 0xe7, 0x30, 0xcd, 0x29,
-	0xa9, 0x69, 0xf0, 0x39, 0x38, 0x33, 0xc1, 0xb3, 0x8c, 0xce, 0x82, 0x9f, 0xdb, 0x20, 0xe2, 0x39,
-	0x53, 0x4e, 0x73, 0x88, 0x46, 0x3d, 0x72, 0x58, 0xf0, 0xab, 0x0a, 0xdf, 0x68, 0xea, 0x5d, 0x82,
-	0x5d, 0xe5, 0xc1, 0x3e, 0x74, 0x52, 0x1e, 0x07, 0x82, 0x46, 0x5c, 0xcc, 0x4a, 0xe7, 0x2a, 0xf7,
-	0x84, 0xc7, 0xc4, 0x10, 0xa2, 0xf7, 0xbe, 0x2b, 0xa5, 0xf7, 0x8e, 0xc0, 0xae, 0x08, 0x3e, 0x82,
-	0xff, 0x2a, 0x99, 0xd3, 0x20, 0x67, 0xc9, 0x32, 0x60, 0x21, 0xe3, 0x66, 0x59, 0x6d, 0xd2, 0xd5,
-	0xb7, 0x4f, 0x2c, 0x59, 0x3e, 0x84, 0x8c, 0xef, 0x0d, 0xd8, 0xfc, 0xe3, 0x80, 0xad, 0x5f, 0x07,
-	0xf4, 0xc1, 0x2a, 0x3b, 0xe2, 0x3e, 0xb4, 0x5e, 0xe9, 0xca, 0x44, 0xb2, 0x89, 0x2e, 0xf1, 0x00,
-	0xfe, 0x2d, 0x34, 0x32, 0x5b, 0xb2, 0xc9, 0xee, 0x70, 0xed, 0x7d, 0x6c, 0x5c, 0xb4, 0xde, 0xb8,
-	0xe8, 0x6b, 0xe3, 0xa2, 0xb7, 0xad, 0xdb, 0x58, 0x6f, 0xdd, 0xc6, 0xe7, 0xd6, 0x6d, 0xbc, 0x58,
-	0x31, 0x65, 0x27, 0xfa, 0xa3, 0x4e, 0xdb, 0xe6, 0xb7, 0x3b, 0xfb, 0x0e, 0x00, 0x00, 0xff, 0xff,
-	0xa4, 0xb1, 0xa4, 0x0f, 0x84, 0x02, 0x00, 0x00,
+	// 448 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x53, 0xbd, 0x6e, 0xd4, 0x40,
+	0x10, 0xbe, 0x3d, 0x27, 0x87, 0x3d, 0x77, 0x41, 0x61, 0x75, 0x42, 0x2e, 0xc0, 0xb2, 0x2c, 0x0a,
+	0x17, 0xe8, 0x40, 0xa6, 0x81, 0x92, 0xbf, 0x02, 0x11, 0x51, 0x2c, 0x0a, 0x05, 0x8d, 0xb5, 0xf1,
+	0xad, 0x8c, 0x85, 0xbd, 0x6b, 0xed, 0xae, 0x4f, 0xc9, 0x43, 0x20, 0x21, 0x7a, 0xde, 0x81, 0xc7,
+	0xa0, 0x4c, 0x49, 0x89, 0xee, 0x5e, 0x04, 0xed, 0xfa, 0x07, 0xeb, 0x40, 0x49, 0x91, 0x6e, 0x66,
+	0xbe, 0x6f, 0x66, 0xbe, 0xf9, 0xec, 0x05, 0x28, 0x45, 0xae, 0x56, 0xb5, 0x14, 0x5a, 0xe0, 0x99,
+	0x2a, 0xaa, 0xba, 0x64, 0xd1, 0x6b, 0x70, 0x4f, 0x44, 0xae, 0x5e, 0x51, 0x4d, 0xf1, 0x33, 0x38,
+	0x92, 0x4c, 0x89, 0x46, 0x66, 0x2c, 0x35, 0x54, 0x1f, 0x85, 0x4e, 0x3c, 0x4f, 0x96, 0xab, 0x96,
+	0xbb, 0x22, 0x1d, 0x68, 0x1a, 0xc8, 0x42, 0x8e, 0xb2, 0xe8, 0x0b, 0x82, 0xc5, 0x18, 0xc6, 0x0f,
+	0xc1, 0xed, 0x09, 0x3e, 0x0a, 0x51, 0x3c, 0x4f, 0x8e, 0xf7, 0xc7, 0x90, 0x81, 0x81, 0x1f, 0x03,
+	0xa8, 0x4c, 0xd4, 0xdd, 0xda, 0xa9, 0x5d, 0x7b, 0xa7, 0xe7, 0xbf, 0x37, 0x88, 0xdd, 0xe9, 0xa9,
+	0x3e, 0xc4, 0xf7, 0x4d, 0xc7, 0x27, 0x56, 0xd1, 0xb4, 0x91, 0xa5, 0xef, 0x84, 0x28, 0xf6, 0x0c,
+	0x6c, 0x2a, 0xa7, 0xb2, 0x8c, 0x36, 0xe0, 0x92, 0xd1, 0x70, 0xaa, 0xb5, 0x2c, 0xce, 0x1a, 0xcd,
+	0xfa, 0x9b, 0x06, 0x31, 0x6f, 0xd9, 0xc5, 0x07, 0x5a, 0x36, 0x8c, 0x8c, 0x38, 0xf8, 0x29, 0xf8,
+	0x6b, 0x29, 0xea, 0x9a, 0xad, 0xd3, 0xbf, 0xd5, 0x34, 0x13, 0x0d, 0xd7, 0xfe, 0x34, 0x44, 0xf1,
+	0x11, 0xb9, 0xdb, 0xe1, 0xcf, 0x07, 0xf8, 0xa5, 0x41, 0xa3, 0x6f, 0x08, 0xbc, 0x41, 0x2f, 0x4e,
+	0xe0, 0xd0, 0x2a, 0xee, 0x1c, 0xb8, 0xd7, 0x2f, 0x7d, 0xc3, 0x95, 0x96, 0x4d, 0xc5, 0xb8, 0xa6,
+	0xba, 0x10, 0xdc, 0x36, 0x90, 0x96, 0x8a, 0x13, 0x98, 0x97, 0x22, 0x4f, 0x25, 0xcb, 0x84, 0x5c,
+	0xff, 0xe3, 0xc5, 0x89, 0xc8, 0x89, 0x45, 0x88, 0xf9, 0x98, 0x6d, 0x78, 0xad, 0x19, 0x3f, 0x10,
+	0x2c, 0xff, 0xb7, 0x12, 0x63, 0x38, 0xe0, 0xb4, 0x6a, 0xe5, 0x79, 0xc4, 0xc6, 0xd8, 0x87, 0x5b,
+	0x1b, 0x26, 0x55, 0x21, 0xb8, 0x3d, 0xd5, 0x23, 0x7d, 0xba, 0xe7, 0xa3, 0x73, 0x43, 0x1f, 0x0f,
+	0xae, 0xf4, 0xf1, 0x3b, 0x02, 0x6f, 0xb8, 0x15, 0x3f, 0x80, 0xdb, 0xba, 0xa8, 0x58, 0xda, 0xf0,
+	0xe2, 0x3c, 0xe5, 0x94, 0x0b, 0xab, 0x78, 0x46, 0x16, 0xa6, 0x7a, 0xca, 0x8b, 0xf3, 0x77, 0x94,
+	0x8b, 0x3d, 0x7d, 0xd3, 0x1b, 0xea, 0x73, 0xae, 0xd4, 0x97, 0x80, 0xdb, 0x4f, 0xc4, 0xc7, 0xe0,
+	0x7c, 0x66, 0x17, 0x9d, 0x89, 0x26, 0xc4, 0x4b, 0x38, 0xdc, 0x18, 0xa8, 0x73, 0xb0, 0x4d, 0x5e,
+	0x44, 0x3f, 0xb7, 0x01, 0xba, 0xdc, 0x06, 0xe8, 0xf7, 0x36, 0x40, 0x5f, 0x77, 0xc1, 0xe4, 0x72,
+	0x17, 0x4c, 0x7e, 0xed, 0x82, 0xc9, 0x47, 0x37, 0x67, 0xfc, 0x91, 0xf9, 0xf5, 0xcf, 0x66, 0xf6,
+	0x75, 0x3e, 0xf9, 0x13, 0x00, 0x00, 0xff, 0xff, 0x24, 0x0a, 0x62, 0x34, 0xab, 0x03, 0x00, 0x00,
 }
 
 func (m *LogsData) Marshal() (dAtA []byte, err error) {
@@ -428,6 +527,13 @@ func (m *ResourceLogs) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.SchemaUrl) > 0 {
+		i -= len(m.SchemaUrl)
+		copy(dAtA[i:], m.SchemaUrl)
+		i = encodeVarintLogs(dAtA, i, uint64(len(m.SchemaUrl)))
+		i--
+		dAtA[i] = 0x1a
+	}
 	if len(m.ScopeLogs) > 0 {
 		for iNdEx := len(m.ScopeLogs) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -519,6 +625,13 @@ func (m *ScopeLogs) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.SchemaUrl) > 0 {
+		i -= len(m.SchemaUrl)
+		copy(dAtA[i:], m.SchemaUrl)
+		i = encodeVarintLogs(dAtA, i, uint64(len(m.SchemaUrl)))
+		i--
+		dAtA[i] = 0x1a
+	}
 	if len(m.LogRecords) > 0 {
 		for iNdEx := len(m.LogRecords) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -530,8 +643,76 @@ func (m *ScopeLogs) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintLogs(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0xa
+			dAtA[i] = 0x12
 		}
+	}
+	if m.Scope != nil {
+		{
+			size, err := m.Scope.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintLogs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *InstrumentationScope) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *InstrumentationScope) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *InstrumentationScope) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.DroppedAttributesCount != 0 {
+		i = encodeVarintLogs(dAtA, i, uint64(m.DroppedAttributesCount))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.Attributes) > 0 {
+		for iNdEx := len(m.Attributes) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Attributes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintLogs(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.Version) > 0 {
+		i -= len(m.Version)
+		copy(dAtA[i:], m.Version)
+		i = encodeVarintLogs(dAtA, i, uint64(len(m.Version)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintLogs(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -663,6 +844,10 @@ func (m *ResourceLogs) Size() (n int) {
 			n += 1 + l + sovLogs(uint64(l))
 		}
 	}
+	l = len(m.SchemaUrl)
+	if l > 0 {
+		n += 1 + l + sovLogs(uint64(l))
+	}
 	return n
 }
 
@@ -690,11 +875,45 @@ func (m *ScopeLogs) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.Scope != nil {
+		l = m.Scope.Size()
+		n += 1 + l + sovLogs(uint64(l))
+	}
 	if len(m.LogRecords) > 0 {
 		for _, e := range m.LogRecords {
 			l = e.Size()
 			n += 1 + l + sovLogs(uint64(l))
 		}
+	}
+	l = len(m.SchemaUrl)
+	if l > 0 {
+		n += 1 + l + sovLogs(uint64(l))
+	}
+	return n
+}
+
+func (m *InstrumentationScope) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovLogs(uint64(l))
+	}
+	l = len(m.Version)
+	if l > 0 {
+		n += 1 + l + sovLogs(uint64(l))
+	}
+	if len(m.Attributes) > 0 {
+		for _, e := range m.Attributes {
+			l = e.Size()
+			n += 1 + l + sovLogs(uint64(l))
+		}
+	}
+	if m.DroppedAttributesCount != 0 {
+		n += 1 + sovLogs(uint64(m.DroppedAttributesCount))
 	}
 	return n
 }
@@ -926,6 +1145,38 @@ func (m *ResourceLogs) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaUrl", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLogs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthLogs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthLogs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SchemaUrl = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipLogs(dAtA[iNdEx:])
@@ -1081,6 +1332,42 @@ func (m *ScopeLogs) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scope", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLogs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthLogs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthLogs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Scope == nil {
+				m.Scope = &InstrumentationScope{}
+			}
+			if err := m.Scope.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field LogRecords", wireType)
 			}
 			var msglen int
@@ -1113,6 +1400,205 @@ func (m *ScopeLogs) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaUrl", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLogs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthLogs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthLogs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SchemaUrl = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipLogs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthLogs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *InstrumentationScope) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowLogs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: InstrumentationScope: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: InstrumentationScope: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLogs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthLogs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthLogs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLogs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthLogs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthLogs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Version = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLogs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthLogs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthLogs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Attributes = append(m.Attributes, &KeyValue{})
+			if err := m.Attributes[len(m.Attributes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DroppedAttributesCount", wireType)
+			}
+			m.DroppedAttributesCount = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLogs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DroppedAttributesCount |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipLogs(dAtA[iNdEx:])

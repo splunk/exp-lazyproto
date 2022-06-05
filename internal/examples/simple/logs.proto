@@ -15,6 +15,8 @@ message ResourceLogs {
   Resource resource = 1;
   // List of ScopeLogs
   repeated ScopeLogs scope_logs = 2;
+
+  string schema_url = 3;
 }
 
 message Resource {
@@ -24,8 +26,20 @@ message Resource {
 
 // A collection of Logs produced by a Scope.
 message ScopeLogs {
+  InstrumentationScope scope = 1;
+
   // A list of log records.
-  repeated LogRecord log_records = 1;
+  repeated LogRecord log_records = 2;
+
+  // This schema_url applies to all logs in the "logs" field.
+  string schema_url = 3;
+}
+
+message InstrumentationScope {
+  string name = 1;
+  string version = 2;
+  repeated KeyValue attributes = 3;
+  uint32 dropped_attributes_count = 4;
 }
 
 message LogRecord {

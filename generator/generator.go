@@ -441,7 +441,9 @@ func (g *generator) oFieldGetter(msg *Message, field *Field) error {
 			g.o("	m.$fieldName[i].decode()")
 			g.o("}")
 		} else {
-			g.o("m.$fieldName.decode()")
+			g.o("if m.$fieldName != nil {")
+			g.o("	m.$fieldName.decode()")
+			g.o("}")
 		}
 		g.i(-1)
 

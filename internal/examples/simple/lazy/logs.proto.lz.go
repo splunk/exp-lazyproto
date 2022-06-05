@@ -210,6 +210,7 @@ type ResourceLogs struct {
 	resource *Resource
 	// List of ScopeLogs
 	scopeLogs []*ScopeLogs
+	schemaUrl string
 }
 
 func NewResourceLogs(bytes []byte) *ResourceLogs {
@@ -230,7 +231,9 @@ const flagResourceLogsScopeLogsDecoded = 0x0000000000000004
 func (m *ResourceLogs) Resource() *Resource {
 	if m.protoMessage.Flags&flagResourceLogsResourceDecoded == 0 {
 		// Decode nested message(s).
-		m.resource.decode()
+		if m.resource != nil {
+			m.resource.decode()
+		}
 		m.protoMessage.Flags |= flagResourceLogsResourceDecoded
 	}
 	return m.resource
@@ -256,6 +259,17 @@ func (m *ResourceLogs) ScopeLogs() []*ScopeLogs {
 
 func (m *ResourceLogs) SetScopeLogs(v []*ScopeLogs) {
 	m.scopeLogs = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *ResourceLogs) SchemaUrl() string {
+	return m.schemaUrl
+}
+
+func (m *ResourceLogs) SetSchemaUrl(v string) {
+	m.schemaUrl = v
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -307,6 +321,13 @@ func (m *ResourceLogs) decode() {
 				scopeLogsCount++
 				elem.protoMessage.Parent = &m.protoMessage
 				elem.protoMessage.Bytes = v
+			case 3:
+				// Decode schemaUrl.
+				v, err := value.AsStringUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.schemaUrl = v
 			}
 			return true, nil
 		},
@@ -315,6 +336,7 @@ func (m *ResourceLogs) decode() {
 
 var preparedResourceLogsResource = molecule.PrepareEmbeddedField(1)
 var preparedResourceLogsScopeLogs = molecule.PrepareEmbeddedField(2)
+var preparedResourceLogsSchemaUrl = molecule.PrepareStringField(3)
 
 func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
@@ -330,6 +352,8 @@ func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 			elem.Marshal(ps)
 			ps.EndEmbeddedPrepared(token, preparedResourceLogsScopeLogs)
 		}
+		// Marshal schemaUrl
+		ps.StringPrepared(preparedResourceLogsSchemaUrl, m.schemaUrl)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -659,8 +683,11 @@ func (p *resourcePoolType) Release(elem *Resource) {
 // A collection of Logs produced by a Scope.
 type ScopeLogs struct {
 	protoMessage lazyproto.ProtoMessage
+	scope        *InstrumentationScope
 	// A list of log records.
 	logRecords []*LogRecord
+	// This schema_url applies to all logs in the "logs" field.
+	schemaUrl string
 }
 
 func NewScopeLogs(bytes []byte) *ScopeLogs {
@@ -675,7 +702,26 @@ func (m *ScopeLogs) Free() {
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagScopeLogsLogRecordsDecoded = 0x0000000000000002
+const flagScopeLogsScopeDecoded = 0x0000000000000002
+const flagScopeLogsLogRecordsDecoded = 0x0000000000000004
+
+func (m *ScopeLogs) Scope() *InstrumentationScope {
+	if m.protoMessage.Flags&flagScopeLogsScopeDecoded == 0 {
+		// Decode nested message(s).
+		if m.scope != nil {
+			m.scope.decode()
+		}
+		m.protoMessage.Flags |= flagScopeLogsScopeDecoded
+	}
+	return m.scope
+}
+
+func (m *ScopeLogs) SetScope(v *InstrumentationScope) {
+	m.scope = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
 
 func (m *ScopeLogs) LogRecords() []*LogRecord {
 	if m.protoMessage.Flags&flagScopeLogsLogRecordsDecoded == 0 {
@@ -695,6 +741,17 @@ func (m *ScopeLogs) SetLogRecords(v []*LogRecord) {
 	}
 }
 
+func (m *ScopeLogs) SchemaUrl() string {
+	return m.schemaUrl
+}
+
+func (m *ScopeLogs) SetSchemaUrl(v string) {
+	m.schemaUrl = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
 func (m *ScopeLogs) decode() {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)
 
@@ -702,7 +759,7 @@ func (m *ScopeLogs) decode() {
 	logRecordsCount := 0
 	molecule.MessageFieldNums(
 		buf, func(fieldNum int32) {
-			if fieldNum == 1 {
+			if fieldNum == 2 {
 				logRecordsCount++
 			}
 		},
@@ -722,6 +779,15 @@ func (m *ScopeLogs) decode() {
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
+				// Decode scope.
+				v, err := value.AsBytesUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.scope = instrumentationScopePool.Get()
+				m.scope.protoMessage.Parent = &m.protoMessage
+				m.scope.protoMessage.Bytes = v
+			case 2:
 				// Decode logRecords.
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
@@ -732,22 +798,39 @@ func (m *ScopeLogs) decode() {
 				logRecordsCount++
 				elem.protoMessage.Parent = &m.protoMessage
 				elem.protoMessage.Bytes = v
+			case 3:
+				// Decode schemaUrl.
+				v, err := value.AsStringUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.schemaUrl = v
 			}
 			return true, nil
 		},
 	)
 }
 
-var preparedScopeLogsLogRecords = molecule.PrepareEmbeddedField(1)
+var preparedScopeLogsScope = molecule.PrepareEmbeddedField(1)
+var preparedScopeLogsLogRecords = molecule.PrepareEmbeddedField(2)
+var preparedScopeLogsSchemaUrl = molecule.PrepareStringField(3)
 
 func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+		// Marshal scope
+		if m.scope != nil {
+			token := ps.BeginEmbedded()
+			m.scope.Marshal(ps)
+			ps.EndEmbeddedPrepared(token, preparedScopeLogsScope)
+		}
 		// Marshal logRecords
 		for _, elem := range m.logRecords {
 			token := ps.BeginEmbedded()
 			elem.Marshal(ps)
 			ps.EndEmbeddedPrepared(token, preparedScopeLogsLogRecords)
 		}
+		// Marshal schemaUrl
+		ps.StringPrepared(preparedScopeLogsSchemaUrl, m.schemaUrl)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -819,6 +902,10 @@ func (p *scopeLogsPoolType) GetSlice(count int) []*ScopeLogs {
 // ReleaseSlice releases a slice of elements back to the pool.
 func (p *scopeLogsPoolType) ReleaseSlice(slice []*ScopeLogs) {
 	for _, elem := range slice {
+		// Release nested scope recursively to their pool.
+		if elem.scope != nil {
+			instrumentationScopePool.Release(elem.scope)
+		}
 		// Release nested logRecords recursively to their pool.
 		logRecordPool.ReleaseSlice(elem.logRecords)
 
@@ -835,11 +922,275 @@ func (p *scopeLogsPoolType) ReleaseSlice(slice []*ScopeLogs) {
 
 // Release an element back to the pool.
 func (p *scopeLogsPoolType) Release(elem *ScopeLogs) {
+	// Release nested scope recursively to their pool.
+	if elem.scope != nil {
+		instrumentationScopePool.Release(elem.scope)
+	}
 	// Release nested logRecords recursively to their pool.
 	logRecordPool.ReleaseSlice(elem.logRecords)
 
 	// Zero-initialize the released element.
 	*elem = ScopeLogs{}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, elem)
+}
+
+// ====================== Generated for message InstrumentationScope ======================
+
+type InstrumentationScope struct {
+	protoMessage           lazyproto.ProtoMessage
+	name                   string
+	version                string
+	attributes             []*KeyValue
+	droppedAttributesCount uint32
+}
+
+func NewInstrumentationScope(bytes []byte) *InstrumentationScope {
+	m := instrumentationScopePool.Get()
+	m.protoMessage.Bytes = bytes
+	m.decode()
+	return m
+}
+
+func (m *InstrumentationScope) Free() {
+	instrumentationScopePool.Release(m)
+}
+
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagInstrumentationScopeAttributesDecoded = 0x0000000000000002
+
+func (m *InstrumentationScope) Name() string {
+	return m.name
+}
+
+func (m *InstrumentationScope) SetName(v string) {
+	m.name = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *InstrumentationScope) Version() string {
+	return m.version
+}
+
+func (m *InstrumentationScope) SetVersion(v string) {
+	m.version = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *InstrumentationScope) Attributes() []*KeyValue {
+	if m.protoMessage.Flags&flagInstrumentationScopeAttributesDecoded == 0 {
+		// Decode nested message(s).
+		for i := range m.attributes {
+			m.attributes[i].decode()
+		}
+		m.protoMessage.Flags |= flagInstrumentationScopeAttributesDecoded
+	}
+	return m.attributes
+}
+
+func (m *InstrumentationScope) SetAttributes(v []*KeyValue) {
+	m.attributes = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *InstrumentationScope) DroppedAttributesCount() uint32 {
+	return m.droppedAttributesCount
+}
+
+func (m *InstrumentationScope) SetDroppedAttributesCount(v uint32) {
+	m.droppedAttributesCount = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *InstrumentationScope) decode() {
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
+
+	// Count all repeated fields. We need one counter per field.
+	attributesCount := 0
+	molecule.MessageFieldNums(
+		buf, func(fieldNum int32) {
+			if fieldNum == 3 {
+				attributesCount++
+			}
+		},
+	)
+
+	// Pre-allocate slices for repeated fields.
+	m.attributes = keyValuePool.GetSlice(attributesCount)
+
+	// Reset the buffer to start iterating over the fields again
+	buf.Reset(m.protoMessage.Bytes)
+
+	// Set slice indexes to 0 to begin iterating over repeated fields.
+	attributesCount = 0
+
+	// Iterate and decode the fields.
+	molecule.MessageEach(
+		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
+			switch fieldNum {
+			case 1:
+				// Decode name.
+				v, err := value.AsStringUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.name = v
+			case 2:
+				// Decode version.
+				v, err := value.AsStringUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.version = v
+			case 3:
+				// Decode attributes.
+				v, err := value.AsBytesUnsafe()
+				if err != nil {
+					return false, err
+				}
+				// The slice is pre-allocated, assign to the appropriate index.
+				elem := m.attributes[attributesCount]
+				attributesCount++
+				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Bytes = v
+			case 4:
+				// Decode droppedAttributesCount.
+				v, err := value.AsUint32()
+				if err != nil {
+					return false, err
+				}
+				m.droppedAttributesCount = v
+			}
+			return true, nil
+		},
+	)
+}
+
+var preparedInstrumentationScopeName = molecule.PrepareStringField(1)
+var preparedInstrumentationScopeVersion = molecule.PrepareStringField(2)
+var preparedInstrumentationScopeAttributes = molecule.PrepareEmbeddedField(3)
+var preparedInstrumentationScopeDroppedAttributesCount = molecule.PrepareUint32Field(4)
+
+func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+		// Marshal name
+		ps.StringPrepared(preparedInstrumentationScopeName, m.name)
+		// Marshal version
+		ps.StringPrepared(preparedInstrumentationScopeVersion, m.version)
+		// Marshal attributes
+		for _, elem := range m.attributes {
+			token := ps.BeginEmbedded()
+			elem.Marshal(ps)
+			ps.EndEmbeddedPrepared(token, preparedInstrumentationScopeAttributes)
+		}
+		// Marshal droppedAttributesCount
+		ps.Uint32Prepared(
+			preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount,
+		)
+	} else {
+		// Message is unchanged. Used original bytes.
+		ps.Raw(m.protoMessage.Bytes)
+	}
+	return nil
+}
+
+// Pool of InstrumentationScope structs.
+type instrumentationScopePoolType struct {
+	pool []*InstrumentationScope
+	mux  sync.Mutex
+}
+
+var instrumentationScopePool = instrumentationScopePoolType{}
+
+// Get one element from the pool. Creates a new element if the pool is empty.
+func (p *instrumentationScopePoolType) Get() *InstrumentationScope {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have elements in the pool?
+	if len(p.pool) >= 1 {
+		// Get the last element.
+		r := p.pool[len(p.pool)-1]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-1]
+		return r
+	}
+
+	// Pool is empty, create a new element.
+	return &InstrumentationScope{}
+}
+
+func (p *instrumentationScopePoolType) GetSlice(count int) []*InstrumentationScope {
+	// Create a new slice.
+	r := make([]*InstrumentationScope, count)
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have enough elements in the pool?
+	if len(p.pool) >= count {
+		// Copy the elements from the end of the pool.
+		copy(r, p.pool[len(p.pool)-count:])
+
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-count]
+
+		return r
+	}
+
+	// Initialize with what remains in the pool.
+	copied := copy(r, p.pool)
+	p.pool = nil
+
+	if copied < count {
+		// Create remaining elements.
+		storage := make([]InstrumentationScope, count-copied)
+		j := 0
+		for ; copied < count; copied++ {
+			r[copied] = &storage[j]
+			j++
+		}
+	}
+
+	return r
+}
+
+// ReleaseSlice releases a slice of elements back to the pool.
+func (p *instrumentationScopePoolType) ReleaseSlice(slice []*InstrumentationScope) {
+	for _, elem := range slice {
+		// Release nested attributes recursively to their pool.
+		keyValuePool.ReleaseSlice(elem.attributes)
+
+		// Zero-initialize the released element.
+		*elem = InstrumentationScope{}
+	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, slice...)
+}
+
+// Release an element back to the pool.
+func (p *instrumentationScopePoolType) Release(elem *InstrumentationScope) {
+	// Release nested attributes recursively to their pool.
+	keyValuePool.ReleaseSlice(elem.attributes)
+
+	// Zero-initialize the released element.
+	*elem = InstrumentationScope{}
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
