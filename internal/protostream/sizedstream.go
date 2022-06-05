@@ -5,8 +5,9 @@ import (
 )
 
 type ProtoStream struct {
-	buf []byte
-	ofs int
+	buf          []byte
+	ofs          int
+	scratchArray [20]byte
 }
 
 func NewProtoStream() *ProtoStream {
@@ -15,8 +16,12 @@ func NewProtoStream() *ProtoStream {
 	return s
 }
 
-func (s *ProtoStream) BufferBytes() []byte {
-	return s.buf[:s.ofs]
+func (s *ProtoStream) Reset() {
+	s.ofs = 0
+}
+
+func (s *ProtoStream) BufferBytes() ([]byte, error) {
+	return s.buf[:s.ofs], nil
 }
 
 func (s *ProtoStream) Len() int {
@@ -57,9 +62,8 @@ func (s *ProtoStream) Uint32Prepared(fieldKey PreparedUint32Key, value uint32) {
 	if value == 0 {
 		return
 	}
-	// Write in backward order.
-	s.writeFixed64(uint64(value))
 	s.writeByte(byte(fieldKey))
+	s.writeVarint(uint64(value))
 	return
 }
 
@@ -80,22 +84,53 @@ func (s *ProtoStream) StringPrepared(key PreparedKey, value string) {
 		return
 	}
 
-	s.writeByte(byte(key))
-	s.writeVarint(uint64(vlen))
-	s.Raw([]byte(value))
+	if vlen < 1<<7 {
+		s.buf[s.ofs] = byte(key)
+		s.buf[s.ofs+1] = byte(vlen)
+		s.ofs += 2
+	} else {
+		s.writeByte(byte(key))
+		s.writeVarint(uint64(vlen))
+	}
+	copy(s.buf[s.ofs:], value)
+	s.ofs += len(value)
 }
 
 type EmbeddedToken int
 
 func (s *ProtoStream) BeginEmbedded() EmbeddedToken {
-	return EmbeddedToken(s.Len())
+	ofs := s.ofs
+	s.ofs += 2
+	return EmbeddedToken(ofs)
 }
 
-func (s *ProtoStream) EndEmbedded(beginToken EmbeddedToken, fieldKey PreparedKey) {
-	embeddedSize := s.Len() - int(beginToken)
+func (s *ProtoStream) EndEmbeddedPrepared(
+	startPos EmbeddedToken, fieldKey PreparedKey,
+) {
+	embeddedSize := s.Len() - int(startPos) - 2
 
-	s.writeByte(byte(fieldKey))
-	s.writeVarint(uint64(embeddedSize))
+	//s.writeByte(byte(fieldKey))
+	//s.writeVarint(uint64(embeddedSize))
+
+	if uint64(embeddedSize) < 1<<7 {
+		s.buf[startPos] = byte(fieldKey)
+		s.buf[startPos+1] = byte(embeddedSize)
+		return
+	}
+
+	scratchBuffer := s.scratchArray[:0]
+	scratchBuffer = append(scratchBuffer, byte(fieldKey))
+	scratchBuffer = protowire.AppendVarint(scratchBuffer, uint64(embeddedSize))
+
+	shift := len(scratchBuffer) - 2
+	copy(s.buf[int(startPos)+2+shift:], s.buf[startPos+2:s.ofs])
+	copy(s.buf[startPos:], scratchBuffer)
+
+	//s.buf = append(
+	//	s.buf[:startPos],
+	//	append(scratchBuffer, s.buf[startPos+2:]...)...,
+	//)
+	s.ofs += shift
 }
 
 func (s *ProtoStream) writeByte(b byte) {

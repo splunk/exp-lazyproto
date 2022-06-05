@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
+	"github.com/tigrannajaryan/exp-lazyproto/internal/protostream"
 	"github.com/tigrannajaryan/molecule"
 	"github.com/tigrannajaryan/molecule/src/codec"
 )
@@ -92,9 +93,9 @@ func (m *LogsData) decode() {
 	)
 }
 
-var preparedLogsDataResourceLogs = molecule.PrepareEmbeddedField(1)
+var preparedLogsDataResourceLogs = protostream.PrepareEmbeddedField(1)
 
-func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
+func (m *LogsData) Marshal(ps *protostream.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal resourceLogs
 		for _, elem := range m.resourceLogs {
@@ -313,10 +314,10 @@ func (m *ResourceLogs) decode() {
 	)
 }
 
-var preparedResourceLogsResource = molecule.PrepareEmbeddedField(1)
-var preparedResourceLogsScopeLogs = molecule.PrepareEmbeddedField(2)
+var preparedResourceLogsResource = protostream.PrepareEmbeddedField(1)
+var preparedResourceLogsScopeLogs = protostream.PrepareEmbeddedField(2)
 
-func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
+func (m *ResourceLogs) Marshal(ps *protostream.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal resource
 		if m.resource != nil {
@@ -539,10 +540,10 @@ func (m *Resource) decode() {
 	)
 }
 
-var preparedResourceAttributes = molecule.PrepareEmbeddedField(1)
-var preparedResourceDroppedAttributesCount = molecule.PrepareUint32Field(2)
+var preparedResourceAttributes = protostream.PrepareEmbeddedField(1)
+var preparedResourceDroppedAttributesCount = protostream.PrepareUint32Field(2)
 
-func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
+func (m *Resource) Marshal(ps *protostream.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal attributes
 		for _, elem := range m.attributes {
@@ -551,9 +552,7 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedResourceAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedResourceDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedResourceDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -738,9 +737,9 @@ func (m *ScopeLogs) decode() {
 	)
 }
 
-var preparedScopeLogsLogRecords = molecule.PrepareEmbeddedField(1)
+var preparedScopeLogsLogRecords = protostream.PrepareEmbeddedField(1)
 
-func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
+func (m *ScopeLogs) Marshal(ps *protostream.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal logRecords
 		for _, elem := range m.logRecords {
@@ -968,11 +967,11 @@ func (m *LogRecord) decode() {
 	)
 }
 
-var preparedLogRecordTimeUnixNano = molecule.PrepareFixed64Field(1)
-var preparedLogRecordAttributes = molecule.PrepareEmbeddedField(2)
-var preparedLogRecordDroppedAttributesCount = molecule.PrepareUint32Field(3)
+var preparedLogRecordTimeUnixNano = protostream.PrepareFixed64Field(1)
+var preparedLogRecordAttributes = protostream.PrepareEmbeddedField(2)
+var preparedLogRecordDroppedAttributesCount = protostream.PrepareUint32Field(3)
 
-func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
+func (m *LogRecord) Marshal(ps *protostream.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal timeUnixNano
 		ps.Fixed64Prepared(preparedLogRecordTimeUnixNano, m.timeUnixNano)
@@ -983,9 +982,7 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedLogRecordAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -1154,10 +1151,10 @@ func (m *KeyValue) decode() {
 	)
 }
 
-var preparedKeyValueKey = molecule.PrepareStringField(1)
-var preparedKeyValueValue = molecule.PrepareStringField(2)
+var preparedKeyValueKey = protostream.PrepareStringField(1)
+var preparedKeyValueValue = protostream.PrepareStringField(2)
 
-func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
+func (m *KeyValue) Marshal(ps *protostream.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal key
 		ps.StringPrepared(preparedKeyValueKey, m.key)

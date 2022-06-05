@@ -86,6 +86,7 @@ import (
 	"sync"
 
 	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
+	"github.com/tigrannajaryan/exp-lazyproto/internal/protostream"
 	"github.com/tigrannajaryan/molecule"
 	"github.com/tigrannajaryan/molecule/src/codec"
 )
@@ -473,7 +474,7 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 	}
 
 	g.o("")
-	g.o("func (m *MessageName) Marshal(ps *molecule.ProtoStream) error {")
+	g.o("func (m *MessageName) Marshal(ps *protostream.ProtoStream) error {")
 	g.i(1)
 	g.o("if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {")
 	g.i(1)
@@ -701,7 +702,7 @@ func (p *messagePoolType) Release(elem *MessageName) {`,
 
 func preparedFieldDecl(msg *Message, field *Field, typeName string) string {
 	return fmt.Sprintf(
-		"var prepared%s%s = molecule.Prepare%sField(%d)", msg.GetName(),
+		"var prepared%s%s = protostream.Prepare%sField(%d)", msg.GetName(),
 		field.GetCapitalName(), typeName, field.GetNumber(),
 	)
 }
