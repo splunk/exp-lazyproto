@@ -103,21 +103,19 @@ import (
 
 func (g *generator) setMessage(msg *Message) {
 	g.msg = msg
-	g.templateData["MessageName"] = msg.GetName()
-	g.templateData["messagePool"] = getPoolName(msg.GetName())
+	g.templateData["$MessageName"] = msg.GetName()
+	g.templateData["$messagePool"] = getPoolName(msg.GetName())
 }
 
 func (g *generator) setField(field *Field) {
 	g.field = field
-	g.templateData["fieldName"] = field.GetName()
-	g.templateData["FieldName"] = field.GetCapitalName()
+	g.templateData["$fieldName"] = field.GetName()
+	g.templateData["$FieldName"] = field.GetCapitalName()
 
 	if field.GetMessageType() != nil {
-		g.templateData["FieldMessageTypeName"] = field.GetMessageType().GetName()
-		g.templateData["fieldTypeMessagePool"] = getPoolName(field.GetMessageType().GetName())
+		g.templateData["$fieldTypeMessagePool"] = getPoolName(field.GetMessageType().GetName())
 	} else {
-		g.templateData["FieldMessageTypeName"] = "FieldMessageTypeName not defined for " + field.GetName()
-		g.templateData["fieldTypeMessagePool"] = "fieldTypeMessagePool not defined for " + field.GetName()
+		g.templateData["$fieldTypeMessagePool"] = "$fieldTypeMessagePool not defined for " + field.GetName()
 	}
 }
 
@@ -173,7 +171,7 @@ func (g *generator) convertType(field *Field) string {
 }
 
 func (g *generator) oMessage(msg *Message) error {
-	g.o("// ====================== Generated for message MessageName ======================")
+	g.o("// ====================== Generated for message $MessageName ======================")
 	g.o("")
 	si := msg.GetSourceInfo()
 	if si != nil {
@@ -183,7 +181,7 @@ func (g *generator) oMessage(msg *Message) error {
 		}
 	}
 
-	g.o("type MessageName struct {")
+	g.o("type $MessageName struct {")
 	g.i(1)
 	g.o("protoMessage lazyproto.ProtoMessage")
 	for _, field := range msg.Fields {
@@ -195,7 +193,7 @@ func (g *generator) oMessage(msg *Message) error {
 				g.o("// %s", c)
 			}
 		}
-		g.o("fieldName %s", g.convertType(field))
+		g.o("$fieldName %s", g.convertType(field))
 	}
 	g.i(-1)
 	g.o("}")
@@ -203,15 +201,15 @@ func (g *generator) oMessage(msg *Message) error {
 
 	g.o(
 		`
-func NewMessageName(bytes []byte) *MessageName {
-	m := messagePool.Get()
+func New$MessageName(bytes []byte) *$MessageName {
+	m := $messagePool.Get()
 	m.protoMessage.Bytes = bytes
 	m.decode()
 	return m
 }
 
-func (m *MessageName) Free() {
-	messagePool.Release(m)
+func (m *$MessageName) Free() {
+	$messagePool.Release(m)
 }`,
 	)
 
@@ -240,7 +238,7 @@ func (g *generator) oMsgDecodeFunc(msg *Message) error {
 	g.o("")
 	g.o(
 		`
-func (m *MessageName) decode() {
+func (m *$MessageName) decode() {
 	buf := codec.NewBuffer(m.protoMessage.Bytes)`,
 	)
 
@@ -282,7 +280,7 @@ v, err := value.As%s()
 if err != nil {
 	return false, err
 }
-m.fieldName = v`, asType,
+m.$fieldName = v`, asType,
 	)
 }
 
@@ -291,7 +289,7 @@ func (g *generator) oFieldDecode(fields []*Field) string {
 		g.setField(field)
 		g.o("case %d:", field.GetNumber())
 		g.i(1)
-		g.o("// Decode fieldName.")
+		g.o("// Decode $fieldName.")
 		switch field.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 			g.oFieldDecodePrimitive(field, "Fixed64")
@@ -316,7 +314,7 @@ if err != nil {
 				g.o(
 					`
 // The slice is pre-allocated, assign to the appropriate index.
-elem := m.fieldName[%[1]s]
+elem := m.$fieldName[%[1]s]
 %[1]s++
 elem.protoMessage.Parent = &m.protoMessage
 elem.protoMessage.Bytes = v`, counterName,
@@ -324,9 +322,9 @@ elem.protoMessage.Bytes = v`, counterName,
 			} else {
 				g.o(
 					`
-m.fieldName = fieldTypeMessagePool.Get()
-m.fieldName.protoMessage.Parent = &m.protoMessage
-m.fieldName.protoMessage.Bytes = v`,
+m.$fieldName = $fieldTypeMessagePool.Get()
+m.$fieldName.protoMessage.Parent = &m.protoMessage
+m.$fieldName.protoMessage.Bytes = v`,
 				)
 			}
 		}
@@ -371,7 +369,7 @@ func (g *generator) oRepeatedFieldCounts(msg *Message) {
 	for _, field := range fields {
 		g.setField(field)
 		counterName := field.GetName() + "Count"
-		g.o("m.fieldName = fieldTypeMessagePool.GetSlice(%s)", counterName)
+		g.o("m.$fieldName = $fieldTypeMessagePool.GetSlice(%s)", counterName)
 	}
 	g.o("")
 	g.o("// Reset the buffer to start iterating over the fields again")
@@ -431,7 +429,7 @@ func (g *generator) fieldFlagName(msg *Message, field *Field) string {
 
 func (g *generator) oFieldGetter(msg *Message, field *Field) error {
 	g.o("")
-	g.o("func (m *MessageName) FieldName() %s {", g.convertType(field))
+	g.o("func (m *$MessageName) $FieldName() %s {", g.convertType(field))
 
 	if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		g.i(1)
@@ -439,11 +437,11 @@ func (g *generator) oFieldGetter(msg *Message, field *Field) error {
 		g.i(1)
 		g.o("// Decode nested message(s).")
 		if field.IsRepeated() {
-			g.o("for i := range m.fieldName {")
-			g.o("	m.fieldName[i].decode()")
+			g.o("for i := range m.$fieldName {")
+			g.o("	m.$fieldName[i].decode()")
 			g.o("}")
 		} else {
-			g.o("m.fieldName.decode()")
+			g.o("m.$fieldName.decode()")
 		}
 		g.i(-1)
 
@@ -453,7 +451,7 @@ func (g *generator) oFieldGetter(msg *Message, field *Field) error {
 	}
 
 	g.o(
-		`	return m.fieldName
+		`	return m.$fieldName
 }`,
 	)
 
@@ -462,8 +460,8 @@ func (g *generator) oFieldGetter(msg *Message, field *Field) error {
 
 func (g *generator) oFieldSetter(msg *Message, field *Field) error {
 	g.o("")
-	g.o("func (m *MessageName) SetFieldName(v %s) {", g.convertType(field))
-	g.o("	m.fieldName = v")
+	g.o("func (m *$MessageName) Set$FieldName(v %s) {", g.convertType(field))
+	g.o("	m.$fieldName = v")
 	g.o("	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {")
 	g.o("		m.protoMessage.MarkModified()")
 	g.o("	}")
@@ -480,9 +478,9 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 
 	g.o("")
 	if g.useSizedMarshaler {
-		g.o("func (m *MessageName) Marshal(ps *protostream.ProtoStream) error {")
+		g.o("func (m *$MessageName) Marshal(ps *protostream.ProtoStream) error {")
 	} else {
-		g.o("func (m *MessageName) Marshal(ps *molecule.ProtoStream) error {")
+		g.o("func (m *$MessageName) Marshal(ps *molecule.ProtoStream) error {")
 	}
 	g.i(1)
 	g.o("if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {")
@@ -507,11 +505,11 @@ func embeddedFieldName(msg *Message, field *Field) string {
 }
 
 func (g *generator) oMarshalPreparedField(msg *Message, field *Field, typeName string) {
-	g.o("ps.%sPrepared(preparedMessageNameFieldName, m.fieldName)", typeName)
+	g.o("ps.%sPrepared(prepared$MessageName$FieldName, m.$fieldName)", typeName)
 }
 
 func (g *generator) oMarshalField(msg *Message, field *Field) {
-	g.o("// Marshal fieldName")
+	g.o("// Marshal $fieldName")
 	switch field.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		g.oMarshalPreparedField(msg, field, "String")
@@ -524,14 +522,14 @@ func (g *generator) oMarshalField(msg *Message, field *Field) {
 
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		if field.IsRepeated() {
-			g.o("for _, elem := range m.fieldName {")
+			g.o("for _, elem := range m.$fieldName {")
 			g.o("	token := ps.BeginEmbedded()")
 			g.o("	elem.Marshal(ps)")
 			g.o("	ps.EndEmbeddedPrepared(token, %s)", embeddedFieldName(msg, field))
 		} else {
-			g.o("if m.fieldName != nil {")
+			g.o("if m.$fieldName != nil {")
 			g.o("	token := ps.BeginEmbedded()")
-			g.o("	m.fieldName.Marshal(ps)")
+			g.o("	m.$fieldName.Marshal(ps)")
 			g.o("	ps.EndEmbeddedPrepared(token, %s)", embeddedFieldName(msg, field))
 		}
 		g.o("}")
@@ -562,16 +560,16 @@ func (g *generator) oPool(msg *Message) error {
 	g.o("")
 	g.o(
 		`
-// Pool of MessageName structs.
-type messagePoolType struct {
-	pool []*MessageName
+// Pool of $MessageName structs.
+type $messagePoolType struct {
+	pool []*$MessageName
 	mux  sync.Mutex
 }
 
-var messagePool = messagePoolType{}
+var $messagePool = $messagePoolType{}
 
 // Get one element from the pool. Creates a new element if the pool is empty.
-func (p *messagePoolType) Get() *MessageName {
+func (p *$messagePoolType) Get() *$MessageName {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
@@ -585,12 +583,12 @@ func (p *messagePoolType) Get() *MessageName {
 	}
 
 	// Pool is empty, create a new element.
-	return &MessageName{}
+	return &$MessageName{}
 }
 
-func (p *messagePoolType) GetSlice(count int) []*MessageName {
+func (p *$messagePoolType) GetSlice(count int) []*$MessageName {
 	// Create a new slice.
-	r := make([]*MessageName, count)
+	r := make([]*$MessageName, count)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -612,7 +610,7 @@ func (p *messagePoolType) GetSlice(count int) []*MessageName {
 
 	if copied < count {
 		// Create remaining elements.
-		storage := make([]MessageName, count-copied)
+		storage := make([]$MessageName, count-copied)
 		j := 0
 		for ; copied < count; copied++ {
 			r[copied] = &storage[j]
@@ -642,12 +640,12 @@ func (g *generator) oPoolReleaseElem(msg *Message) {
 			continue
 		}
 
-		g.o("// Release nested fieldName recursively to their pool.")
+		g.o("// Release nested $fieldName recursively to their pool.")
 		if field.IsRepeated() {
-			g.o("fieldTypeMessagePool.ReleaseSlice(elem.fieldName)")
+			g.o("$fieldTypeMessagePool.ReleaseSlice(elem.$fieldName)")
 		} else {
-			g.o("if elem.fieldName != nil {")
-			g.o("	fieldTypeMessagePool.Release(elem.fieldName)")
+			g.o("if elem.$fieldName != nil {")
+			g.o("	$fieldTypeMessagePool.Release(elem.$fieldName)")
 			g.o("}")
 		}
 	}
@@ -656,7 +654,7 @@ func (g *generator) oPoolReleaseElem(msg *Message) {
 	g.o(
 		`
 // Zero-initialize the released element.
-*elem = MessageName{}`,
+*elem = $MessageName{}`,
 	)
 }
 
@@ -665,7 +663,7 @@ func (g *generator) oPoolReleaseSlice(msg *Message) {
 	g.o(
 		`
 // ReleaseSlice releases a slice of elements back to the pool.
-func (p *messagePoolType) ReleaseSlice(slice []*MessageName) {
+func (p *$messagePoolType) ReleaseSlice(slice []*$MessageName) {
 	for _, elem := range slice {`,
 	)
 
@@ -690,7 +688,7 @@ func (g *generator) oPoolRelease(msg *Message) {
 	g.o(
 		`
 // Release an element back to the pool.
-func (p *messagePoolType) Release(elem *MessageName) {`,
+func (p *$messagePoolType) Release(elem *$MessageName) {`,
 	)
 
 	g.i(1)
