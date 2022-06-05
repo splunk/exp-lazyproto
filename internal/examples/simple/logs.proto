@@ -44,8 +44,10 @@ message InstrumentationScope {
 
 message LogRecord {
   fixed64 time_unix_nano = 1;
-  repeated KeyValue attributes = 2;
-  uint32 dropped_attributes_count = 3;
+  fixed64 observed_time_unix_nano = 11;
+  string severity_text = 3;
+  repeated KeyValue attributes = 6;
+  uint32 dropped_attributes_count = 7;
 }
 
 message KeyValue {

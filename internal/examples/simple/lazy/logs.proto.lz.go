@@ -575,9 +575,7 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedResourceAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedResourceDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedResourceDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -1096,9 +1094,7 @@ func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedInstrumentationScopeAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -1204,6 +1200,8 @@ func (p *instrumentationScopePoolType) Release(elem *InstrumentationScope) {
 type LogRecord struct {
 	protoMessage           lazyproto.ProtoMessage
 	timeUnixNano           uint64
+	observedTimeUnixNano   uint64
+	severityText           string
 	attributes             []*KeyValue
 	droppedAttributesCount uint32
 }
@@ -1228,6 +1226,28 @@ func (m *LogRecord) TimeUnixNano() uint64 {
 
 func (m *LogRecord) SetTimeUnixNano(v uint64) {
 	m.timeUnixNano = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *LogRecord) ObservedTimeUnixNano() uint64 {
+	return m.observedTimeUnixNano
+}
+
+func (m *LogRecord) SetObservedTimeUnixNano(v uint64) {
+	m.observedTimeUnixNano = v
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *LogRecord) SeverityText() string {
+	return m.severityText
+}
+
+func (m *LogRecord) SetSeverityText(v string) {
+	m.severityText = v
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
 		m.protoMessage.MarkModified()
 	}
@@ -1269,7 +1289,7 @@ func (m *LogRecord) decode() {
 	attributesCount := 0
 	molecule.MessageFieldNums(
 		buf, func(fieldNum int32) {
-			if fieldNum == 2 {
+			if fieldNum == 6 {
 				attributesCount++
 			}
 		},
@@ -1295,7 +1315,21 @@ func (m *LogRecord) decode() {
 					return false, err
 				}
 				m.timeUnixNano = v
-			case 2:
+			case 11:
+				// Decode observedTimeUnixNano.
+				v, err := value.AsFixed64()
+				if err != nil {
+					return false, err
+				}
+				m.observedTimeUnixNano = v
+			case 3:
+				// Decode severityText.
+				v, err := value.AsStringUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.severityText = v
+			case 6:
 				// Decode attributes.
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
@@ -1306,7 +1340,7 @@ func (m *LogRecord) decode() {
 				attributesCount++
 				elem.protoMessage.Parent = &m.protoMessage
 				elem.protoMessage.Bytes = v
-			case 3:
+			case 7:
 				// Decode droppedAttributesCount.
 				v, err := value.AsUint32()
 				if err != nil {
@@ -1320,13 +1354,19 @@ func (m *LogRecord) decode() {
 }
 
 var preparedLogRecordTimeUnixNano = molecule.PrepareFixed64Field(1)
-var preparedLogRecordAttributes = molecule.PrepareEmbeddedField(2)
-var preparedLogRecordDroppedAttributesCount = molecule.PrepareUint32Field(3)
+var preparedLogRecordObservedTimeUnixNano = molecule.PrepareFixed64Field(11)
+var preparedLogRecordSeverityText = molecule.PrepareStringField(3)
+var preparedLogRecordAttributes = molecule.PrepareEmbeddedField(6)
+var preparedLogRecordDroppedAttributesCount = molecule.PrepareUint32Field(7)
 
 func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal timeUnixNano
 		ps.Fixed64Prepared(preparedLogRecordTimeUnixNano, m.timeUnixNano)
+		// Marshal observedTimeUnixNano
+		ps.Fixed64Prepared(preparedLogRecordObservedTimeUnixNano, m.observedTimeUnixNano)
+		// Marshal severityText
+		ps.StringPrepared(preparedLogRecordSeverityText, m.severityText)
 		// Marshal attributes
 		for _, elem := range m.attributes {
 			token := ps.BeginEmbedded()
@@ -1334,9 +1374,7 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedLogRecordAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
