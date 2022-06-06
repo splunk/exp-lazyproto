@@ -76,8 +76,8 @@ func createLogRecord(n int) *gogomsg.LogRecord {
 		sl.SeverityText = "ERROR"
 		sl.Flags = 1
 		sl.ObservedTimeUnixNano = sl.TimeUnixNano + 200
-		//sl.SpanId = []byte{1, 2, 3, 4, 5}
-		//sl.TraceId = []byte{6, 7, 8, 9}
+		sl.SpanId = []byte{1, 2, 3, 4, 5}
+		sl.TraceId = []byte{6, 7, 8, 9}
 	}
 
 	return sl
@@ -168,6 +168,8 @@ func TestDecode(t *testing.T) {
 									createAttr("key2", "value2"),
 								},
 								DroppedAttributesCount: 234,
+								SpanId:                 []byte{1, 2, 3, 4, 5},
+								TraceId:                []byte{6, 7, 8, 9},
 							},
 						},
 					},
@@ -223,6 +225,9 @@ func TestDecode(t *testing.T) {
 	logRecord := logRecords[0]
 	assert.EqualValues(t, 123, logRecord.TimeUnixNano())
 	assert.EqualValues(t, 234, logRecord.DroppedAttributesCount())
+	assert.EqualValues(t, []byte{1, 2, 3, 4, 5}, logRecord.SpanId())
+	assert.EqualValues(t, []byte{6, 7, 8, 9}, logRecord.TraceId())
+
 	attrs2 := logRecord.Attributes()
 	require.Len(t, attrs2, 1)
 
