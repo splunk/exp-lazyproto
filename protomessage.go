@@ -5,33 +5,34 @@ import (
 	"unsafe"
 )
 
-const FlagsMessageModified = 1
-
 type ProtoMessage struct {
-	// TODO: implement a custom byte view that only uses Data and Len. We don't need Cap.
+	// TODO: implement a custom byte view that only uses Data and Len. We don't need Cap
+	// and can save memory by eliminating it.
+	// Bytes are set to nil when the message is modified (i.e. marshaling will do
+	// full field-by-field encoding).
 	Bytes  []byte
 	Flags  uint64
 	Parent *ProtoMessage
 }
 
 func (m *ProtoMessage) IsModified() bool {
-	return m.Flags&FlagsMessageModified != 0
+	return m.Bytes == nil
 }
 
 func (m *ProtoMessage) MarkModified() {
-	if m.Flags&FlagsMessageModified == 0 {
+	if m.Bytes != nil {
 		m.markModified()
 	}
 }
 
 func (m *ProtoMessage) markModified() {
-	m.Flags |= FlagsMessageModified
+	m.Bytes = nil
 	parent := m.Parent
 	for parent != nil {
-		if parent.Flags&FlagsMessageModified != 0 {
+		if parent.IsModified() {
 			break
 		}
-		parent.Flags |= FlagsMessageModified
+		parent.Bytes = nil
 		parent = parent.Parent
 	}
 }
