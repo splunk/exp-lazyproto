@@ -170,7 +170,8 @@ func TestDecode(t *testing.T) {
 	require.EqualValues(t, "value2", kv2.Value().StringValue())
 
 	ps := molecule.NewProtoStream()
-	lazy.Marshal(ps)
+	err = lazy.Marshal(ps)
+	assert.NoError(t, err)
 
 	lazyBytes, err := ps.BufferBytes()
 	assert.NoError(t, err)
