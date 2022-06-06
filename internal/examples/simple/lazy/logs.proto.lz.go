@@ -2,6 +2,7 @@ package simple
 
 import (
 	"sync"
+	"unsafe"
 
 	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 	"github.com/tigrannajaryan/molecule"
@@ -313,9 +314,10 @@ const flagResourceLogsScopeLogsDecoded = 0x0000000000000004
 func (m *ResourceLogs) Resource() *Resource {
 	if m.protoMessage.Flags&flagResourceLogsResourceDecoded == 0 {
 		// Decode nested message(s).
-		if m.resource != nil {
+		resource := m.resource
+		if resource != nil {
 			// TODO: decide how to handle decoding errors.
-			_ = m.resource.decode()
+			_ = resource.decode()
 		}
 		m.protoMessage.Flags |= flagResourceLogsResourceDecoded
 	}
@@ -327,7 +329,7 @@ func (m *ResourceLogs) SetResource(v *Resource) {
 	m.resource = v
 
 	// Make sure the field's Parent points to this message.
-	m.resource.protoMessage.Parent = &m.protoMessage
+	v.protoMessage.Parent = &m.protoMessage
 
 	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
@@ -477,9 +479,10 @@ var preparedResourceLogsSchemaUrl = molecule.PrepareStringField(3)
 func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal "resource".
-		if m.resource != nil {
+		elem := m.resource
+		if elem != nil {
 			token := ps.BeginEmbedded()
-			if err := m.resource.Marshal(ps); err != nil {
+			if err := elem.Marshal(ps); err != nil {
 				return err
 			}
 			ps.EndEmbeddedPrepared(token, preparedResourceLogsResource)
@@ -900,9 +903,10 @@ const flagScopeLogsLogRecordsDecoded = 0x0000000000000004
 func (m *ScopeLogs) Scope() *InstrumentationScope {
 	if m.protoMessage.Flags&flagScopeLogsScopeDecoded == 0 {
 		// Decode nested message(s).
-		if m.scope != nil {
+		scope := m.scope
+		if scope != nil {
 			// TODO: decide how to handle decoding errors.
-			_ = m.scope.decode()
+			_ = scope.decode()
 		}
 		m.protoMessage.Flags |= flagScopeLogsScopeDecoded
 	}
@@ -914,7 +918,7 @@ func (m *ScopeLogs) SetScope(v *InstrumentationScope) {
 	m.scope = v
 
 	// Make sure the field's Parent points to this message.
-	m.scope.protoMessage.Parent = &m.protoMessage
+	v.protoMessage.Parent = &m.protoMessage
 
 	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
@@ -1064,9 +1068,10 @@ var preparedScopeLogsSchemaUrl = molecule.PrepareStringField(3)
 func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal "scope".
-		if m.scope != nil {
+		elem := m.scope
+		if elem != nil {
 			token := ps.BeginEmbedded()
-			if err := m.scope.Marshal(ps); err != nil {
+			if err := elem.Marshal(ps); err != nil {
 				return err
 			}
 			ps.EndEmbeddedPrepared(token, preparedScopeLogsScope)
@@ -1996,9 +2001,10 @@ func (m *KeyValue) SetKey(v string) {
 func (m *KeyValue) Value() *AnyValue {
 	if m.protoMessage.Flags&flagKeyValueValueDecoded == 0 {
 		// Decode nested message(s).
-		if m.value != nil {
+		value := m.value
+		if value != nil {
 			// TODO: decide how to handle decoding errors.
-			_ = m.value.decode()
+			_ = value.decode()
 		}
 		m.protoMessage.Flags |= flagKeyValueValueDecoded
 	}
@@ -2010,7 +2016,7 @@ func (m *KeyValue) SetValue(v *AnyValue) {
 	m.value = v
 
 	// Make sure the field's Parent points to this message.
-	m.value.protoMessage.Parent = &m.protoMessage
+	v.protoMessage.Parent = &m.protoMessage
 
 	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
@@ -2059,9 +2065,10 @@ func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
 		// Marshal "key".
 		ps.StringPrepared(preparedKeyValueKey, m.key)
 		// Marshal "value".
-		if m.value != nil {
+		elem := m.value
+		if elem != nil {
 			token := ps.BeginEmbedded()
-			if err := m.value.Marshal(ps); err != nil {
+			if err := elem.Marshal(ps); err != nil {
 				return err
 			}
 			ps.EndEmbeddedPrepared(token, preparedKeyValueValue)
@@ -2204,8 +2211,10 @@ const (
 	AnyValueIntValue AnyValueValue = 3
 	// AnyValueDoubleValue indicates that oneof field "doubleValue" is set.
 	AnyValueDoubleValue AnyValueValue = 4
+	// AnyValueArrayValue indicates that oneof field "arrayValue" is set.
+	AnyValueArrayValue AnyValueValue = 5
 	// AnyValueBytesValue indicates that oneof field "bytesValue" is set.
-	AnyValueBytesValue AnyValueValue = 5
+	AnyValueBytesValue AnyValueValue = 6
 )
 
 // ValueType returns the type of the current stored oneof "value".
@@ -2218,6 +2227,9 @@ func (m *AnyValue) ValueType() AnyValueValue {
 func (m *AnyValue) ValueUnset() {
 	m.value = lazyproto.NewOneOfNone()
 }
+
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagAnyValueArrayValueDecoded = 0x0000000000000002
 
 // StringValue returns the value of the stringValue.
 // If the field "value" is not set to "stringValue" then the returned value is undefined.
@@ -2287,6 +2299,37 @@ func (m *AnyValue) SetDoubleValue(v float64) {
 	}
 }
 
+// ArrayValue returns the value of the arrayValue.
+// If the field "value" is not set to "arrayValue" then the returned value is undefined.
+func (m *AnyValue) ArrayValue() *ArrayValue {
+	if m.protoMessage.Flags&flagAnyValueArrayValueDecoded == 0 {
+		// Decode nested message(s).
+		if m.value.FieldIndex() == int(AnyValueArrayValue) {
+			arrayValue := (*ArrayValue)(m.value.PtrVal())
+			if arrayValue != nil {
+				// TODO: decide how to handle decoding errors.
+				_ = arrayValue.decode()
+			}
+		}
+		m.protoMessage.Flags |= flagAnyValueArrayValueDecoded
+	}
+	return (*ArrayValue)(m.value.PtrVal())
+}
+
+// SetArrayValue sets the value of the arrayValue.
+// The oneof field "value" will be set to "arrayValue".
+func (m *AnyValue) SetArrayValue(v *ArrayValue) {
+	m.value = lazyproto.NewOneOfPtr(unsafe.Pointer(v), int(AnyValueArrayValue))
+
+	// Make sure the field's Parent points to this message.
+	v.protoMessage.Parent = &m.protoMessage
+
+	// Mark this message modified, if not already.
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
 // BytesValue returns the value of the bytesValue.
 // If the field "value" is not set to "bytesValue" then the returned value is undefined.
 func (m *AnyValue) BytesValue() []byte {
@@ -2339,6 +2382,16 @@ func (m *AnyValue) decode() error {
 					return false, err
 				}
 				m.value = lazyproto.NewOneOfDouble(v, int(AnyValueDoubleValue))
+			case 5:
+				// Decode "arrayValue".
+				v, err := value.AsBytesUnsafe()
+				if err != nil {
+					return false, err
+				}
+				elem := arrayValuePool.Get()
+				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Bytes = v
+				m.value = lazyproto.NewOneOfPtr(unsafe.Pointer(elem), int(AnyValueArrayValue))
 			case 7:
 				// Decode "bytesValue".
 				v, err := value.AsBytesUnsafe()
@@ -2360,6 +2413,7 @@ var preparedAnyValueStringValue = molecule.PrepareStringField(1)
 var preparedAnyValueBoolValue = molecule.PrepareBoolField(2)
 var preparedAnyValueIntValue = molecule.PrepareInt64Field(3)
 var preparedAnyValueDoubleValue = molecule.PrepareDoubleField(4)
+var preparedAnyValueArrayValue = molecule.PrepareEmbeddedField(5)
 var preparedAnyValueBytesValue = molecule.PrepareBytesField(7)
 
 func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
@@ -2380,6 +2434,16 @@ func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
 		case AnyValueDoubleValue:
 			// Marshal "doubleValue".
 			ps.DoublePrepared(preparedAnyValueDoubleValue, m.value.DoubleVal())
+		case AnyValueArrayValue:
+			// Marshal "arrayValue".
+			elem := (*ArrayValue)(m.value.PtrVal())
+			if elem != nil {
+				token := ps.BeginEmbedded()
+				if err := elem.Marshal(ps); err != nil {
+					return err
+				}
+				ps.EndEmbeddedPrepared(token, preparedAnyValueArrayValue)
+			}
 		case AnyValueBytesValue:
 			// Marshal "bytesValue".
 			ps.BytesPrepared(preparedAnyValueBytesValue, m.value.BytesVal())
@@ -2455,6 +2519,13 @@ func (p *anyValuePoolType) GetSlice(count int) []*AnyValue {
 // ReleaseSlice releases a slice of elements back to the pool.
 func (p *anyValuePoolType) ReleaseSlice(slice []*AnyValue) {
 	for _, elem := range slice {
+		switch AnyValueValue(elem.value.FieldIndex()) {
+		case AnyValueArrayValue:
+			ptr := (*ArrayValue)(elem.value.PtrVal())
+			if ptr != nil {
+				arrayValuePool.Release(ptr)
+			}
+		}
 
 		// Zero-initialize the released element.
 		*elem = AnyValue{}
@@ -2469,9 +2540,255 @@ func (p *anyValuePoolType) ReleaseSlice(slice []*AnyValue) {
 
 // Release an element back to the pool.
 func (p *anyValuePoolType) Release(elem *AnyValue) {
+	switch AnyValueValue(elem.value.FieldIndex()) {
+	case AnyValueArrayValue:
+		ptr := (*ArrayValue)(elem.value.PtrVal())
+		if ptr != nil {
+			arrayValuePool.Release(ptr)
+		}
+	}
 
 	// Zero-initialize the released element.
 	*elem = AnyValue{}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, elem)
+}
+
+// ====================== ArrayValue message implementation ======================
+
+type ArrayValue struct {
+	protoMessage lazyproto.ProtoMessage
+	values       []*AnyValue
+}
+
+func UnmarshalArrayValue(bytes []byte) (*ArrayValue, error) {
+	m := arrayValuePool.Get()
+	m.protoMessage.Bytes = bytes
+	if err := m.decode(); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (m *ArrayValue) Free() {
+	arrayValuePool.Release(m)
+}
+
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagArrayValueValuesDecoded = 0x0000000000000002
+
+// Values returns the value of the values.
+func (m *ArrayValue) Values() []*AnyValue {
+	if m.protoMessage.Flags&flagArrayValueValuesDecoded == 0 {
+		// Decode nested message(s).
+		for i := range m.values {
+			// TODO: decide how to handle decoding errors.
+			_ = m.values[i].decode()
+		}
+		m.protoMessage.Flags |= flagArrayValueValuesDecoded
+	}
+	return m.values
+}
+
+// SetValues sets the value of the values.
+func (m *ArrayValue) SetValues(v []*AnyValue) {
+	m.values = v
+
+	// Make sure the field's Parent points to this message.
+	for _, elem := range m.values {
+		elem.protoMessage.Parent = &m.protoMessage
+	}
+
+	// Mark this message modified, if not already.
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *ArrayValue) ValuesRemoveIf(f func(*AnyValue) bool) {
+	// Call getter to load the field.
+	m.Values()
+
+	newLen := 0
+	for i := 0; i < len(m.values); i++ {
+		if f(m.values[i]) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		m.values[newLen] = m.values[i]
+		newLen++
+	}
+	if newLen != len(m.values) {
+		m.values = m.values[:newLen]
+		// Mark this message modified, if not already.
+		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+			m.protoMessage.MarkModified()
+		}
+	}
+}
+
+func (m *ArrayValue) decode() error {
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
+
+	// Count all repeated fields. We need one counter per field.
+	valuesCount := 0
+	err := molecule.MessageFieldNums(
+		buf, func(fieldNum int32) {
+			if fieldNum == 1 {
+				valuesCount++
+			}
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	// Pre-allocate slices for repeated fields.
+	m.values = anyValuePool.GetSlice(valuesCount)
+
+	// Reset the buffer to start iterating over the fields again
+	buf.Reset(m.protoMessage.Bytes)
+
+	// Set slice indexes to 0 to begin iterating over repeated fields.
+	valuesCount = 0
+
+	// Iterate and decode the fields.
+	err2 := molecule.MessageEach(
+		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
+			switch fieldNum {
+			case 1:
+				// Decode "values".
+				v, err := value.AsBytesUnsafe()
+				if err != nil {
+					return false, err
+				}
+				// The slice is pre-allocated, assign to the appropriate index.
+				elem := m.values[valuesCount]
+				valuesCount++
+				elem.protoMessage.Parent = &m.protoMessage
+				elem.protoMessage.Bytes = v
+			}
+			return true, nil
+		},
+	)
+	if err2 != nil {
+		return err2
+	}
+	return nil
+}
+
+var preparedArrayValueValues = molecule.PrepareEmbeddedField(1)
+
+func (m *ArrayValue) Marshal(ps *molecule.ProtoStream) error {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+		// Marshal "values".
+		for _, elem := range m.values {
+			token := ps.BeginEmbedded()
+			if err := elem.Marshal(ps); err != nil {
+				return err
+			}
+			ps.EndEmbeddedPrepared(token, preparedArrayValueValues)
+		}
+	} else {
+		// Message is unchanged. Used original bytes.
+		ps.Raw(m.protoMessage.Bytes)
+	}
+	return nil
+}
+
+// Pool of ArrayValue structs.
+type arrayValuePoolType struct {
+	pool []*ArrayValue
+	mux  sync.Mutex
+}
+
+var arrayValuePool = arrayValuePoolType{}
+
+// Get one element from the pool. Creates a new element if the pool is empty.
+func (p *arrayValuePoolType) Get() *ArrayValue {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have elements in the pool?
+	if len(p.pool) >= 1 {
+		// Get the last element.
+		r := p.pool[len(p.pool)-1]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-1]
+		return r
+	}
+
+	// Pool is empty, create a new element.
+	return &ArrayValue{}
+}
+
+func (p *arrayValuePoolType) GetSlice(count int) []*ArrayValue {
+	// Create a new slice.
+	r := make([]*ArrayValue, count)
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have enough elements in the pool?
+	if len(p.pool) >= count {
+		// Copy the elements from the end of the pool.
+		copy(r, p.pool[len(p.pool)-count:])
+
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-count]
+
+		return r
+	}
+
+	// Initialize with what remains in the pool.
+	copied := copy(r, p.pool)
+	p.pool = nil
+
+	if copied < count {
+		// Create remaining elements.
+		storage := make([]ArrayValue, count-copied)
+		j := 0
+		for ; copied < count; copied++ {
+			r[copied] = &storage[j]
+			j++
+		}
+	}
+
+	return r
+}
+
+// ReleaseSlice releases a slice of elements back to the pool.
+func (p *arrayValuePoolType) ReleaseSlice(slice []*ArrayValue) {
+	for _, elem := range slice {
+		// Release nested values recursively to their pool.
+		anyValuePool.ReleaseSlice(elem.values)
+
+		// Zero-initialize the released element.
+		*elem = ArrayValue{}
+	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, slice...)
+}
+
+// Release an element back to the pool.
+func (p *arrayValuePoolType) Release(elem *ArrayValue) {
+	// Release nested values recursively to their pool.
+	anyValuePool.ReleaseSlice(elem.values)
+
+	// Zero-initialize the released element.
+	*elem = ArrayValue{}
 
 	p.mux.Lock()
 	defer p.mux.Unlock()

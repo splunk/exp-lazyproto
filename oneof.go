@@ -56,6 +56,13 @@ func NewOneOfBool(v bool, fieldIdx int) OneOf {
 	}
 }
 
+func NewOneOfPtr(v unsafe.Pointer, fieldIdx int) OneOf {
+	return OneOf{
+		lenAndFieldIdx: int64(fieldIdx),
+		ptr:            v,
+	}
+}
+
 func NewOneOfString(v string, fieldIdx int) OneOf {
 	hdr := (*reflect.StringHeader)(unsafe.Pointer(&v))
 	if hdr.Len > MaxSliceLen {
@@ -91,6 +98,10 @@ func (v *OneOf) Int64Val() int64 {
 
 func (v *OneOf) DoubleVal() float64 {
 	return *(*float64)(unsafe.Pointer(&v.capOrVal))
+}
+
+func (v *OneOf) PtrVal() unsafe.Pointer {
+	return v.ptr
 }
 
 func (v *OneOf) BoolVal() bool {

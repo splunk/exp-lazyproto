@@ -95,7 +95,11 @@ message AnyValue {
     bool bool_value = 2;
     int64 int_value = 3;
     double double_value = 4;
+    ArrayValue array_value = 5;
     bytes bytes_value = 7;
   }
 }
 
+message ArrayValue {
+  repeated AnyValue values = 1;
+}

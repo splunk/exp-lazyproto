@@ -92,6 +92,7 @@ func (g *generator) oFile(fdescr *desc.FileDescriptor) error {
 		`
 import (
 	"sync"
+	"unsafe"
 
 	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 	"github.com/tigrannajaryan/molecule"
@@ -476,6 +477,16 @@ elem := m.$fieldName[%[1]s]
 elem.protoMessage.Parent = &m.protoMessage
 elem.protoMessage.Bytes = v`, counterName,
 				)
+			} else if field.GetOneOf() != nil {
+				choiceName := composeOneOfChoiceName(g.msg, field)
+				g.o(
+					`
+elem := $fieldTypeMessagePool.Get()
+elem.protoMessage.Parent = &m.protoMessage
+elem.protoMessage.Bytes = v
+m.%s = lazyproto.NewOneOfPtr(unsafe.Pointer(elem), int(%s))`,
+					field.GetOneOf().GetName(), choiceName,
+				)
 			} else {
 				g.o(
 					`
@@ -602,7 +613,9 @@ func (g *generator) oFieldGetter() error {
 		)
 	}
 
-	g.o("func (m *$MessageName) $FieldName() %s {", g.convertTypeToGo(g.field))
+	goType := g.convertTypeToGo(g.field)
+
+	g.o("func (m *$MessageName) $FieldName() %s {", goType)
 
 	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		g.i(1)
@@ -615,10 +628,30 @@ func (g *generator) oFieldGetter() error {
 			g.o("	_ = m.$fieldName[i].decode()")
 			g.o("}")
 		} else {
-			g.o("if m.$fieldName != nil {")
+			if g.field.GetOneOf() != nil {
+				choiceName := composeOneOfChoiceName(g.msg, g.field)
+				g.o(
+					"if m.%s.FieldIndex() == int(%s) {", g.field.GetOneOf().GetName(),
+					choiceName,
+				)
+				g.i(1)
+				g.o(
+					"$fieldName := (*$FieldMessageTypeName)(m.%s.PtrVal())",
+					g.field.GetOneOf().GetName(),
+				)
+			} else {
+				g.o("$fieldName := m.$fieldName")
+			}
+
+			g.o("if $fieldName != nil {")
 			g.o("	// TODO: decide how to handle decoding errors.")
-			g.o("	_ = m.$fieldName.decode()")
+			g.o("	_ = $fieldName.decode()")
 			g.o("}")
+
+			if g.field.GetOneOf() != nil {
+				g.i(-1)
+				g.o("}")
+			}
 		}
 		g.i(-1)
 
@@ -639,6 +672,8 @@ func (g *generator) oFieldGetter() error {
 			g.o("	return m.%s.StringVal()", g.field.GetOneOf().GetName())
 		case descriptor.FieldDescriptorProto_TYPE_BYTES:
 			g.o("	return m.%s.BytesVal()", g.field.GetOneOf().GetName())
+		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+			g.o("	return (%s)(m.%s.PtrVal())", goType, g.field.GetOneOf().GetName())
 		default:
 			return fmt.Errorf("unsupported oneof field type %v", g.field.GetType())
 		}
@@ -710,6 +745,11 @@ func (g *generator) oFieldSetter() error {
 				"	m.%s = lazyproto.NewOneOfBytes(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
+		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+			g.o(
+				"	m.%s = lazyproto.NewOneOfPtr(unsafe.Pointer(v), int(%s))",
+				g.field.GetOneOf().GetName(), choiceName,
+			)
 		default:
 			return fmt.Errorf("unsupported oneof field type %v", g.field.GetType())
 		}
@@ -725,7 +765,7 @@ func (g *generator) oFieldSetter() error {
 			g.o("		elem.protoMessage.Parent = &m.protoMessage")
 			g.o("	}")
 		} else {
-			g.o("	m.$fieldName.protoMessage.Parent = &m.protoMessage")
+			g.o("	v.protoMessage.Parent = &m.protoMessage")
 		}
 	}
 	g.o("")
@@ -818,6 +858,7 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 			typeName := composeOneOfTypeName(g.msg, g.field.GetOneOf())
 			g.o("switch %s(m.%s.FieldIndex()) {", typeName, g.field.GetOneOf().GetName())
 
+			// Add the "none" case.
 			noneChoiceName := composeOneOfNoneChoiceName(g.msg, g.field.GetOneOf())
 			g.o("case %s:", noneChoiceName)
 			g.o("	// Nothing to do, oneof is unset.")
@@ -825,7 +866,6 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 			for _, choice := range field.GetOneOf().GetChoices() {
 				oneofField := g.msg.FieldsMap[choice.GetName()]
 				g.setField(oneofField)
-				//fieldIdx := g.calcOneOfFieldIndex()
 				typeName := composeOneOfChoiceName(g.msg, g.field)
 				g.o("case %s:", typeName)
 				g.i(1)
@@ -906,9 +946,18 @@ func (g *generator) oMarshalField() {
 				embeddedFieldName(g.msg, g.field),
 			)
 		} else {
-			g.o("if m.$fieldName != nil {")
+			if g.field.GetOneOf() != nil {
+				g.o(
+					"elem := (*$FieldMessageTypeName)(m.%s.PtrVal())",
+					g.field.GetOneOf().GetName(),
+				)
+			} else {
+				g.o("elem := m.$fieldName")
+			}
+
+			g.o("if elem != nil {")
 			g.o("	token := ps.BeginEmbedded()")
-			g.o("	if err := m.$fieldName.Marshal(ps); err != nil {")
+			g.o("	if err := elem.Marshal(ps); err != nil {")
 			g.o("		return err")
 			g.o("	}")
 			g.o(
@@ -1048,10 +1097,42 @@ func (g *generator) oPoolReleaseElem(msg *Message) {
 	for _, field := range msg.Fields {
 		g.setField(field)
 
-		if field.GetType() != descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+		if field.GetOneOf() != nil {
+			fieldIndex := g.calcOneOfFieldIndex()
+			if fieldIndex != 0 {
+				// We generate all oneof cases when we see the first field. Skip for the rest.
+				continue
+			}
+
+			typeName := composeOneOfTypeName(g.msg, field.GetOneOf())
+			g.o("switch %s(elem.%s.FieldIndex()) {", typeName, field.GetOneOf().GetName())
+			for _, choice := range field.GetOneOf().GetChoices() {
+				choiceField := g.msg.FieldsMap[choice.GetName()]
+				g.setField(choiceField)
+				if choiceField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+					choiceName := composeOneOfChoiceName(g.msg, choiceField)
+					g.o("case %s:", choiceName)
+					g.i(1)
+					g.o(
+						"ptr := (*$FieldMessageTypeName)(elem.%s.PtrVal())",
+						field.GetOneOf().GetName(),
+					)
+					g.o("if ptr != nil {")
+					g.o("	$fieldTypeMessagePool.Release(ptr)")
+					g.o("}")
+					g.i(-1)
+				}
+			}
+			g.o("}")
 			continue
 		}
 
+		if field.GetType() != descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			// Only embedded messages need to be freed.
+			continue
+		}
+
+		// Not a oneof field.
 		g.o("// Release nested $fieldName recursively to their pool.")
 		if field.IsRepeated() {
 			g.o("$fieldTypeMessagePool.ReleaseSlice(elem.$fieldName)")

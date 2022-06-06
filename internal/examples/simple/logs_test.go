@@ -25,6 +25,22 @@ func createAttr(k, v string) *gogomsg.KeyValue {
 	}
 }
 
+func createArrayValue(v string) *gogomsg.AnyValue {
+	return &gogomsg.AnyValue{
+		Value: &gogomsg.AnyValue_ArrayValue{
+			ArrayValue: &gogomsg.ArrayValue{
+				Values: []*gogomsg.AnyValue{
+					{
+						Value: &gogomsg.AnyValue_StringValue{
+							StringValue: v,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func createLogRecord(n int) *gogomsg.LogRecord {
 	sl := &gogomsg.LogRecord{
 		TimeUnixNano:   uint64(n * 10000),
@@ -35,6 +51,10 @@ func createLogRecord(n int) *gogomsg.LogRecord {
 			createAttr("http.server", "example.com"),
 			createAttr("db.name", "postgres"),
 			createAttr("host.name", "localhost"),
+			{
+				Key:   "multivalue",
+				Value: createArrayValue("1.2.3.4"),
+			},
 		},
 		DroppedAttributesCount: uint32(n),
 	}
@@ -103,6 +123,10 @@ func TestDecode(t *testing.T) {
 				Resource: &gogomsg.Resource{
 					Attributes: []*gogomsg.KeyValue{
 						createAttr("key1", "value1"),
+						{
+							Key:   "multivalue",
+							Value: createArrayValue("1.2.3.4"),
+						},
 					},
 					DroppedAttributesCount: 12,
 				},
@@ -144,12 +168,19 @@ func TestDecode(t *testing.T) {
 	require.NotNil(t, resource)
 
 	attrs := resource.Attributes()
-	require.Len(t, attrs, 1)
+	require.Len(t, attrs, 2)
 
-	kv1 := attrs[0]
-	require.EqualValues(t, "key1", kv1.Key())
-	require.EqualValues(t, lazymsg.AnyValueStringValue, kv1.Value().ValueType())
-	require.EqualValues(t, "value1", kv1.Value().StringValue())
+	kvr := attrs[0]
+	require.EqualValues(t, "key1", kvr.Key())
+	require.EqualValues(t, lazymsg.AnyValueStringValue, kvr.Value().ValueType())
+	require.EqualValues(t, "value1", kvr.Value().StringValue())
+
+	kvr = attrs[1]
+	require.EqualValues(t, "multivalue", kvr.Key())
+	require.EqualValues(t, lazymsg.AnyValueArrayValue, kvr.Value().ValueType())
+	arrayVals := kvr.Value().ArrayValue().Values()
+	require.Len(t, arrayVals, 1)
+	require.EqualValues(t, "1.2.3.4", arrayVals[0].StringValue())
 
 	sls := rl[0].ScopeLogs()
 	require.Len(t, sls, 1)
@@ -162,7 +193,7 @@ func TestDecode(t *testing.T) {
 	assert.EqualValues(t, 123, logRecord.TimeUnixNano())
 	assert.EqualValues(t, 234, logRecord.DroppedAttributesCount())
 	attrs2 := logRecord.Attributes()
-	require.Len(t, attrs, 1)
+	require.Len(t, attrs2, 1)
 
 	kv2 := attrs2[0]
 	require.EqualValues(t, "key2", kv2.Key())
