@@ -89,9 +89,7 @@ func (m *LogsData) SetResourceLogs(v []*ResourceLogs) {
 	}
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *LogsData) ResourceLogsRemoveIf(f func(*ResourceLogs) bool) {
@@ -114,9 +112,7 @@ func (m *LogsData) ResourceLogsRemoveIf(f func(*ResourceLogs) bool) {
 	if newLen != len(m.resourceLogs) {
 		m.resourceLogs = m.resourceLogs[:newLen]
 		// Mark this message modified, if not already.
-		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-			m.protoMessage.MarkModified()
-		}
+		m.protoMessage.MarkModified()
 	}
 }
 
@@ -173,7 +169,7 @@ func (m *LogsData) decode() error {
 var preparedLogsDataResourceLogs = molecule.PrepareEmbeddedField(1)
 
 func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+	if m.protoMessage.IsModified() {
 		// Marshal "resourceLogs".
 		for _, elem := range m.resourceLogs {
 			token := ps.BeginEmbedded()
@@ -332,9 +328,7 @@ func (m *ResourceLogs) SetResource(v *Resource) {
 	v.protoMessage.Parent = &m.protoMessage
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // ScopeLogs returns the value of the scopeLogs.
@@ -360,9 +354,7 @@ func (m *ResourceLogs) SetScopeLogs(v []*ScopeLogs) {
 	}
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *ResourceLogs) ScopeLogsRemoveIf(f func(*ScopeLogs) bool) {
@@ -385,9 +377,7 @@ func (m *ResourceLogs) ScopeLogsRemoveIf(f func(*ScopeLogs) bool) {
 	if newLen != len(m.scopeLogs) {
 		m.scopeLogs = m.scopeLogs[:newLen]
 		// Mark this message modified, if not already.
-		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-			m.protoMessage.MarkModified()
-		}
+		m.protoMessage.MarkModified()
 	}
 }
 
@@ -401,9 +391,7 @@ func (m *ResourceLogs) SetSchemaUrl(v string) {
 	m.schemaUrl = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *ResourceLogs) decode() error {
@@ -477,7 +465,7 @@ var preparedResourceLogsScopeLogs = molecule.PrepareEmbeddedField(2)
 var preparedResourceLogsSchemaUrl = molecule.PrepareStringField(3)
 
 func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+	if m.protoMessage.IsModified() {
 		// Marshal "resource".
 		elem := m.resource
 		if elem != nil {
@@ -652,9 +640,7 @@ func (m *Resource) SetAttributes(v []*KeyValue) {
 	}
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *Resource) AttributesRemoveIf(f func(*KeyValue) bool) {
@@ -677,9 +663,7 @@ func (m *Resource) AttributesRemoveIf(f func(*KeyValue) bool) {
 	if newLen != len(m.attributes) {
 		m.attributes = m.attributes[:newLen]
 		// Mark this message modified, if not already.
-		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-			m.protoMessage.MarkModified()
-		}
+		m.protoMessage.MarkModified()
 	}
 }
 
@@ -693,9 +677,7 @@ func (m *Resource) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *Resource) decode() error {
@@ -759,7 +741,7 @@ var preparedResourceAttributes = molecule.PrepareEmbeddedField(1)
 var preparedResourceDroppedAttributesCount = molecule.PrepareUint32Field(2)
 
 func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+	if m.protoMessage.IsModified() {
 		// Marshal "attributes".
 		for _, elem := range m.attributes {
 			token := ps.BeginEmbedded()
@@ -921,9 +903,7 @@ func (m *ScopeLogs) SetScope(v *InstrumentationScope) {
 	v.protoMessage.Parent = &m.protoMessage
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // LogRecords returns the value of the logRecords.
@@ -949,9 +929,7 @@ func (m *ScopeLogs) SetLogRecords(v []*LogRecord) {
 	}
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *ScopeLogs) LogRecordsRemoveIf(f func(*LogRecord) bool) {
@@ -974,9 +952,7 @@ func (m *ScopeLogs) LogRecordsRemoveIf(f func(*LogRecord) bool) {
 	if newLen != len(m.logRecords) {
 		m.logRecords = m.logRecords[:newLen]
 		// Mark this message modified, if not already.
-		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-			m.protoMessage.MarkModified()
-		}
+		m.protoMessage.MarkModified()
 	}
 }
 
@@ -990,9 +966,7 @@ func (m *ScopeLogs) SetSchemaUrl(v string) {
 	m.schemaUrl = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *ScopeLogs) decode() error {
@@ -1066,7 +1040,7 @@ var preparedScopeLogsLogRecords = molecule.PrepareEmbeddedField(2)
 var preparedScopeLogsSchemaUrl = molecule.PrepareStringField(3)
 
 func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+	if m.protoMessage.IsModified() {
 		// Marshal "scope".
 		elem := m.scope
 		if elem != nil {
@@ -1230,9 +1204,7 @@ func (m *InstrumentationScope) SetName(v string) {
 	m.name = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // Version returns the value of the version.
@@ -1245,9 +1217,7 @@ func (m *InstrumentationScope) SetVersion(v string) {
 	m.version = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // Attributes returns the value of the attributes.
@@ -1273,9 +1243,7 @@ func (m *InstrumentationScope) SetAttributes(v []*KeyValue) {
 	}
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *InstrumentationScope) AttributesRemoveIf(f func(*KeyValue) bool) {
@@ -1298,9 +1266,7 @@ func (m *InstrumentationScope) AttributesRemoveIf(f func(*KeyValue) bool) {
 	if newLen != len(m.attributes) {
 		m.attributes = m.attributes[:newLen]
 		// Mark this message modified, if not already.
-		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-			m.protoMessage.MarkModified()
-		}
+		m.protoMessage.MarkModified()
 	}
 }
 
@@ -1314,9 +1280,7 @@ func (m *InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *InstrumentationScope) decode() error {
@@ -1396,7 +1360,7 @@ var preparedInstrumentationScopeAttributes = molecule.PrepareEmbeddedField(3)
 var preparedInstrumentationScopeDroppedAttributesCount = molecule.PrepareUint32Field(4)
 
 func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+	if m.protoMessage.IsModified() {
 		// Marshal "name".
 		ps.StringPrepared(preparedInstrumentationScopeName, m.name)
 		// Marshal "version".
@@ -1552,9 +1516,7 @@ func (m *LogRecord) SetTimeUnixNano(v uint64) {
 	m.timeUnixNano = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // ObservedTimeUnixNano returns the value of the observedTimeUnixNano.
@@ -1567,9 +1529,7 @@ func (m *LogRecord) SetObservedTimeUnixNano(v uint64) {
 	m.observedTimeUnixNano = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // SeverityNumber returns the value of the severityNumber.
@@ -1582,9 +1542,7 @@ func (m *LogRecord) SetSeverityNumber(v SeverityNumber) {
 	m.severityNumber = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // SeverityText returns the value of the severityText.
@@ -1597,9 +1555,7 @@ func (m *LogRecord) SetSeverityText(v string) {
 	m.severityText = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // Attributes returns the value of the attributes.
@@ -1625,9 +1581,7 @@ func (m *LogRecord) SetAttributes(v []*KeyValue) {
 	}
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *LogRecord) AttributesRemoveIf(f func(*KeyValue) bool) {
@@ -1650,9 +1604,7 @@ func (m *LogRecord) AttributesRemoveIf(f func(*KeyValue) bool) {
 	if newLen != len(m.attributes) {
 		m.attributes = m.attributes[:newLen]
 		// Mark this message modified, if not already.
-		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-			m.protoMessage.MarkModified()
-		}
+		m.protoMessage.MarkModified()
 	}
 }
 
@@ -1666,9 +1618,7 @@ func (m *LogRecord) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // Flags returns the value of the flags.
@@ -1681,9 +1631,7 @@ func (m *LogRecord) SetFlags(v uint32) {
 	m.flags = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // TraceId returns the value of the traceId.
@@ -1696,9 +1644,7 @@ func (m *LogRecord) SetTraceId(v []byte) {
 	m.traceId = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // SpanId returns the value of the spanId.
@@ -1711,9 +1657,7 @@ func (m *LogRecord) SetSpanId(v []byte) {
 	m.spanId = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *LogRecord) decode() error {
@@ -1833,7 +1777,7 @@ var preparedLogRecordTraceId = molecule.PrepareBytesField(9)
 var preparedLogRecordSpanId = molecule.PrepareBytesField(10)
 
 func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+	if m.protoMessage.IsModified() {
 		// Marshal "timeUnixNano".
 		ps.Fixed64Prepared(preparedLogRecordTimeUnixNano, m.timeUnixNano)
 		// Marshal "severityNumber".
@@ -1992,9 +1936,7 @@ func (m *KeyValue) SetKey(v string) {
 	m.key = v
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // Value returns the value of the value.
@@ -2019,9 +1961,7 @@ func (m *KeyValue) SetValue(v *AnyValue) {
 	v.protoMessage.Parent = &m.protoMessage
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *KeyValue) decode() error {
@@ -2061,7 +2001,7 @@ var preparedKeyValueKey = molecule.PrepareStringField(1)
 var preparedKeyValueValue = molecule.PrepareEmbeddedField(2)
 
 func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+	if m.protoMessage.IsModified() {
 		// Marshal "key".
 		ps.StringPrepared(preparedKeyValueKey, m.key)
 		// Marshal "value".
@@ -2246,9 +2186,7 @@ func (m *AnyValue) SetStringValue(v string) {
 	m.value = lazyproto.NewOneOfString(v, int(AnyValueStringValue))
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // BoolValue returns the value of the boolValue.
@@ -2263,9 +2201,7 @@ func (m *AnyValue) SetBoolValue(v bool) {
 	m.value = lazyproto.NewOneOfBool(v, int(AnyValueBoolValue))
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // IntValue returns the value of the intValue.
@@ -2280,9 +2216,7 @@ func (m *AnyValue) SetIntValue(v int64) {
 	m.value = lazyproto.NewOneOfInt64(v, int(AnyValueIntValue))
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // DoubleValue returns the value of the doubleValue.
@@ -2297,9 +2231,7 @@ func (m *AnyValue) SetDoubleValue(v float64) {
 	m.value = lazyproto.NewOneOfDouble(v, int(AnyValueDoubleValue))
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // ArrayValue returns the value of the arrayValue.
@@ -2328,9 +2260,7 @@ func (m *AnyValue) SetArrayValue(v *ArrayValue) {
 	v.protoMessage.Parent = &m.protoMessage
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // KvlistValue returns the value of the kvlistValue.
@@ -2359,9 +2289,7 @@ func (m *AnyValue) SetKvlistValue(v *KeyValueList) {
 	v.protoMessage.Parent = &m.protoMessage
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 // BytesValue returns the value of the bytesValue.
@@ -2376,9 +2304,7 @@ func (m *AnyValue) SetBytesValue(v []byte) {
 	m.value = lazyproto.NewOneOfBytes(v, int(AnyValueBytesValue))
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *AnyValue) decode() error {
@@ -2462,7 +2388,7 @@ var preparedAnyValueKvlistValue = molecule.PrepareEmbeddedField(6)
 var preparedAnyValueBytesValue = molecule.PrepareBytesField(7)
 
 func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+	if m.protoMessage.IsModified() {
 		// Marshal "value".
 		switch AnyValueValue(m.value.FieldIndex()) {
 		case AnyValueValueNone:
@@ -2669,9 +2595,7 @@ func (m *ArrayValue) SetValues(v []*AnyValue) {
 	}
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *ArrayValue) ValuesRemoveIf(f func(*AnyValue) bool) {
@@ -2694,9 +2618,7 @@ func (m *ArrayValue) ValuesRemoveIf(f func(*AnyValue) bool) {
 	if newLen != len(m.values) {
 		m.values = m.values[:newLen]
 		// Mark this message modified, if not already.
-		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-			m.protoMessage.MarkModified()
-		}
+		m.protoMessage.MarkModified()
 	}
 }
 
@@ -2753,7 +2675,7 @@ func (m *ArrayValue) decode() error {
 var preparedArrayValueValues = molecule.PrepareEmbeddedField(1)
 
 func (m *ArrayValue) Marshal(ps *molecule.ProtoStream) error {
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+	if m.protoMessage.IsModified() {
 		// Marshal "values".
 		for _, elem := range m.values {
 			token := ps.BeginEmbedded()
@@ -2908,9 +2830,7 @@ func (m *KeyValueList) SetValues(v []*KeyValue) {
 	}
 
 	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
+	m.protoMessage.MarkModified()
 }
 
 func (m *KeyValueList) ValuesRemoveIf(f func(*KeyValue) bool) {
@@ -2933,9 +2853,7 @@ func (m *KeyValueList) ValuesRemoveIf(f func(*KeyValue) bool) {
 	if newLen != len(m.values) {
 		m.values = m.values[:newLen]
 		// Mark this message modified, if not already.
-		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-			m.protoMessage.MarkModified()
-		}
+		m.protoMessage.MarkModified()
 	}
 }
 
@@ -2992,7 +2910,7 @@ func (m *KeyValueList) decode() error {
 var preparedKeyValueListValues = molecule.PrepareEmbeddedField(1)
 
 func (m *KeyValueList) Marshal(ps *molecule.ProtoStream) error {
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+	if m.protoMessage.IsModified() {
 		// Marshal "values".
 		for _, elem := range m.values {
 			token := ps.BeginEmbedded()

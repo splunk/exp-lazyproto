@@ -894,3 +894,21 @@ func BenchmarkLazyBatch(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkLazyTouchAll(b *testing.B) {
+	src := createLogsData()
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(b, err)
+
+		countAttrsLazy(lazy)
+		touchAll(lazy)
+	}
+}

@@ -797,9 +797,7 @@ func (g *generator) oFieldSetter() error {
 	}
 	g.o("")
 	g.o("	// Mark this message modified, if not already.")
-	g.o("	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {")
-	g.o("		m.protoMessage.MarkModified()")
-	g.o("	}")
+	g.o("	m.protoMessage.MarkModified()")
 	g.o("}\n")
 
 	if g.field.IsRepeated() {
@@ -834,9 +832,7 @@ func (m *$MessageName) $FieldNameRemoveIf(f func(*$FieldMessageTypeName) bool) {
 	if newLen != len(m.$fieldName) {
 		m.$fieldName = m.$fieldName[:newLen]
 		// Mark this message modified, if not already.
-		if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-			m.protoMessage.MarkModified()
-		}
+		m.protoMessage.MarkModified()
 	}
 }
 `,
@@ -857,7 +853,7 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 		g.o("func (m *$MessageName) Marshal(ps *molecule.ProtoStream) error {")
 	}
 	g.i(1)
-	g.o("if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {")
+	g.o("if m.protoMessage.IsModified() {")
 	g.i(1)
 
 	// Order the fields by their number to ensure marshaling is done in an
