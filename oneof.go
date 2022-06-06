@@ -28,6 +28,27 @@ func NewOneOfNone() OneOf {
 	return OneOf{}
 }
 
+func NewOneOfInt64(v int64, fieldIdx int) OneOf {
+	return OneOf{
+		lenAndFieldIdx: int64(fieldIdx),
+		capOrVal:       v,
+	}
+}
+
+func boolToInt64(b bool) int64 {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func NewOneOfBool(v bool, fieldIdx int) OneOf {
+	return OneOf{
+		lenAndFieldIdx: int64(fieldIdx),
+		capOrVal:       boolToInt64(v),
+	}
+}
+
 func NewOneOfString(v string, fieldIdx int) OneOf {
 	hdr := (*reflect.StringHeader)(unsafe.Pointer(&v))
 	if hdr.Len > MaxSliceLen {
@@ -55,6 +76,14 @@ func NewOneOfBytes(v []byte, fieldIdx int) OneOf {
 
 func (v *OneOf) FieldIndex() int {
 	return int(v.lenAndFieldIdx & fieldIdxMask)
+}
+
+func (v *OneOf) Int64Val() int64 {
+	return v.capOrVal
+}
+
+func (v *OneOf) BoolVal() bool {
+	return v.capOrVal != 0
 }
 
 // StringVal returns the stored string value.

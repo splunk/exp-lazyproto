@@ -92,6 +92,7 @@ message KeyValue {
 message AnyValue {
   oneof value {
     string string_value = 1;
+    bool bool_value = 2;
     bytes bytes_value = 7;
   }
 }
