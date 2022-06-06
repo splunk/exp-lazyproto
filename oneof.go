@@ -12,7 +12,7 @@ type OneOf struct {
 }
 
 // Number of bits to use for field index. This should be wide enough to fit all field indexes.
-const fieldIdxBitCount = 5
+const fieldIdxBitCount = 8
 
 // Bit mask for field index part of lenAndFieldIdx field.
 const fieldIdxMask = (1 << fieldIdxBitCount) - 1
@@ -24,6 +24,10 @@ const fieldIdxMask = (1 << fieldIdxBitCount) - 1
 // maxint / (2^fieldIdxBitCount), which we calculate below.
 const MaxSliceLen = int((^uint(0))>>1) >> fieldIdxBitCount
 
+func NewOneOfNone() OneOf {
+	return OneOf{}
+}
+
 func NewOneOfString(v string, fieldIdx int) OneOf {
 	hdr := (*reflect.StringHeader)(unsafe.Pointer(&v))
 	if hdr.Len > MaxSliceLen {
@@ -32,7 +36,7 @@ func NewOneOfString(v string, fieldIdx int) OneOf {
 
 	return OneOf{
 		ptr:            unsafe.Pointer(hdr.Data),
-		lenAndFieldIdx: int64((hdr.Len << fieldIdxMask) | fieldIdx),
+		lenAndFieldIdx: int64((hdr.Len << fieldIdxBitCount) | fieldIdx),
 	}
 }
 

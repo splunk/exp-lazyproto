@@ -44,8 +44,12 @@ func (f *Field) GetName() string {
 }
 
 func (f *Field) GetCapitalName() string {
-	if f.camelName != "" {
-		return strings.ToUpper(f.camelName[:1]) + f.camelName[1:]
+	return capitalCamelCase(f.camelName)
+}
+
+func capitalCamelCase(s string) string {
+	if s != "" {
+		return strings.ToUpper(s[:1]) + s[1:]
 	}
 	return ""
 }

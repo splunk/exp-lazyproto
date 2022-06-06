@@ -40,7 +40,7 @@ const (
 	SeverityNumber_SEVERITY_NUMBER_FATAL4      SeverityNumber = 24
 )
 
-// ====================== Generated for message AnyValue ======================
+// ====================== AnyValue message implementation ======================
 
 type AnyValue struct {
 	protoMessage lazyproto.ProtoMessage
@@ -60,12 +60,39 @@ func (m *AnyValue) Free() {
 	anyValuePool.Release(m)
 }
 
+// AnyValueValue defines the possible types for oneof field "value".
+type AnyValueValue int
+
+const (
+	// AnyValueValueNone indicates that none of the oneof choices is set.
+	AnyValueValueNone AnyValueValue = 0
+	// AnyValueStringValue indicates that oneof field "stringValue" is set.
+	AnyValueStringValue AnyValueValue = 1
+	// AnyValueBytesValue indicates that oneof field "bytesValue" is set.
+	AnyValueBytesValue AnyValueValue = 2
+)
+
+// ValueType returns the type of the current stored oneof "value".
+// To set the type use one of the setters.
+func (m *AnyValue) ValueType() AnyValueValue {
+	return AnyValueValue(m.value.FieldIndex())
+}
+
+// ValueUnset unsets the oneof field "value", so that it contains none of the choices.
+func (m *AnyValue) ValueUnset() {
+	m.value = lazyproto.NewOneOfNone()
+}
+
+// StringValue returns the value of the stringValue.
+// If the field "value" is not set to "stringValue" then the returned value is undefined.
 func (m *AnyValue) StringValue() string {
 	return m.value.StringVal()
 }
 
+// SetStringValue sets the value of the stringValue.
+// The oneof field "value" will be set to "stringValue".
 func (m *AnyValue) SetStringValue(v string) {
-	m.value = lazyproto.NewOneOfString(v, 0)
+	m.value = lazyproto.NewOneOfString(v, int(AnyValueStringValue))
 
 	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
@@ -73,12 +100,16 @@ func (m *AnyValue) SetStringValue(v string) {
 	}
 }
 
+// BytesValue returns the value of the bytesValue.
+// If the field "value" is not set to "bytesValue" then the returned value is undefined.
 func (m *AnyValue) BytesValue() []byte {
 	return m.value.BytesVal()
 }
 
+// SetBytesValue sets the value of the bytesValue.
+// The oneof field "value" will be set to "bytesValue".
 func (m *AnyValue) SetBytesValue(v []byte) {
-	m.value = lazyproto.NewOneOfBytes(v, 1)
+	m.value = lazyproto.NewOneOfBytes(v, int(AnyValueBytesValue))
 
 	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
@@ -94,19 +125,19 @@ func (m *AnyValue) decode() error {
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
-				// Decode stringValue.
+				// Decode "stringValue".
 				v, err := value.AsStringUnsafe()
 				if err != nil {
 					return false, err
 				}
-				m.value = lazyproto.NewOneOfString(v, 0)
+				m.value = lazyproto.NewOneOfString(v, int(AnyValueStringValue))
 			case 7:
-				// Decode bytesValue.
+				// Decode "bytesValue".
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
 				}
-				m.value = lazyproto.NewOneOfBytes(v, 1)
+				m.value = lazyproto.NewOneOfBytes(v, int(AnyValueBytesValue))
 			}
 			return true, nil
 		},
@@ -122,12 +153,15 @@ var preparedAnyValueBytesValue = molecule.PrepareBytesField(7)
 
 func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
-		switch m.value.FieldIndex() {
-		case 0:
-			// Marshal stringValue
+		// Marshal "value".
+		switch AnyValueValue(m.value.FieldIndex()) {
+		case AnyValueValueNone:
+			// Nothing to do, oneof is unset.
+		case AnyValueStringValue:
+			// Marshal "stringValue".
 			ps.StringPrepared(preparedAnyValueStringValue, m.value.StringVal())
-		case 1:
-			// Marshal bytesValue
+		case AnyValueBytesValue:
+			// Marshal "bytesValue".
 			ps.BytesPrepared(preparedAnyValueBytesValue, m.value.BytesVal())
 		}
 	} else {
@@ -226,7 +260,7 @@ func (p *anyValuePoolType) Release(elem *AnyValue) {
 	p.pool = append(p.pool, elem)
 }
 
-// ====================== Generated for message LogsData ======================
+// ====================== LogsData message implementation ======================
 
 // LogsData contains all log data
 type LogsData struct {
@@ -251,6 +285,7 @@ func (m *LogsData) Free() {
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagLogsDataResourceLogsDecoded = 0x0000000000000002
 
+// ResourceLogs returns the value of the resourceLogs.
 func (m *LogsData) ResourceLogs() []*ResourceLogs {
 	if m.protoMessage.Flags&flagLogsDataResourceLogsDecoded == 0 {
 		// Decode nested message(s).
@@ -263,6 +298,7 @@ func (m *LogsData) ResourceLogs() []*ResourceLogs {
 	return m.resourceLogs
 }
 
+// SetResourceLogs sets the value of the resourceLogs.
 func (m *LogsData) SetResourceLogs(v []*ResourceLogs) {
 	m.resourceLogs = v
 
@@ -276,6 +312,7 @@ func (m *LogsData) SetResourceLogs(v []*ResourceLogs) {
 		m.protoMessage.MarkModified()
 	}
 }
+
 func (m *LogsData) ResourceLogsRemoveIf(f func(*ResourceLogs) bool) {
 	// Call getter to load the field.
 	m.ResourceLogs()
@@ -332,7 +369,7 @@ func (m *LogsData) decode() error {
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
-				// Decode resourceLogs.
+				// Decode "resourceLogs".
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
@@ -356,7 +393,7 @@ var preparedLogsDataResourceLogs = molecule.PrepareEmbeddedField(1)
 
 func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
-		// Marshal resourceLogs
+		// Marshal "resourceLogs".
 		for _, elem := range m.resourceLogs {
 			token := ps.BeginEmbedded()
 			if err := elem.Marshal(ps); err != nil {
@@ -464,7 +501,7 @@ func (p *logsDataPoolType) Release(elem *LogsData) {
 	p.pool = append(p.pool, elem)
 }
 
-// ====================== Generated for message ResourceLogs ======================
+// ====================== ResourceLogs message implementation ======================
 
 type ResourceLogs struct {
 	protoMessage lazyproto.ProtoMessage
@@ -492,6 +529,7 @@ func (m *ResourceLogs) Free() {
 const flagResourceLogsResourceDecoded = 0x0000000000000002
 const flagResourceLogsScopeLogsDecoded = 0x0000000000000004
 
+// Resource returns the value of the resource.
 func (m *ResourceLogs) Resource() *Resource {
 	if m.protoMessage.Flags&flagResourceLogsResourceDecoded == 0 {
 		// Decode nested message(s).
@@ -504,6 +542,7 @@ func (m *ResourceLogs) Resource() *Resource {
 	return m.resource
 }
 
+// SetResource sets the value of the resource.
 func (m *ResourceLogs) SetResource(v *Resource) {
 	m.resource = v
 
@@ -516,6 +555,7 @@ func (m *ResourceLogs) SetResource(v *Resource) {
 	}
 }
 
+// ScopeLogs returns the value of the scopeLogs.
 func (m *ResourceLogs) ScopeLogs() []*ScopeLogs {
 	if m.protoMessage.Flags&flagResourceLogsScopeLogsDecoded == 0 {
 		// Decode nested message(s).
@@ -528,6 +568,7 @@ func (m *ResourceLogs) ScopeLogs() []*ScopeLogs {
 	return m.scopeLogs
 }
 
+// SetScopeLogs sets the value of the scopeLogs.
 func (m *ResourceLogs) SetScopeLogs(v []*ScopeLogs) {
 	m.scopeLogs = v
 
@@ -541,6 +582,7 @@ func (m *ResourceLogs) SetScopeLogs(v []*ScopeLogs) {
 		m.protoMessage.MarkModified()
 	}
 }
+
 func (m *ResourceLogs) ScopeLogsRemoveIf(f func(*ScopeLogs) bool) {
 	// Call getter to load the field.
 	m.ScopeLogs()
@@ -567,10 +609,12 @@ func (m *ResourceLogs) ScopeLogsRemoveIf(f func(*ScopeLogs) bool) {
 	}
 }
 
+// SchemaUrl returns the value of the schemaUrl.
 func (m *ResourceLogs) SchemaUrl() string {
 	return m.schemaUrl
 }
 
+// SetSchemaUrl sets the value of the schemaUrl.
 func (m *ResourceLogs) SetSchemaUrl(v string) {
 	m.schemaUrl = v
 
@@ -610,7 +654,7 @@ func (m *ResourceLogs) decode() error {
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
-				// Decode resource.
+				// Decode "resource".
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
@@ -619,7 +663,7 @@ func (m *ResourceLogs) decode() error {
 				m.resource.protoMessage.Parent = &m.protoMessage
 				m.resource.protoMessage.Bytes = v
 			case 2:
-				// Decode scopeLogs.
+				// Decode "scopeLogs".
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
@@ -630,7 +674,7 @@ func (m *ResourceLogs) decode() error {
 				elem.protoMessage.Parent = &m.protoMessage
 				elem.protoMessage.Bytes = v
 			case 3:
-				// Decode schemaUrl.
+				// Decode "schemaUrl".
 				v, err := value.AsStringUnsafe()
 				if err != nil {
 					return false, err
@@ -652,7 +696,7 @@ var preparedResourceLogsSchemaUrl = molecule.PrepareStringField(3)
 
 func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
-		// Marshal resource
+		// Marshal "resource".
 		if m.resource != nil {
 			token := ps.BeginEmbedded()
 			if err := m.resource.Marshal(ps); err != nil {
@@ -660,7 +704,7 @@ func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 			}
 			ps.EndEmbeddedPrepared(token, preparedResourceLogsResource)
 		}
-		// Marshal scopeLogs
+		// Marshal "scopeLogs".
 		for _, elem := range m.scopeLogs {
 			token := ps.BeginEmbedded()
 			if err := elem.Marshal(ps); err != nil {
@@ -668,7 +712,7 @@ func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 			}
 			ps.EndEmbeddedPrepared(token, preparedResourceLogsScopeLogs)
 		}
-		// Marshal schemaUrl
+		// Marshal "schemaUrl".
 		ps.StringPrepared(preparedResourceLogsSchemaUrl, m.schemaUrl)
 	} else {
 		// Message is unchanged. Used original bytes.
@@ -778,7 +822,7 @@ func (p *resourceLogsPoolType) Release(elem *ResourceLogs) {
 	p.pool = append(p.pool, elem)
 }
 
-// ====================== Generated for message Resource ======================
+// ====================== Resource message implementation ======================
 
 type Resource struct {
 	protoMessage           lazyproto.ProtoMessage
@@ -802,6 +846,7 @@ func (m *Resource) Free() {
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagResourceAttributesDecoded = 0x0000000000000002
 
+// Attributes returns the value of the attributes.
 func (m *Resource) Attributes() []*KeyValue {
 	if m.protoMessage.Flags&flagResourceAttributesDecoded == 0 {
 		// Decode nested message(s).
@@ -814,6 +859,7 @@ func (m *Resource) Attributes() []*KeyValue {
 	return m.attributes
 }
 
+// SetAttributes sets the value of the attributes.
 func (m *Resource) SetAttributes(v []*KeyValue) {
 	m.attributes = v
 
@@ -827,6 +873,7 @@ func (m *Resource) SetAttributes(v []*KeyValue) {
 		m.protoMessage.MarkModified()
 	}
 }
+
 func (m *Resource) AttributesRemoveIf(f func(*KeyValue) bool) {
 	// Call getter to load the field.
 	m.Attributes()
@@ -853,10 +900,12 @@ func (m *Resource) AttributesRemoveIf(f func(*KeyValue) bool) {
 	}
 }
 
+// DroppedAttributesCount returns the value of the droppedAttributesCount.
 func (m *Resource) DroppedAttributesCount() uint32 {
 	return m.droppedAttributesCount
 }
 
+// SetDroppedAttributesCount sets the value of the droppedAttributesCount.
 func (m *Resource) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
 
@@ -896,7 +945,7 @@ func (m *Resource) decode() error {
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
-				// Decode attributes.
+				// Decode "attributes".
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
@@ -907,7 +956,7 @@ func (m *Resource) decode() error {
 				elem.protoMessage.Parent = &m.protoMessage
 				elem.protoMessage.Bytes = v
 			case 2:
-				// Decode droppedAttributesCount.
+				// Decode "droppedAttributesCount".
 				v, err := value.AsUint32()
 				if err != nil {
 					return false, err
@@ -928,7 +977,7 @@ var preparedResourceDroppedAttributesCount = molecule.PrepareUint32Field(2)
 
 func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
-		// Marshal attributes
+		// Marshal "attributes".
 		for _, elem := range m.attributes {
 			token := ps.BeginEmbedded()
 			if err := elem.Marshal(ps); err != nil {
@@ -936,7 +985,7 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 			}
 			ps.EndEmbeddedPrepared(token, preparedResourceAttributes)
 		}
-		// Marshal droppedAttributesCount
+		// Marshal "droppedAttributesCount".
 		ps.Uint32Prepared(preparedResourceDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
@@ -1038,7 +1087,7 @@ func (p *resourcePoolType) Release(elem *Resource) {
 	p.pool = append(p.pool, elem)
 }
 
-// ====================== Generated for message ScopeLogs ======================
+// ====================== ScopeLogs message implementation ======================
 
 // A collection of Logs produced by a Scope.
 type ScopeLogs struct {
@@ -1067,6 +1116,7 @@ func (m *ScopeLogs) Free() {
 const flagScopeLogsScopeDecoded = 0x0000000000000002
 const flagScopeLogsLogRecordsDecoded = 0x0000000000000004
 
+// Scope returns the value of the scope.
 func (m *ScopeLogs) Scope() *InstrumentationScope {
 	if m.protoMessage.Flags&flagScopeLogsScopeDecoded == 0 {
 		// Decode nested message(s).
@@ -1079,6 +1129,7 @@ func (m *ScopeLogs) Scope() *InstrumentationScope {
 	return m.scope
 }
 
+// SetScope sets the value of the scope.
 func (m *ScopeLogs) SetScope(v *InstrumentationScope) {
 	m.scope = v
 
@@ -1091,6 +1142,7 @@ func (m *ScopeLogs) SetScope(v *InstrumentationScope) {
 	}
 }
 
+// LogRecords returns the value of the logRecords.
 func (m *ScopeLogs) LogRecords() []*LogRecord {
 	if m.protoMessage.Flags&flagScopeLogsLogRecordsDecoded == 0 {
 		// Decode nested message(s).
@@ -1103,6 +1155,7 @@ func (m *ScopeLogs) LogRecords() []*LogRecord {
 	return m.logRecords
 }
 
+// SetLogRecords sets the value of the logRecords.
 func (m *ScopeLogs) SetLogRecords(v []*LogRecord) {
 	m.logRecords = v
 
@@ -1116,6 +1169,7 @@ func (m *ScopeLogs) SetLogRecords(v []*LogRecord) {
 		m.protoMessage.MarkModified()
 	}
 }
+
 func (m *ScopeLogs) LogRecordsRemoveIf(f func(*LogRecord) bool) {
 	// Call getter to load the field.
 	m.LogRecords()
@@ -1142,10 +1196,12 @@ func (m *ScopeLogs) LogRecordsRemoveIf(f func(*LogRecord) bool) {
 	}
 }
 
+// SchemaUrl returns the value of the schemaUrl.
 func (m *ScopeLogs) SchemaUrl() string {
 	return m.schemaUrl
 }
 
+// SetSchemaUrl sets the value of the schemaUrl.
 func (m *ScopeLogs) SetSchemaUrl(v string) {
 	m.schemaUrl = v
 
@@ -1185,7 +1241,7 @@ func (m *ScopeLogs) decode() error {
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
-				// Decode scope.
+				// Decode "scope".
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
@@ -1194,7 +1250,7 @@ func (m *ScopeLogs) decode() error {
 				m.scope.protoMessage.Parent = &m.protoMessage
 				m.scope.protoMessage.Bytes = v
 			case 2:
-				// Decode logRecords.
+				// Decode "logRecords".
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
@@ -1205,7 +1261,7 @@ func (m *ScopeLogs) decode() error {
 				elem.protoMessage.Parent = &m.protoMessage
 				elem.protoMessage.Bytes = v
 			case 3:
-				// Decode schemaUrl.
+				// Decode "schemaUrl".
 				v, err := value.AsStringUnsafe()
 				if err != nil {
 					return false, err
@@ -1227,7 +1283,7 @@ var preparedScopeLogsSchemaUrl = molecule.PrepareStringField(3)
 
 func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
-		// Marshal scope
+		// Marshal "scope".
 		if m.scope != nil {
 			token := ps.BeginEmbedded()
 			if err := m.scope.Marshal(ps); err != nil {
@@ -1235,7 +1291,7 @@ func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 			}
 			ps.EndEmbeddedPrepared(token, preparedScopeLogsScope)
 		}
-		// Marshal logRecords
+		// Marshal "logRecords".
 		for _, elem := range m.logRecords {
 			token := ps.BeginEmbedded()
 			if err := elem.Marshal(ps); err != nil {
@@ -1243,7 +1299,7 @@ func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 			}
 			ps.EndEmbeddedPrepared(token, preparedScopeLogsLogRecords)
 		}
-		// Marshal schemaUrl
+		// Marshal "schemaUrl".
 		ps.StringPrepared(preparedScopeLogsSchemaUrl, m.schemaUrl)
 	} else {
 		// Message is unchanged. Used original bytes.
@@ -1353,7 +1409,7 @@ func (p *scopeLogsPoolType) Release(elem *ScopeLogs) {
 	p.pool = append(p.pool, elem)
 }
 
-// ====================== Generated for message InstrumentationScope ======================
+// ====================== InstrumentationScope message implementation ======================
 
 type InstrumentationScope struct {
 	protoMessage           lazyproto.ProtoMessage
@@ -1379,10 +1435,12 @@ func (m *InstrumentationScope) Free() {
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagInstrumentationScopeAttributesDecoded = 0x0000000000000002
 
+// Name returns the value of the name.
 func (m *InstrumentationScope) Name() string {
 	return m.name
 }
 
+// SetName sets the value of the name.
 func (m *InstrumentationScope) SetName(v string) {
 	m.name = v
 
@@ -1392,10 +1450,12 @@ func (m *InstrumentationScope) SetName(v string) {
 	}
 }
 
+// Version returns the value of the version.
 func (m *InstrumentationScope) Version() string {
 	return m.version
 }
 
+// SetVersion sets the value of the version.
 func (m *InstrumentationScope) SetVersion(v string) {
 	m.version = v
 
@@ -1405,6 +1465,7 @@ func (m *InstrumentationScope) SetVersion(v string) {
 	}
 }
 
+// Attributes returns the value of the attributes.
 func (m *InstrumentationScope) Attributes() []*KeyValue {
 	if m.protoMessage.Flags&flagInstrumentationScopeAttributesDecoded == 0 {
 		// Decode nested message(s).
@@ -1417,6 +1478,7 @@ func (m *InstrumentationScope) Attributes() []*KeyValue {
 	return m.attributes
 }
 
+// SetAttributes sets the value of the attributes.
 func (m *InstrumentationScope) SetAttributes(v []*KeyValue) {
 	m.attributes = v
 
@@ -1430,6 +1492,7 @@ func (m *InstrumentationScope) SetAttributes(v []*KeyValue) {
 		m.protoMessage.MarkModified()
 	}
 }
+
 func (m *InstrumentationScope) AttributesRemoveIf(f func(*KeyValue) bool) {
 	// Call getter to load the field.
 	m.Attributes()
@@ -1456,10 +1519,12 @@ func (m *InstrumentationScope) AttributesRemoveIf(f func(*KeyValue) bool) {
 	}
 }
 
+// DroppedAttributesCount returns the value of the droppedAttributesCount.
 func (m *InstrumentationScope) DroppedAttributesCount() uint32 {
 	return m.droppedAttributesCount
 }
 
+// SetDroppedAttributesCount sets the value of the droppedAttributesCount.
 func (m *InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
 
@@ -1499,21 +1564,21 @@ func (m *InstrumentationScope) decode() error {
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
-				// Decode name.
+				// Decode "name".
 				v, err := value.AsStringUnsafe()
 				if err != nil {
 					return false, err
 				}
 				m.name = v
 			case 2:
-				// Decode version.
+				// Decode "version".
 				v, err := value.AsStringUnsafe()
 				if err != nil {
 					return false, err
 				}
 				m.version = v
 			case 3:
-				// Decode attributes.
+				// Decode "attributes".
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
@@ -1524,7 +1589,7 @@ func (m *InstrumentationScope) decode() error {
 				elem.protoMessage.Parent = &m.protoMessage
 				elem.protoMessage.Bytes = v
 			case 4:
-				// Decode droppedAttributesCount.
+				// Decode "droppedAttributesCount".
 				v, err := value.AsUint32()
 				if err != nil {
 					return false, err
@@ -1547,11 +1612,11 @@ var preparedInstrumentationScopeDroppedAttributesCount = molecule.PrepareUint32F
 
 func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
-		// Marshal name
+		// Marshal "name".
 		ps.StringPrepared(preparedInstrumentationScopeName, m.name)
-		// Marshal version
+		// Marshal "version".
 		ps.StringPrepared(preparedInstrumentationScopeVersion, m.version)
-		// Marshal attributes
+		// Marshal "attributes".
 		for _, elem := range m.attributes {
 			token := ps.BeginEmbedded()
 			if err := elem.Marshal(ps); err != nil {
@@ -1559,7 +1624,7 @@ func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 			}
 			ps.EndEmbeddedPrepared(token, preparedInstrumentationScopeAttributes)
 		}
-		// Marshal droppedAttributesCount
+		// Marshal "droppedAttributesCount".
 		ps.Uint32Prepared(preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
@@ -1661,7 +1726,7 @@ func (p *instrumentationScopePoolType) Release(elem *InstrumentationScope) {
 	p.pool = append(p.pool, elem)
 }
 
-// ====================== Generated for message LogRecord ======================
+// ====================== LogRecord message implementation ======================
 
 type LogRecord struct {
 	protoMessage           lazyproto.ProtoMessage
@@ -1692,10 +1757,12 @@ func (m *LogRecord) Free() {
 // Bitmasks that indicate that the particular nested message is decoded.
 const flagLogRecordAttributesDecoded = 0x0000000000000002
 
+// TimeUnixNano returns the value of the timeUnixNano.
 func (m *LogRecord) TimeUnixNano() uint64 {
 	return m.timeUnixNano
 }
 
+// SetTimeUnixNano sets the value of the timeUnixNano.
 func (m *LogRecord) SetTimeUnixNano(v uint64) {
 	m.timeUnixNano = v
 
@@ -1705,10 +1772,12 @@ func (m *LogRecord) SetTimeUnixNano(v uint64) {
 	}
 }
 
+// ObservedTimeUnixNano returns the value of the observedTimeUnixNano.
 func (m *LogRecord) ObservedTimeUnixNano() uint64 {
 	return m.observedTimeUnixNano
 }
 
+// SetObservedTimeUnixNano sets the value of the observedTimeUnixNano.
 func (m *LogRecord) SetObservedTimeUnixNano(v uint64) {
 	m.observedTimeUnixNano = v
 
@@ -1718,10 +1787,12 @@ func (m *LogRecord) SetObservedTimeUnixNano(v uint64) {
 	}
 }
 
+// SeverityNumber returns the value of the severityNumber.
 func (m *LogRecord) SeverityNumber() SeverityNumber {
 	return m.severityNumber
 }
 
+// SetSeverityNumber sets the value of the severityNumber.
 func (m *LogRecord) SetSeverityNumber(v SeverityNumber) {
 	m.severityNumber = v
 
@@ -1731,10 +1802,12 @@ func (m *LogRecord) SetSeverityNumber(v SeverityNumber) {
 	}
 }
 
+// SeverityText returns the value of the severityText.
 func (m *LogRecord) SeverityText() string {
 	return m.severityText
 }
 
+// SetSeverityText sets the value of the severityText.
 func (m *LogRecord) SetSeverityText(v string) {
 	m.severityText = v
 
@@ -1744,6 +1817,7 @@ func (m *LogRecord) SetSeverityText(v string) {
 	}
 }
 
+// Attributes returns the value of the attributes.
 func (m *LogRecord) Attributes() []*KeyValue {
 	if m.protoMessage.Flags&flagLogRecordAttributesDecoded == 0 {
 		// Decode nested message(s).
@@ -1756,6 +1830,7 @@ func (m *LogRecord) Attributes() []*KeyValue {
 	return m.attributes
 }
 
+// SetAttributes sets the value of the attributes.
 func (m *LogRecord) SetAttributes(v []*KeyValue) {
 	m.attributes = v
 
@@ -1769,6 +1844,7 @@ func (m *LogRecord) SetAttributes(v []*KeyValue) {
 		m.protoMessage.MarkModified()
 	}
 }
+
 func (m *LogRecord) AttributesRemoveIf(f func(*KeyValue) bool) {
 	// Call getter to load the field.
 	m.Attributes()
@@ -1795,10 +1871,12 @@ func (m *LogRecord) AttributesRemoveIf(f func(*KeyValue) bool) {
 	}
 }
 
+// DroppedAttributesCount returns the value of the droppedAttributesCount.
 func (m *LogRecord) DroppedAttributesCount() uint32 {
 	return m.droppedAttributesCount
 }
 
+// SetDroppedAttributesCount sets the value of the droppedAttributesCount.
 func (m *LogRecord) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
 
@@ -1808,10 +1886,12 @@ func (m *LogRecord) SetDroppedAttributesCount(v uint32) {
 	}
 }
 
+// Flags returns the value of the flags.
 func (m *LogRecord) Flags() uint32 {
 	return m.flags
 }
 
+// SetFlags sets the value of the flags.
 func (m *LogRecord) SetFlags(v uint32) {
 	m.flags = v
 
@@ -1821,10 +1901,12 @@ func (m *LogRecord) SetFlags(v uint32) {
 	}
 }
 
+// TraceId returns the value of the traceId.
 func (m *LogRecord) TraceId() []byte {
 	return m.traceId
 }
 
+// SetTraceId sets the value of the traceId.
 func (m *LogRecord) SetTraceId(v []byte) {
 	m.traceId = v
 
@@ -1834,10 +1916,12 @@ func (m *LogRecord) SetTraceId(v []byte) {
 	}
 }
 
+// SpanId returns the value of the spanId.
 func (m *LogRecord) SpanId() []byte {
 	return m.spanId
 }
 
+// SetSpanId sets the value of the spanId.
 func (m *LogRecord) SetSpanId(v []byte) {
 	m.spanId = v
 
@@ -1877,35 +1961,35 @@ func (m *LogRecord) decode() error {
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
-				// Decode timeUnixNano.
+				// Decode "timeUnixNano".
 				v, err := value.AsFixed64()
 				if err != nil {
 					return false, err
 				}
 				m.timeUnixNano = v
 			case 11:
-				// Decode observedTimeUnixNano.
+				// Decode "observedTimeUnixNano".
 				v, err := value.AsFixed64()
 				if err != nil {
 					return false, err
 				}
 				m.observedTimeUnixNano = v
 			case 2:
-				// Decode severityNumber.
+				// Decode "severityNumber".
 				v, err := value.AsUint32()
 				if err != nil {
 					return false, err
 				}
 				m.severityNumber = SeverityNumber(v)
 			case 3:
-				// Decode severityText.
+				// Decode "severityText".
 				v, err := value.AsStringUnsafe()
 				if err != nil {
 					return false, err
 				}
 				m.severityText = v
 			case 6:
-				// Decode attributes.
+				// Decode "attributes".
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
@@ -1916,28 +2000,28 @@ func (m *LogRecord) decode() error {
 				elem.protoMessage.Parent = &m.protoMessage
 				elem.protoMessage.Bytes = v
 			case 7:
-				// Decode droppedAttributesCount.
+				// Decode "droppedAttributesCount".
 				v, err := value.AsUint32()
 				if err != nil {
 					return false, err
 				}
 				m.droppedAttributesCount = v
 			case 8:
-				// Decode flags.
+				// Decode "flags".
 				v, err := value.AsFixed32()
 				if err != nil {
 					return false, err
 				}
 				m.flags = v
 			case 9:
-				// Decode traceId.
+				// Decode "traceId".
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
 				}
 				m.traceId = v
 			case 10:
-				// Decode spanId.
+				// Decode "spanId".
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
@@ -1965,13 +2049,13 @@ var preparedLogRecordSpanId = molecule.PrepareBytesField(10)
 
 func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
-		// Marshal timeUnixNano
+		// Marshal "timeUnixNano".
 		ps.Fixed64Prepared(preparedLogRecordTimeUnixNano, m.timeUnixNano)
-		// Marshal severityNumber
+		// Marshal "severityNumber".
 		ps.Uint32Prepared(preparedLogRecordSeverityNumber, uint32(m.severityNumber))
-		// Marshal severityText
+		// Marshal "severityText".
 		ps.StringPrepared(preparedLogRecordSeverityText, m.severityText)
-		// Marshal attributes
+		// Marshal "attributes".
 		for _, elem := range m.attributes {
 			token := ps.BeginEmbedded()
 			if err := elem.Marshal(ps); err != nil {
@@ -1979,15 +2063,15 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 			}
 			ps.EndEmbeddedPrepared(token, preparedLogRecordAttributes)
 		}
-		// Marshal droppedAttributesCount
+		// Marshal "droppedAttributesCount".
 		ps.Uint32Prepared(preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount)
-		// Marshal flags
+		// Marshal "flags".
 		ps.Fixed32Prepared(preparedLogRecordFlags, m.flags)
-		// Marshal traceId
+		// Marshal "traceId".
 		ps.BytesPrepared(preparedLogRecordTraceId, m.traceId)
-		// Marshal spanId
+		// Marshal "spanId".
 		ps.BytesPrepared(preparedLogRecordSpanId, m.spanId)
-		// Marshal observedTimeUnixNano
+		// Marshal "observedTimeUnixNano".
 		ps.Fixed64Prepared(preparedLogRecordObservedTimeUnixNano, m.observedTimeUnixNano)
 	} else {
 		// Message is unchanged. Used original bytes.
@@ -2089,7 +2173,7 @@ func (p *logRecordPoolType) Release(elem *LogRecord) {
 	p.pool = append(p.pool, elem)
 }
 
-// ====================== Generated for message KeyValue ======================
+// ====================== KeyValue message implementation ======================
 
 type KeyValue struct {
 	protoMessage lazyproto.ProtoMessage
@@ -2110,10 +2194,12 @@ func (m *KeyValue) Free() {
 	keyValuePool.Release(m)
 }
 
+// Key returns the value of the key.
 func (m *KeyValue) Key() string {
 	return m.key
 }
 
+// SetKey sets the value of the key.
 func (m *KeyValue) SetKey(v string) {
 	m.key = v
 
@@ -2123,10 +2209,12 @@ func (m *KeyValue) SetKey(v string) {
 	}
 }
 
+// Value returns the value of the value.
 func (m *KeyValue) Value() string {
 	return m.value
 }
 
+// SetValue sets the value of the value.
 func (m *KeyValue) SetValue(v string) {
 	m.value = v
 
@@ -2144,14 +2232,14 @@ func (m *KeyValue) decode() error {
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
 			switch fieldNum {
 			case 1:
-				// Decode key.
+				// Decode "key".
 				v, err := value.AsStringUnsafe()
 				if err != nil {
 					return false, err
 				}
 				m.key = v
 			case 2:
-				// Decode value.
+				// Decode "value".
 				v, err := value.AsStringUnsafe()
 				if err != nil {
 					return false, err
@@ -2172,9 +2260,9 @@ var preparedKeyValueValue = molecule.PrepareStringField(2)
 
 func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
-		// Marshal key
+		// Marshal "key".
 		ps.StringPrepared(preparedKeyValueKey, m.key)
-		// Marshal value
+		// Marshal "value".
 		ps.StringPrepared(preparedKeyValueValue, m.value)
 	} else {
 		// Message is unchanged. Used original bytes.
