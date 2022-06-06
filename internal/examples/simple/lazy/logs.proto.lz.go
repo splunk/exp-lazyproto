@@ -40,6 +40,192 @@ const (
 	SeverityNumber_SEVERITY_NUMBER_FATAL4      SeverityNumber = 24
 )
 
+// ====================== Generated for message AnyValue ======================
+
+type AnyValue struct {
+	protoMessage lazyproto.ProtoMessage
+	value        lazyproto.OneOf
+}
+
+func UnmarshalAnyValue(bytes []byte) (*AnyValue, error) {
+	m := anyValuePool.Get()
+	m.protoMessage.Bytes = bytes
+	if err := m.decode(); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (m *AnyValue) Free() {
+	anyValuePool.Release(m)
+}
+
+func (m *AnyValue) StringValue() string {
+	return m.value.StringVal()
+}
+
+func (m *AnyValue) SetStringValue(v string) {
+	m.value = lazyproto.NewOneOfString(v, 0)
+
+	// Mark this message modified, if not already.
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *AnyValue) BytesValue() []byte {
+	return m.value.BytesVal()
+}
+
+func (m *AnyValue) SetBytesValue(v []byte) {
+	m.value = lazyproto.NewOneOfBytes(v, 1)
+
+	// Mark this message modified, if not already.
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *AnyValue) decode() error {
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
+
+	// Iterate and decode the fields.
+	err2 := molecule.MessageEach(
+		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
+			switch fieldNum {
+			case 1:
+				// Decode stringValue.
+				v, err := value.AsStringUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.value = lazyproto.NewOneOfString(v, 0)
+			case 7:
+				// Decode bytesValue.
+				v, err := value.AsBytesUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.value = lazyproto.NewOneOfBytes(v, 1)
+			}
+			return true, nil
+		},
+	)
+	if err2 != nil {
+		return err2
+	}
+	return nil
+}
+
+var preparedAnyValueStringValue = molecule.PrepareStringField(1)
+var preparedAnyValueBytesValue = molecule.PrepareBytesField(7)
+
+func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+		switch m.value.FieldIndex() {
+		case 0:
+			// Marshal stringValue
+			ps.StringPrepared(preparedAnyValueStringValue, m.value.StringVal())
+		case 1:
+			// Marshal bytesValue
+			ps.BytesPrepared(preparedAnyValueBytesValue, m.value.BytesVal())
+		}
+	} else {
+		// Message is unchanged. Used original bytes.
+		ps.Raw(m.protoMessage.Bytes)
+	}
+	return nil
+}
+
+// Pool of AnyValue structs.
+type anyValuePoolType struct {
+	pool []*AnyValue
+	mux  sync.Mutex
+}
+
+var anyValuePool = anyValuePoolType{}
+
+// Get one element from the pool. Creates a new element if the pool is empty.
+func (p *anyValuePoolType) Get() *AnyValue {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have elements in the pool?
+	if len(p.pool) >= 1 {
+		// Get the last element.
+		r := p.pool[len(p.pool)-1]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-1]
+		return r
+	}
+
+	// Pool is empty, create a new element.
+	return &AnyValue{}
+}
+
+func (p *anyValuePoolType) GetSlice(count int) []*AnyValue {
+	// Create a new slice.
+	r := make([]*AnyValue, count)
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have enough elements in the pool?
+	if len(p.pool) >= count {
+		// Copy the elements from the end of the pool.
+		copy(r, p.pool[len(p.pool)-count:])
+
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-count]
+
+		return r
+	}
+
+	// Initialize with what remains in the pool.
+	copied := copy(r, p.pool)
+	p.pool = nil
+
+	if copied < count {
+		// Create remaining elements.
+		storage := make([]AnyValue, count-copied)
+		j := 0
+		for ; copied < count; copied++ {
+			r[copied] = &storage[j]
+			j++
+		}
+	}
+
+	return r
+}
+
+// ReleaseSlice releases a slice of elements back to the pool.
+func (p *anyValuePoolType) ReleaseSlice(slice []*AnyValue) {
+	for _, elem := range slice {
+
+		// Zero-initialize the released element.
+		*elem = AnyValue{}
+	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, slice...)
+}
+
+// Release an element back to the pool.
+func (p *anyValuePoolType) Release(elem *AnyValue) {
+
+	// Zero-initialize the released element.
+	*elem = AnyValue{}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, elem)
+}
+
 // ====================== Generated for message LogsData ======================
 
 // LogsData contains all log data

@@ -29,7 +29,7 @@ func NewMessage(descr *desc.MessageDescriptor) *Message {
 			camelName:       name,
 		}
 		m.Fields = append(m.Fields, f)
-		m.FieldsMap[name] = f
+		m.FieldsMap[field.GetName()] = f
 	}
 	return m
 }
