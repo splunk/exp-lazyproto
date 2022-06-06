@@ -16,6 +16,8 @@ import (
 
 func createLogRecord(n int) *gogomsg.LogRecord {
 	sl := &gogomsg.LogRecord{
+		TimeUnixNano:   uint64(n * 10000),
+		SeverityNumber: gogomsg.SeverityNumber(n % 25),
 		Attributes: []*gogomsg.KeyValue{
 			{
 				Key:   "http.method",
@@ -38,7 +40,15 @@ func createLogRecord(n int) *gogomsg.LogRecord {
 				Value: "localhost",
 			},
 		},
-		DroppedAttributesCount: 12,
+		DroppedAttributesCount: uint32(n),
+	}
+
+	if n == 0 {
+		sl.SeverityText = "ERROR"
+		sl.Flags = 1
+		sl.ObservedTimeUnixNano = sl.TimeUnixNano + 200
+		//sl.SpanId = []byte{1, 2, 3, 4, 5}
+		//sl.TraceId = []byte{6, 7, 8, 9}
 	}
 
 	return sl

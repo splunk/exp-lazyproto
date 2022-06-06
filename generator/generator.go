@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
@@ -21,7 +22,7 @@ func Generate(inputProtoFiles []string, outputDir string) error {
 			return err
 		}
 	}
-	return nil
+	return g.lastErr
 }
 
 type generator struct {
@@ -54,6 +55,11 @@ func (g *generator) processFile(inputFilePath string) error {
 		if err := g.oFile(fdescr); err != nil {
 			return err
 		}
+		for _, enum := range fdescr.GetEnumTypes() {
+			if err := g.oEnum(enum); err != nil {
+				return err
+			}
+		}
 		for _, descr := range fdescr.GetMessageTypes() {
 			msg := NewMessage(descr)
 			g.setMessage(msg)
@@ -63,7 +69,7 @@ func (g *generator) processFile(inputFilePath string) error {
 		}
 	}
 
-	return nil
+	return g.lastErr
 }
 
 func (g *generator) oFile(fdescr *desc.FileDescriptor) error {
@@ -98,7 +104,7 @@ import (
 		g.o(`import "github.com/tigrannajaryan/exp-lazyproto/internal/protostream"`)
 	}
 
-	return nil
+	return g.lastErr
 }
 
 func (g *generator) setMessage(msg *Message) {
@@ -172,21 +178,27 @@ func (g *generator) convertType(field *Field) string {
 		s += "[]byte"
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		s += "*" + field.GetMessageType().GetName()
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		s += field.GetEnumType().GetName()
 	default:
 		g.lastErr = fmt.Errorf("unsupported field type %v", field.GetType())
 	}
 	return s
 }
 
+func getLeadingComment(si *descriptor.SourceCodeInfo_Location) string {
+	if si != nil {
+		return strings.TrimSpace(si.GetLeadingComments())
+	}
+	return ""
+}
+
 func (g *generator) oMessage(msg *Message) error {
 	g.o("// ====================== Generated for message $MessageName ======================")
 	g.o("")
-	si := msg.GetSourceInfo()
-	if si != nil {
-		c := strings.TrimSpace(si.GetLeadingComments())
-		if c != "" {
-			g.o("// %s", c)
-		}
+	c := getLeadingComment(msg.GetSourceInfo())
+	if c != "" {
+		g.o("// %s", c)
 	}
 
 	g.o("type $MessageName struct {")
@@ -194,12 +206,9 @@ func (g *generator) oMessage(msg *Message) error {
 	g.o("protoMessage lazyproto.ProtoMessage")
 	for _, field := range msg.Fields {
 		g.setField(field)
-		si := field.GetSourceInfo()
-		if si != nil {
-			c := strings.TrimSpace(si.GetLeadingComments())
-			if c != "" {
-				g.o("// %s", c)
-			}
+		c := getLeadingComment(field.GetSourceInfo())
+		if c != "" {
+			g.o("// %s", c)
 		}
 		g.o("$fieldName %s", g.convertType(field))
 	}
@@ -298,6 +307,17 @@ m.$fieldName = v`, asType,
 	)
 }
 
+func (g *generator) oFieldDecodeEnum(enumTypeName string) {
+	g.o(
+		`
+v, err := value.AsUint32()
+if err != nil {
+	return false, err
+}
+m.$fieldName = %s(v)`, enumTypeName,
+	)
+}
+
 func (g *generator) oFieldDecode(fields []*Field) string {
 	for _, field := range fields {
 		g.setField(field)
@@ -313,6 +333,9 @@ func (g *generator) oFieldDecode(fields []*Field) string {
 
 		case descriptor.FieldDescriptorProto_TYPE_UINT32:
 			g.oFieldDecodePrimitive("Uint32")
+
+		case descriptor.FieldDescriptorProto_TYPE_ENUM:
+			g.oFieldDecodeEnum(field.GetEnumType().GetName())
 
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
 			g.oFieldDecodePrimitive("StringUnsafe")
@@ -566,7 +589,19 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 	g.i(1)
 	g.o("if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {")
 	g.i(1)
-	for _, field := range msg.Fields {
+
+	// Order the fields by their number to ensure marshaling is done in an
+	// order that we can rely on in the tests (same order as other as Protobuf
+	// libs so that we can compare the results).
+	fields := make([]*Field, len(msg.Fields))
+	copy(fields, msg.Fields)
+	sort.Slice(
+		fields, func(i, j int) bool {
+			return fields[i].GetNumber() < fields[j].GetNumber()
+		},
+	)
+
+	for _, field := range fields {
 		g.setField(field)
 		g.oMarshalField()
 	}
@@ -607,6 +642,9 @@ func (g *generator) oMarshalField() {
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		g.oMarshalPreparedField("Uint32")
 
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		g.o("ps.Uint32Prepared(prepared$MessageName$FieldName, uint32(m.$fieldName))")
+
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		if g.field.IsRepeated() {
 			g.o("for _, elem := range m.$fieldName {")
@@ -615,7 +653,8 @@ func (g *generator) oMarshalField() {
 			g.o("		return err")
 			g.o("	}")
 			g.o(
-				"	ps.EndEmbeddedPrepared(token, %s)", embeddedFieldName(g.msg, g.field),
+				"	ps.EndEmbeddedPrepared(token, %s)",
+				embeddedFieldName(g.msg, g.field),
 			)
 		} else {
 			g.o("if m.$fieldName != nil {")
@@ -624,7 +663,8 @@ func (g *generator) oMarshalField() {
 			g.o("		return err")
 			g.o("	}")
 			g.o(
-				"	ps.EndEmbeddedPrepared(token, %s)", embeddedFieldName(g.msg, g.field),
+				"	ps.EndEmbeddedPrepared(token, %s)",
+				embeddedFieldName(g.msg, g.field),
 			)
 		}
 		g.o("}")
@@ -649,6 +689,9 @@ func (g *generator) oPrepareMarshalField(msg *Message, field *Field) {
 		g.o(g.preparedFieldDecl(msg, field, "Fixed32"))
 
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
+		g.o(g.preparedFieldDecl(msg, field, "Uint32"))
+
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		g.o(g.preparedFieldDecl(msg, field, "Uint32"))
 
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
@@ -828,4 +871,35 @@ func (g *generator) preparedFieldDecl(
 			field.GetCapitalName(), typeName, field.GetNumber(),
 		)
 	}
+}
+
+func (g *generator) oEnum(enum *desc.EnumDescriptor) error {
+	c := getLeadingComment(enum.GetSourceInfo())
+	if c != "" {
+		g.o("// %s", c)
+	}
+	g.o(
+		`
+type %[1]s uint32
+
+const (`, enum.GetName(),
+	)
+
+	g.i(1)
+	for _, value := range enum.GetValues() {
+		c := getLeadingComment(value.GetSourceInfo())
+		if c != "" {
+			g.o("// %s", c)
+		}
+		g.o(
+			"%[1]s_%[2]s %[1]s = %[3]d", enum.GetName(), value.GetName(),
+			value.GetNumber(),
+		)
+	}
+	g.i(-1)
+
+	g.o(")")
+	g.o("")
+
+	return g.lastErr
 }

@@ -8,6 +8,38 @@ import (
 	"github.com/tigrannajaryan/molecule/src/codec"
 )
 
+// SeverityNumber values
+type SeverityNumber uint32
+
+const (
+	// SeverityNumber is not specified
+	SeverityNumber_SEVERITY_NUMBER_UNSPECIFIED SeverityNumber = 0
+	SeverityNumber_SEVERITY_NUMBER_TRACE       SeverityNumber = 1
+	SeverityNumber_SEVERITY_NUMBER_TRACE2      SeverityNumber = 2
+	SeverityNumber_SEVERITY_NUMBER_TRACE3      SeverityNumber = 3
+	SeverityNumber_SEVERITY_NUMBER_TRACE4      SeverityNumber = 4
+	SeverityNumber_SEVERITY_NUMBER_DEBUG       SeverityNumber = 5
+	SeverityNumber_SEVERITY_NUMBER_DEBUG2      SeverityNumber = 6
+	SeverityNumber_SEVERITY_NUMBER_DEBUG3      SeverityNumber = 7
+	SeverityNumber_SEVERITY_NUMBER_DEBUG4      SeverityNumber = 8
+	SeverityNumber_SEVERITY_NUMBER_INFO        SeverityNumber = 9
+	SeverityNumber_SEVERITY_NUMBER_INFO2       SeverityNumber = 10
+	SeverityNumber_SEVERITY_NUMBER_INFO3       SeverityNumber = 11
+	SeverityNumber_SEVERITY_NUMBER_INFO4       SeverityNumber = 12
+	SeverityNumber_SEVERITY_NUMBER_WARN        SeverityNumber = 13
+	SeverityNumber_SEVERITY_NUMBER_WARN2       SeverityNumber = 14
+	SeverityNumber_SEVERITY_NUMBER_WARN3       SeverityNumber = 15
+	SeverityNumber_SEVERITY_NUMBER_WARN4       SeverityNumber = 16
+	SeverityNumber_SEVERITY_NUMBER_ERROR       SeverityNumber = 17
+	SeverityNumber_SEVERITY_NUMBER_ERROR2      SeverityNumber = 18
+	SeverityNumber_SEVERITY_NUMBER_ERROR3      SeverityNumber = 19
+	SeverityNumber_SEVERITY_NUMBER_ERROR4      SeverityNumber = 20
+	SeverityNumber_SEVERITY_NUMBER_FATAL       SeverityNumber = 21
+	SeverityNumber_SEVERITY_NUMBER_FATAL2      SeverityNumber = 22
+	SeverityNumber_SEVERITY_NUMBER_FATAL3      SeverityNumber = 23
+	SeverityNumber_SEVERITY_NUMBER_FATAL4      SeverityNumber = 24
+)
+
 // ====================== Generated for message LogsData ======================
 
 // LogsData contains all log data
@@ -719,9 +751,7 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedResourceAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedResourceDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedResourceDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -1344,9 +1374,7 @@ func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedInstrumentationScopeAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -1453,6 +1481,7 @@ type LogRecord struct {
 	protoMessage           lazyproto.ProtoMessage
 	timeUnixNano           uint64
 	observedTimeUnixNano   uint64
+	severityNumber         SeverityNumber
 	severityText           string
 	attributes             []*KeyValue
 	droppedAttributesCount uint32
@@ -1496,6 +1525,19 @@ func (m *LogRecord) ObservedTimeUnixNano() uint64 {
 
 func (m *LogRecord) SetObservedTimeUnixNano(v uint64) {
 	m.observedTimeUnixNano = v
+
+	// Mark this message modified, if not already.
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *LogRecord) SeverityNumber() SeverityNumber {
+	return m.severityNumber
+}
+
+func (m *LogRecord) SetSeverityNumber(v SeverityNumber) {
+	m.severityNumber = v
 
 	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
@@ -1662,6 +1704,13 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.observedTimeUnixNano = v
+			case 2:
+				// Decode severityNumber.
+				v, err := value.AsUint32()
+				if err != nil {
+					return false, err
+				}
+				m.severityNumber = SeverityNumber(v)
 			case 3:
 				// Decode severityText.
 				v, err := value.AsStringUnsafe()
@@ -1720,6 +1769,7 @@ func (m *LogRecord) decode() error {
 
 var preparedLogRecordTimeUnixNano = molecule.PrepareFixed64Field(1)
 var preparedLogRecordObservedTimeUnixNano = molecule.PrepareFixed64Field(11)
+var preparedLogRecordSeverityNumber = molecule.PrepareUint32Field(2)
 var preparedLogRecordSeverityText = molecule.PrepareStringField(3)
 var preparedLogRecordAttributes = molecule.PrepareEmbeddedField(6)
 var preparedLogRecordDroppedAttributesCount = molecule.PrepareUint32Field(7)
@@ -1731,8 +1781,8 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal timeUnixNano
 		ps.Fixed64Prepared(preparedLogRecordTimeUnixNano, m.timeUnixNano)
-		// Marshal observedTimeUnixNano
-		ps.Fixed64Prepared(preparedLogRecordObservedTimeUnixNano, m.observedTimeUnixNano)
+		// Marshal severityNumber
+		ps.Uint32Prepared(preparedLogRecordSeverityNumber, uint32(m.severityNumber))
 		// Marshal severityText
 		ps.StringPrepared(preparedLogRecordSeverityText, m.severityText)
 		// Marshal attributes
@@ -1744,15 +1794,15 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, preparedLogRecordAttributes)
 		}
 		// Marshal droppedAttributesCount
-		ps.Uint32Prepared(
-			preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount,
-		)
+		ps.Uint32Prepared(preparedLogRecordDroppedAttributesCount, m.droppedAttributesCount)
 		// Marshal flags
 		ps.Fixed32Prepared(preparedLogRecordFlags, m.flags)
 		// Marshal traceId
 		ps.BytesPrepared(preparedLogRecordTraceId, m.traceId)
 		// Marshal spanId
 		ps.BytesPrepared(preparedLogRecordSpanId, m.spanId)
+		// Marshal observedTimeUnixNano
+		ps.Fixed64Prepared(preparedLogRecordObservedTimeUnixNano, m.observedTimeUnixNano)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
