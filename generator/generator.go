@@ -1,7 +1,9 @@
 package generator
 
 import (
+	"bytes"
 	"fmt"
+	"go/format"
 	"io"
 	"os"
 	"path"
@@ -27,7 +29,7 @@ func Generate(inputProtoFiles []string, outputDir string) error {
 
 type generator struct {
 	outputDir string
-	outF      *os.File
+	outBuf    *bytes.Buffer
 	lastErr   error
 
 	file         *File
@@ -52,7 +54,7 @@ func (g *generator) processFile(inputFilePath string) error {
 	}
 
 	for _, fdescr := range fdescrs {
-		if err := g.oFile(fdescr); err != nil {
+		if err := g.oStartFile(fdescr); err != nil {
 			return err
 		}
 		for _, enum := range fdescr.GetEnumTypes() {
@@ -67,12 +69,15 @@ func (g *generator) processFile(inputFilePath string) error {
 				return err
 			}
 		}
+		if err := g.formatAndWriteToFile(fdescr); err != nil {
+			return err
+		}
 	}
 
 	return g.lastErr
 }
 
-func (g *generator) oFile(fdescr *desc.FileDescriptor) error {
+func (g *generator) formatAndWriteToFile(fdescr *desc.FileDescriptor) error {
 	fname := path.Base(fdescr.GetName()) + ".lz.go"
 	fname = path.Join(g.outputDir, fname)
 	fdir := path.Dir(fname)
@@ -81,10 +86,22 @@ func (g *generator) oFile(fdescr *desc.FileDescriptor) error {
 	}
 
 	var err error
-	g.outF, err = os.Create(fname)
+	f, err := os.Create(fname)
 	if err != nil {
 		return err
 	}
+
+	srcCode, err := format.Source(g.outBuf.Bytes())
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Write(srcCode)
+	return err
+}
+
+func (g *generator) oStartFile(fdescr *desc.FileDescriptor) error {
+	g.outBuf = bytes.NewBuffer(nil)
 
 	g.o("package %s", fdescr.GetPackage())
 	g.o("")
@@ -147,7 +164,7 @@ func (g *generator) o(str string, a ...any) {
 
 	str = strings.Join(strs, "\n")
 
-	_, err := g.outF.WriteString(str + "\n")
+	_, err := io.WriteString(g.outBuf, str+"\n")
 	if err != nil {
 		g.lastErr = err
 	}
@@ -210,7 +227,7 @@ func (g *generator) oMessage(msg *Message) error {
 		return err
 	}
 
-	if err := g.oOneOfTypes(); err != nil {
+	if err := g.oOneOf(); err != nil {
 		return err
 	}
 
@@ -246,7 +263,7 @@ func (g *generator) oMsgStruct() error {
 	g.o("protoMessage lazyproto.ProtoMessage")
 	for _, field := range g.msg.Fields {
 		if field.GetOneOf() != nil {
-			// Skip oneof fields. They will be generated separately.
+			// Skip oneof fields for now. They will be generated separately.
 			continue
 		}
 		g.setField(field)
@@ -256,6 +273,8 @@ func (g *generator) oMsgStruct() error {
 		}
 		g.o("$fieldName %s", g.convertTypeToGo(field))
 	}
+
+	// Generate oneof fields.
 	for _, oneof := range g.msg.GetOneOfs() {
 		g.o("%s lazyproto.OneOf", oneof.GetName())
 	}
@@ -280,55 +299,63 @@ func composeOneOfNoneChoiceName(msg *Message, oneof *desc.OneOfDescriptor) strin
 	return msg.GetName() + capitalCamelCase(oneof.GetName()+"None")
 }
 
-func (g *generator) oOneOfTypes() error {
+func (g *generator) oOneOf() error {
 	for _, oneof := range g.msg.GetOneOfs() {
-		typeName := composeOneOfTypeName(g.msg, oneof)
-		g.o(
-			"// %s defines the possible types for oneof field %q.", typeName,
-			oneof.GetName(),
-		)
-		g.o("type %s int\n", typeName)
-		g.o("const (")
-		g.i(1)
-
-		noneChoiceName := composeOneOfNoneChoiceName(g.msg, oneof)
-		g.o("// %s indicates that none of the oneof choices is set.", noneChoiceName)
-		g.o("%s %s = 0", noneChoiceName, typeName)
-
-		for i, choice := range oneof.GetChoices() {
-			choiceField := g.msg.FieldsMap[choice.GetName()]
-			choiceName := composeOneOfChoiceName(g.msg, choiceField)
-			g.o(
-				"// %s indicates that oneof field %q is set.", choiceName,
-				choiceField.GetName(),
-			)
-			g.o("%s %s = %d", choiceName, typeName, i+1)
-		}
-
-		g.i(-1)
-		g.o(")\n")
-
-		funcName := fmt.Sprintf("%sType", capitalCamelCase(oneof.GetName()))
-		g.o(
-			"// %s returns the type of the current stored oneof %q.", funcName,
-			oneof.GetName(),
-		)
-		g.o("// To set the type use one of the setters.")
-		g.o("func (m *$MessageName) %s() %s {", funcName, typeName)
-		g.o("	return %s(m.%s.FieldIndex())", typeName, oneof.GetName())
-		g.o("}\n")
-
-		funcName = fmt.Sprintf("%sUnset", capitalCamelCase(oneof.GetName()))
-		g.o(
-			"// %s unsets the oneof field %q, so that it contains none of the choices.",
-			funcName, oneof.GetName(),
-		)
-		g.o("func (m *$MessageName) %s() {", funcName)
-		g.o("	m.%s = lazyproto.NewOneOfNone()", oneof.GetName())
-		g.o("}\n")
+		g.oOneOfTypeConsts(oneof)
+		g.oOneOfTypeFunc(oneof)
 	}
 
 	return g.lastErr
+}
+
+func (g *generator) oOneOfTypeConsts(oneof *desc.OneOfDescriptor) {
+	typeName := composeOneOfTypeName(g.msg, oneof)
+	g.o(
+		"// %s defines the possible types for oneof field %q.", typeName,
+		oneof.GetName(),
+	)
+	g.o("type %s int\n", typeName)
+	g.o("const (")
+	g.i(1)
+
+	noneChoiceName := composeOneOfNoneChoiceName(g.msg, oneof)
+	g.o("// %s indicates that none of the oneof choices is set.", noneChoiceName)
+	g.o("%s %s = 0", noneChoiceName, typeName)
+
+	for i, choice := range oneof.GetChoices() {
+		choiceField := g.msg.FieldsMap[choice.GetName()]
+		choiceName := composeOneOfChoiceName(g.msg, choiceField)
+		g.o(
+			"// %s indicates that oneof field %q is set.", choiceName,
+			choiceField.GetName(),
+		)
+		g.o("%s %s = %d", choiceName, typeName, i+1)
+	}
+
+	g.i(-1)
+	g.o(")\n")
+}
+
+func (g *generator) oOneOfTypeFunc(oneof *desc.OneOfDescriptor) {
+	typeName := composeOneOfTypeName(g.msg, oneof)
+	funcName := fmt.Sprintf("%sType", capitalCamelCase(oneof.GetName()))
+	g.o(
+		"// %s returns the type of the current stored oneof %q.", funcName,
+		oneof.GetName(),
+	)
+	g.o("// To set the type use one of the setters.")
+	g.o("func (m *$MessageName) %s() %s {", funcName, typeName)
+	g.o("	return %s(m.%s.FieldIndex())", typeName, oneof.GetName())
+	g.o("}\n")
+
+	funcName = fmt.Sprintf("%sUnset", capitalCamelCase(oneof.GetName()))
+	g.o(
+		"// %s unsets the oneof field %q, so that it contains none of the choices.",
+		funcName, oneof.GetName(),
+	)
+	g.o("func (m *$MessageName) %s() {", funcName)
+	g.o("	m.%s = lazyproto.NewOneOfNone()", oneof.GetName())
+	g.o("}\n")
 }
 
 func (g *generator) oUnmarshalFree() error {
@@ -935,45 +962,45 @@ func (g *generator) oMarshalField() {
 		g.o("ps.Uint32Prepared(prepared$MessageName$FieldName, uint32(m.$fieldName))")
 
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		if g.field.IsRepeated() {
-			g.o("for _, elem := range m.$fieldName {")
-			g.o("	token := ps.BeginEmbedded()")
-			g.o("	if err := elem.Marshal(ps); err != nil {")
-			g.o("		return err")
-			g.o("	}")
-			g.o(
-				"	ps.EndEmbeddedPrepared(token, %s)",
-				embeddedFieldName(g.msg, g.field),
-			)
-		} else {
-			if g.field.GetOneOf() != nil {
-				g.o(
-					"elem := (*$FieldMessageTypeName)(m.%s.PtrVal())",
-					g.field.GetOneOf().GetName(),
-				)
-			} else {
-				g.o("elem := m.$fieldName")
-			}
-
-			g.o("if elem != nil {")
-			g.o("	token := ps.BeginEmbedded()")
-			g.o("	if err := elem.Marshal(ps); err != nil {")
-			g.o("		return err")
-			g.o("	}")
-			g.o(
-				"	ps.EndEmbeddedPrepared(token, %s)",
-				embeddedFieldName(g.msg, g.field),
-			)
-		}
-		g.o("}")
+		g.oMarshalMessageTypeField()
 
 	default:
 		g.lastErr = fmt.Errorf("unsupported field type %v", g.field.GetType())
 	}
+}
 
-	//if g.field.GetOneOf() != nil {
-	//	g.o("}")
-	//}
+func (g *generator) oMarshalMessageTypeField() {
+	if g.field.IsRepeated() {
+		g.o("for _, elem := range m.$fieldName {")
+		g.o("	token := ps.BeginEmbedded()")
+		g.o("	if err := elem.Marshal(ps); err != nil {")
+		g.o("		return err")
+		g.o("	}")
+		g.o(
+			"	ps.EndEmbeddedPrepared(token, %s)",
+			embeddedFieldName(g.msg, g.field),
+		)
+	} else {
+		if g.field.GetOneOf() != nil {
+			g.o(
+				"elem := (*$FieldMessageTypeName)(m.%s.PtrVal())",
+				g.field.GetOneOf().GetName(),
+			)
+		} else {
+			g.o("elem := m.$fieldName")
+		}
+
+		g.o("if elem != nil {")
+		g.o("	token := ps.BeginEmbedded()")
+		g.o("	if err := elem.Marshal(ps); err != nil {")
+		g.o("		return err")
+		g.o("	}")
+		g.o(
+			"	ps.EndEmbeddedPrepared(token, %s)",
+			embeddedFieldName(g.msg, g.field),
+		)
+	}
+	g.o("}")
 }
 
 func (g *generator) oPrepareMarshalField(msg *Message, field *Field) {
