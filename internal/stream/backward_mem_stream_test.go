@@ -118,22 +118,22 @@ func TestBackwardMemStreamVarint(t *testing.T) {
 	}
 }
 
-const varintTestRange = 100000
+//const varintTestRange = 100000
 
-func BenchmarkBackwardMemStreamVarint(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		s := NewBackwardMemStream()
-		for v := uint64(0); v < varintTestRange; v++ {
-			s.writeVarint(v)
-		}
-	}
-}
-
-func BenchmarkGoogleProtobufVarint(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		var s []byte
-		for v := uint64(0); v < varintTestRange; v++ {
-			s = protowire.AppendVarint(s, v)
-		}
-	}
-}
+//func BenchmarkBackwardMemStreamVarint(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		s := NewBackwardMemStream()
+//		for v := uint64(0); v < varintTestRange; v++ {
+//			s.writeVarint(v)
+//		}
+//	}
+//}
+//
+//func BenchmarkGoogleProtobufVarint(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		var s []byte
+//		for v := uint64(0); v < varintTestRange; v++ {
+//			s = protowire.AppendVarint(s, v)
+//		}
+//	}
+//}

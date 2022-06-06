@@ -2200,8 +2200,10 @@ const (
 	AnyValueStringValue AnyValueValue = 1
 	// AnyValueBoolValue indicates that oneof field "boolValue" is set.
 	AnyValueBoolValue AnyValueValue = 2
+	// AnyValueIntValue indicates that oneof field "intValue" is set.
+	AnyValueIntValue AnyValueValue = 3
 	// AnyValueBytesValue indicates that oneof field "bytesValue" is set.
-	AnyValueBytesValue AnyValueValue = 3
+	AnyValueBytesValue AnyValueValue = 4
 )
 
 // ValueType returns the type of the current stored oneof "value".
@@ -2249,6 +2251,23 @@ func (m *AnyValue) SetBoolValue(v bool) {
 	}
 }
 
+// IntValue returns the value of the intValue.
+// If the field "value" is not set to "intValue" then the returned value is undefined.
+func (m *AnyValue) IntValue() int64 {
+	return m.value.Int64Val()
+}
+
+// SetIntValue sets the value of the intValue.
+// The oneof field "value" will be set to "intValue".
+func (m *AnyValue) SetIntValue(v int64) {
+	m.value = lazyproto.NewOneOfInt64(v, int(AnyValueIntValue))
+
+	// Mark this message modified, if not already.
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
 // BytesValue returns the value of the bytesValue.
 // If the field "value" is not set to "bytesValue" then the returned value is undefined.
 func (m *AnyValue) BytesValue() []byte {
@@ -2287,6 +2306,13 @@ func (m *AnyValue) decode() error {
 					return false, err
 				}
 				m.value = lazyproto.NewOneOfBool(v, int(AnyValueBoolValue))
+			case 3:
+				// Decode "intValue".
+				v, err := value.AsInt64()
+				if err != nil {
+					return false, err
+				}
+				m.value = lazyproto.NewOneOfInt64(v, int(AnyValueIntValue))
 			case 7:
 				// Decode "bytesValue".
 				v, err := value.AsBytesUnsafe()
@@ -2306,6 +2332,7 @@ func (m *AnyValue) decode() error {
 
 var preparedAnyValueStringValue = molecule.PrepareStringField(1)
 var preparedAnyValueBoolValue = molecule.PrepareBoolField(2)
+var preparedAnyValueIntValue = molecule.PrepareInt64Field(3)
 var preparedAnyValueBytesValue = molecule.PrepareBytesField(7)
 
 func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
@@ -2320,6 +2347,9 @@ func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
 		case AnyValueBoolValue:
 			// Marshal "boolValue".
 			ps.BoolPrepared(preparedAnyValueBoolValue, m.value.BoolVal())
+		case AnyValueIntValue:
+			// Marshal "intValue".
+			ps.Int64Prepared(preparedAnyValueIntValue, m.value.Int64Val())
 		case AnyValueBytesValue:
 			// Marshal "bytesValue".
 			ps.BytesPrepared(preparedAnyValueBytesValue, m.value.BytesVal())
