@@ -13,9 +13,11 @@ type File struct {
 
 type Message struct {
 	desc.MessageDescriptor
-	Fields         []*Field
-	FieldsMap      map[string]*Field
-	HasEmbeddedMsg bool
+	Fields    []*Field
+	FieldsMap map[string]*Field
+
+	FlagBitCount int
+	NeedBitFlag  bool
 }
 
 func NewMessage(descr *desc.MessageDescriptor) *Message {
@@ -34,7 +36,8 @@ func NewMessage(descr *desc.MessageDescriptor) *Message {
 		m.FieldsMap[field.GetName()] = f
 
 		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			m.HasEmbeddedMsg = true
+			m.NeedBitFlag = true
+			m.FlagBitCount++
 		}
 	}
 	return m

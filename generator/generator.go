@@ -262,8 +262,22 @@ func (g *generator) oMsgStruct() error {
 	g.i(1)
 	g.o("_protoMessage lazyproto.ProtoMessage")
 
-	if g.msg.HasEmbeddedMsg {
-		g.o("_flags uint64")
+	if g.msg.NeedBitFlag {
+		var bitCountFieldType string
+		switch {
+		case g.msg.FlagBitCount <= 8:
+			bitCountFieldType = "uint8"
+		case g.msg.FlagBitCount <= 16:
+			bitCountFieldType = "uint16"
+		case g.msg.FlagBitCount <= 32:
+			bitCountFieldType = "uint32"
+		case g.msg.FlagBitCount <= 64:
+			bitCountFieldType = "uint64"
+		default:
+			return fmt.Errorf("more than 64 bits flags not supported")
+		}
+
+		g.o("_flags %s", bitCountFieldType)
 	}
 	g.o("")
 
@@ -601,7 +615,7 @@ func (g *generator) getRepeatedFields(msg *Message) []*Field {
 }
 
 func (g *generator) oFieldsAccessors(msg *Message) error {
-	if msg.HasEmbeddedMsg {
+	if msg.NeedBitFlag {
 		// Generate decode bit flags
 		g.o("// Bitmasks that indicate that the particular nested message is decoded.")
 		bitMask := uint64(1)
