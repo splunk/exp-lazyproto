@@ -41,6 +41,19 @@ func createArrayValue(v string) *gogomsg.AnyValue {
 	}
 }
 
+func createKVList() *gogomsg.AnyValue {
+	return &gogomsg.AnyValue{
+		Value: &gogomsg.AnyValue_KvlistValue{
+			KvlistValue: &gogomsg.KeyValueList{
+				Values: []*gogomsg.KeyValue{
+					createAttr("x", "10"),
+					createAttr("y", "20"),
+				},
+			},
+		},
+	}
+}
+
 func createLogRecord(n int) *gogomsg.LogRecord {
 	sl := &gogomsg.LogRecord{
 		TimeUnixNano:   uint64(n * 10000),
@@ -101,6 +114,10 @@ func createLogsData() *gogomsg.LogsData {
 			Resource: &gogomsg.Resource{
 				Attributes: []*gogomsg.KeyValue{
 					createAttr("service.name", "checkout"),
+					{
+						Key:   "nested",
+						Value: createKVList(),
+					},
 				},
 				DroppedAttributesCount: 12,
 			},
@@ -126,6 +143,10 @@ func TestDecode(t *testing.T) {
 						{
 							Key:   "multivalue",
 							Value: createArrayValue("1.2.3.4"),
+						},
+						{
+							Key:   "nested",
+							Value: createKVList(),
 						},
 					},
 					DroppedAttributesCount: 12,
@@ -167,20 +188,30 @@ func TestDecode(t *testing.T) {
 	assert.EqualValues(t, 12, resource.DroppedAttributesCount())
 	require.NotNil(t, resource)
 
-	attrs := resource.Attributes()
-	require.Len(t, attrs, 2)
+	resAttrs := resource.Attributes()
+	require.Len(t, resAttrs, 3)
 
-	kvr := attrs[0]
+	kvr := resAttrs[0]
 	require.EqualValues(t, "key1", kvr.Key())
 	require.EqualValues(t, lazymsg.AnyValueStringValue, kvr.Value().ValueType())
 	require.EqualValues(t, "value1", kvr.Value().StringValue())
 
-	kvr = attrs[1]
+	kvr = resAttrs[1]
 	require.EqualValues(t, "multivalue", kvr.Key())
 	require.EqualValues(t, lazymsg.AnyValueArrayValue, kvr.Value().ValueType())
 	arrayVals := kvr.Value().ArrayValue().Values()
 	require.Len(t, arrayVals, 1)
 	require.EqualValues(t, "1.2.3.4", arrayVals[0].StringValue())
+
+	kvr = resAttrs[2]
+	require.EqualValues(t, "nested", kvr.Key())
+	require.EqualValues(t, lazymsg.AnyValueKvlistValue, kvr.Value().ValueType())
+	kvVals := kvr.Value().KvlistValue().Values()
+	require.Len(t, kvVals, 2)
+	require.EqualValues(t, "x", kvVals[0].Key())
+	require.EqualValues(t, "10", kvVals[0].Value().StringValue())
+	require.EqualValues(t, "y", kvVals[1].Key())
+	require.EqualValues(t, "20", kvVals[1].Value().StringValue())
 
 	sls := rl[0].ScopeLogs()
 	require.Len(t, sls, 1)
@@ -634,7 +665,8 @@ func BenchmarkGogoInspectScopeAttr(b *testing.B) {
 					continue
 				}
 				for _, attr := range sl.Scope.Attributes {
-					if attr.Key == "otel.profiling" && attr.GetValue().GetStringValue() == "true" {
+					if attr.Key == "otel.profiling" &&
+						attr.GetValue().GetStringValue() == "true" {
 						foundCount++
 					}
 				}
