@@ -12,7 +12,7 @@ message LogsData {
 
 message ResourceLogs {
   // The Resource
-  Resource resource = 1;
+  Resource resource = 1 [(gogoproto.nullable) = false];
   // List of ScopeLogs
   repeated ScopeLogs scope_logs = 2;
 
@@ -20,13 +20,13 @@ message ResourceLogs {
 }
 
 message Resource {
-  repeated KeyValue attributes = 1;
+  repeated KeyValue attributes = 1 [(gogoproto.nullable) = false];
   uint32 dropped_attributes_count = 2;
 }
 
 // A collection of Logs produced by a Scope.
 message ScopeLogs {
-  InstrumentationScope scope = 1;
+  InstrumentationScope scope = 1 [(gogoproto.nullable) = false];
 
   // A list of log records.
   repeated LogRecord log_records = 2;
@@ -38,7 +38,7 @@ message ScopeLogs {
 message InstrumentationScope {
   string name = 1;
   string version = 2;
-  repeated KeyValue attributes = 3;
+  repeated KeyValue attributes = 3 [(gogoproto.nullable) = false];
   uint32 dropped_attributes_count = 4;
 }
 
@@ -72,12 +72,14 @@ enum SeverityNumber {
   SEVERITY_NUMBER_FATAL4 = 24;
 }
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
 message LogRecord {
   fixed64 time_unix_nano = 1;
   fixed64 observed_time_unix_nano = 11;
   SeverityNumber severity_number = 2;
   string severity_text = 3;
-  repeated KeyValue attributes = 6;
+  repeated KeyValue attributes = 6 [(gogoproto.nullable) = false];
   uint32 dropped_attributes_count = 7;
   fixed32 flags = 8;
   bytes trace_id = 9;
@@ -86,7 +88,7 @@ message LogRecord {
 
 message KeyValue {
   string key = 1;
-  AnyValue value = 2;
+  AnyValue value = 2 [(gogoproto.nullable) = false];
 }
 
 message AnyValue {
@@ -106,7 +108,7 @@ message ArrayValue {
 }
 
 message KeyValueList {
-  repeated KeyValue values = 1;
+  repeated KeyValue values = 1 [(gogoproto.nullable) = false];
 }
 
 message PlainMessage {

@@ -14,10 +14,10 @@ import (
 	"github.com/tigrannajaryan/molecule"
 )
 
-func createAttr(k, v string) *gogomsg.KeyValue {
-	return &gogomsg.KeyValue{
+func createAttr(k, v string) gogomsg.KeyValue {
+	return gogomsg.KeyValue{
 		Key: k,
-		Value: &gogomsg.AnyValue{
+		Value: gogomsg.AnyValue{
 			Value: &gogomsg.AnyValue_StringValue{
 				StringValue: v,
 			},
@@ -25,8 +25,8 @@ func createAttr(k, v string) *gogomsg.KeyValue {
 	}
 }
 
-func createArrayValue(v string) *gogomsg.AnyValue {
-	return &gogomsg.AnyValue{
+func createArrayValue(v string) gogomsg.AnyValue {
+	return gogomsg.AnyValue{
 		Value: &gogomsg.AnyValue_ArrayValue{
 			ArrayValue: &gogomsg.ArrayValue{
 				Values: []*gogomsg.AnyValue{
@@ -41,11 +41,11 @@ func createArrayValue(v string) *gogomsg.AnyValue {
 	}
 }
 
-func createKVList() *gogomsg.AnyValue {
-	return &gogomsg.AnyValue{
+func createKVList() gogomsg.AnyValue {
+	return gogomsg.AnyValue{
 		Value: &gogomsg.AnyValue_KvlistValue{
 			KvlistValue: &gogomsg.KeyValueList{
-				Values: []*gogomsg.KeyValue{
+				Values: []gogomsg.KeyValue{
 					createAttr("x", "10"),
 					createAttr("y", "20"),
 				},
@@ -58,7 +58,7 @@ func createLogRecord(n int) *gogomsg.LogRecord {
 	sl := &gogomsg.LogRecord{
 		TimeUnixNano:   uint64(n * 10000),
 		SeverityNumber: gogomsg.SeverityNumber(n % 25),
-		Attributes: []*gogomsg.KeyValue{
+		Attributes: []gogomsg.KeyValue{
 			createAttr("http.method", "GET"),
 			createAttr("http.url", "/checkout"),
 			createAttr("http.server", "example.com"),
@@ -85,10 +85,10 @@ func createLogRecord(n int) *gogomsg.LogRecord {
 
 func createScopedLogs(n int) *gogomsg.ScopeLogs {
 	sl := &gogomsg.ScopeLogs{
-		Scope: &gogomsg.InstrumentationScope{
+		Scope: gogomsg.InstrumentationScope{
 			Name:    "library",
 			Version: "2.5",
-			Attributes: []*gogomsg.KeyValue{
+			Attributes: []gogomsg.KeyValue{
 				createAttr("otel.profiling", "true"),
 			},
 		},
@@ -111,8 +111,8 @@ func createLogsData() *gogomsg.LogsData {
 
 	for i := 0; i < 10; i++ {
 		rl := &gogomsg.ResourceLogs{
-			Resource: &gogomsg.Resource{
-				Attributes: []*gogomsg.KeyValue{
+			Resource: gogomsg.Resource{
+				Attributes: []gogomsg.KeyValue{
 					createAttr("service.name", "checkout"),
 					{
 						Key:   "nested",
@@ -137,8 +137,8 @@ func TestDecode(t *testing.T) {
 	src := &gogomsg.LogsData{
 		ResourceLogs: []*gogomsg.ResourceLogs{
 			{
-				Resource: &gogomsg.Resource{
-					Attributes: []*gogomsg.KeyValue{
+				Resource: gogomsg.Resource{
+					Attributes: []gogomsg.KeyValue{
 						createAttr("key1", "value1"),
 						{
 							Key:   "multivalue",
@@ -154,17 +154,17 @@ func TestDecode(t *testing.T) {
 				ScopeLogs: []*gogomsg.ScopeLogs{
 					{
 						SchemaUrl: "https://opentelemetry.io/schemas/1.0.0",
-						Scope: &gogomsg.InstrumentationScope{
+						Scope: gogomsg.InstrumentationScope{
 							Name:    "library",
 							Version: "2.5",
-							Attributes: []*gogomsg.KeyValue{
+							Attributes: []gogomsg.KeyValue{
 								createAttr("otel.profiling", "true"),
 							},
 						},
 						LogRecords: []*gogomsg.LogRecord{
 							{
 								TimeUnixNano: 123,
-								Attributes: []*gogomsg.KeyValue{
+								Attributes: []gogomsg.KeyValue{
 									createAttr("key2", "value2"),
 								},
 								DroppedAttributesCount: 234,
@@ -666,12 +666,12 @@ func BenchmarkGogoInspectScopeAttr(b *testing.B) {
 		foundCount := 0
 		for _, rl := range lazy.ResourceLogs {
 			for _, sl := range rl.ScopeLogs {
-				if sl.Scope == nil {
-					continue
-				}
+				//if sl.Scope == nil {
+				//	continue
+				//}
 				for _, attr := range sl.Scope.Attributes {
 					if attr.Key == "otel.profiling" &&
-						attr.GetValue().GetStringValue() == "true" {
+						attr.GetValue().Value.(*gogomsg.AnyValue_StringValue).StringValue == "true" {
 						foundCount++
 					}
 				}
@@ -746,12 +746,10 @@ func BenchmarkGogoFilterScopeAttr(b *testing.B) {
 		for _, rl := range lazy.ResourceLogs {
 			for j := 0; j < len(rl.ScopeLogs); j++ {
 				sl := rl.ScopeLogs[j]
-				if sl.Scope == nil {
-					continue
-				}
 				found := false
 				for _, attr := range sl.Scope.Attributes {
-					if attr.Key == "otel.profiling" && attr.GetValue().GetStringValue() == "true" {
+					if attr.Key == "otel.profiling" &&
+						attr.GetValue().Value.(*gogomsg.AnyValue_StringValue).StringValue == "true" {
 						foundCount++
 						found = true
 						break
