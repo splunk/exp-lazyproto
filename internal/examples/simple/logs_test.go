@@ -14,31 +14,27 @@ import (
 	"github.com/tigrannajaryan/molecule"
 )
 
+func createAttr(k, v string) *gogomsg.KeyValue {
+	return &gogomsg.KeyValue{
+		Key: k,
+		Value: &gogomsg.AnyValue{
+			Value: &gogomsg.AnyValue_StringValue{
+				StringValue: v,
+			},
+		},
+	}
+}
+
 func createLogRecord(n int) *gogomsg.LogRecord {
 	sl := &gogomsg.LogRecord{
 		TimeUnixNano:   uint64(n * 10000),
 		SeverityNumber: gogomsg.SeverityNumber(n % 25),
 		Attributes: []*gogomsg.KeyValue{
-			{
-				Key:   "http.method",
-				Value: "GET",
-			},
-			{
-				Key:   "http.url",
-				Value: "/checkout",
-			},
-			{
-				Key:   "http.server",
-				Value: "example.com",
-			},
-			{
-				Key:   "db.name",
-				Value: "postgres",
-			},
-			{
-				Key:   "host.name",
-				Value: "localhost",
-			},
+			createAttr("http.method", "GET"),
+			createAttr("http.url", "/checkout"),
+			createAttr("http.server", "example.com"),
+			createAttr("db.name", "postgres"),
+			createAttr("host.name", "localhost"),
 		},
 		DroppedAttributesCount: uint32(n),
 	}
@@ -60,17 +56,14 @@ func createScopedLogs(n int) *gogomsg.ScopeLogs {
 			Name:    "library",
 			Version: "2.5",
 			Attributes: []*gogomsg.KeyValue{
-				{
-					Key:   "otel.profiling",
-					Value: "true",
-				},
+				createAttr("otel.profiling", "true"),
 			},
 		},
 	}
 
 	if n%2 == 0 {
 		// Give half of the scopes a different attribute value.
-		sl.Scope.Attributes[0].Value = "false"
+		sl.Scope.Attributes[0] = createAttr("otel.profiling", "false")
 	}
 
 	for i := 0; i < 10; i++ {
@@ -87,10 +80,7 @@ func createLogsData() *gogomsg.LogsData {
 		rl := &gogomsg.ResourceLogs{
 			Resource: &gogomsg.Resource{
 				Attributes: []*gogomsg.KeyValue{
-					{
-						Key:   "service.name",
-						Value: "checkout",
-					},
+					createAttr("service.name", "checkout"),
 				},
 				DroppedAttributesCount: 12,
 			},
@@ -112,10 +102,7 @@ func TestDecode(t *testing.T) {
 			{
 				Resource: &gogomsg.Resource{
 					Attributes: []*gogomsg.KeyValue{
-						{
-							Key:   "key1",
-							Value: "value1",
-						},
+						createAttr("key1", "value1"),
 					},
 					DroppedAttributesCount: 12,
 				},
@@ -126,20 +113,14 @@ func TestDecode(t *testing.T) {
 							Name:    "library",
 							Version: "2.5",
 							Attributes: []*gogomsg.KeyValue{
-								{
-									Key:   "otel.profiling",
-									Value: "true",
-								},
+								createAttr("otel.profiling", "true"),
 							},
 						},
 						LogRecords: []*gogomsg.LogRecord{
 							{
 								TimeUnixNano: 123,
 								Attributes: []*gogomsg.KeyValue{
-									{
-										Key:   "key2",
-										Value: "value2",
-									},
+									createAttr("key2", "value2"),
 								},
 								DroppedAttributesCount: 234,
 							},
@@ -167,7 +148,8 @@ func TestDecode(t *testing.T) {
 
 	kv1 := attrs[0]
 	require.EqualValues(t, "key1", kv1.Key())
-	require.EqualValues(t, "value1", kv1.Value())
+	require.EqualValues(t, lazymsg.AnyValueStringValue, kv1.Value().ValueType())
+	require.EqualValues(t, "value1", kv1.Value().StringValue())
 
 	sls := rl[0].ScopeLogs()
 	require.Len(t, sls, 1)
@@ -184,7 +166,8 @@ func TestDecode(t *testing.T) {
 
 	kv2 := attrs2[0]
 	require.EqualValues(t, "key2", kv2.Key())
-	require.EqualValues(t, "value2", kv2.Value())
+	require.EqualValues(t, lazymsg.AnyValueStringValue, kv2.Value().ValueType())
+	require.EqualValues(t, "value2", kv2.Value().StringValue())
 
 	ps := molecule.NewProtoStream()
 	lazy.Marshal(ps)
@@ -619,7 +602,7 @@ func BenchmarkGogoInspectScopeAttr(b *testing.B) {
 					continue
 				}
 				for _, attr := range sl.Scope.Attributes {
-					if attr.Key == "otel.profiling" && attr.Value == "true" {
+					if attr.Key == "otel.profiling" && attr.GetValue().GetStringValue() == "true" {
 						foundCount++
 					}
 				}
@@ -654,7 +637,9 @@ func BenchmarkLazyInspectScopeAttr(b *testing.B) {
 					continue
 				}
 				for _, attr := range sl.Scope().Attributes() {
-					if attr.Key() == "otel.profiling" && attr.Value() == "true" {
+					if attr.Key() == "otel.profiling" &&
+						attr.Value().ValueType() == lazymsg.AnyValueStringValue &&
+						attr.Value().StringValue() == "true" {
 						foundCount++
 					}
 				}
@@ -697,7 +682,7 @@ func BenchmarkGogoFilterScopeAttr(b *testing.B) {
 				}
 				found := false
 				for _, attr := range sl.Scope.Attributes {
-					if attr.Key == "otel.profiling" && attr.Value == "true" {
+					if attr.Key == "otel.profiling" && attr.GetValue().GetStringValue() == "true" {
 						foundCount++
 						found = true
 						break
@@ -739,7 +724,9 @@ func BenchmarkLazyFilterScopeAttr(b *testing.B) {
 						return false
 					}
 					for _, attr := range sl.Scope().Attributes() {
-						if attr.Key() == "otel.profiling" && attr.Value() == "true" {
+						if attr.Key() == "otel.profiling" &&
+							attr.Value().ValueType() == lazymsg.AnyValueStringValue &&
+							attr.Value().StringValue() == "true" {
 							foundCount++
 							return true
 						}

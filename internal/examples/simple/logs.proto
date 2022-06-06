@@ -4,13 +4,6 @@ package simple;
 
 option go_package = "gen/logs";
 
-message AnyValue {
-  oneof value {
-    string string_value = 1;
-    bytes bytes_value = 7;
-  }
-}
-
 // LogsData contains all log data
 message LogsData {
   // List of ResourceLogs
@@ -92,7 +85,14 @@ message LogRecord {
 }
 
 message KeyValue {
-  string key =1;
-  string value = 2;
+  string key = 1;
+  AnyValue value = 2;
+}
+
+message AnyValue {
+  oneof value {
+    string string_value = 1;
+    bytes bytes_value = 7;
+  }
 }
 

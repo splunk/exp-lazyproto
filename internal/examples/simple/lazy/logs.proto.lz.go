@@ -40,226 +40,6 @@ const (
 	SeverityNumber_SEVERITY_NUMBER_FATAL4      SeverityNumber = 24
 )
 
-// ====================== AnyValue message implementation ======================
-
-type AnyValue struct {
-	protoMessage lazyproto.ProtoMessage
-	value        lazyproto.OneOf
-}
-
-func UnmarshalAnyValue(bytes []byte) (*AnyValue, error) {
-	m := anyValuePool.Get()
-	m.protoMessage.Bytes = bytes
-	if err := m.decode(); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (m *AnyValue) Free() {
-	anyValuePool.Release(m)
-}
-
-// AnyValueValue defines the possible types for oneof field "value".
-type AnyValueValue int
-
-const (
-	// AnyValueValueNone indicates that none of the oneof choices is set.
-	AnyValueValueNone AnyValueValue = 0
-	// AnyValueStringValue indicates that oneof field "stringValue" is set.
-	AnyValueStringValue AnyValueValue = 1
-	// AnyValueBytesValue indicates that oneof field "bytesValue" is set.
-	AnyValueBytesValue AnyValueValue = 2
-)
-
-// ValueType returns the type of the current stored oneof "value".
-// To set the type use one of the setters.
-func (m *AnyValue) ValueType() AnyValueValue {
-	return AnyValueValue(m.value.FieldIndex())
-}
-
-// ValueUnset unsets the oneof field "value", so that it contains none of the choices.
-func (m *AnyValue) ValueUnset() {
-	m.value = lazyproto.NewOneOfNone()
-}
-
-// StringValue returns the value of the stringValue.
-// If the field "value" is not set to "stringValue" then the returned value is undefined.
-func (m *AnyValue) StringValue() string {
-	return m.value.StringVal()
-}
-
-// SetStringValue sets the value of the stringValue.
-// The oneof field "value" will be set to "stringValue".
-func (m *AnyValue) SetStringValue(v string) {
-	m.value = lazyproto.NewOneOfString(v, int(AnyValueStringValue))
-
-	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
-}
-
-// BytesValue returns the value of the bytesValue.
-// If the field "value" is not set to "bytesValue" then the returned value is undefined.
-func (m *AnyValue) BytesValue() []byte {
-	return m.value.BytesVal()
-}
-
-// SetBytesValue sets the value of the bytesValue.
-// The oneof field "value" will be set to "bytesValue".
-func (m *AnyValue) SetBytesValue(v []byte) {
-	m.value = lazyproto.NewOneOfBytes(v, int(AnyValueBytesValue))
-
-	// Mark this message modified, if not already.
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
-		m.protoMessage.MarkModified()
-	}
-}
-
-func (m *AnyValue) decode() error {
-	buf := codec.NewBuffer(m.protoMessage.Bytes)
-
-	// Iterate and decode the fields.
-	err2 := molecule.MessageEach(
-		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
-			switch fieldNum {
-			case 1:
-				// Decode "stringValue".
-				v, err := value.AsStringUnsafe()
-				if err != nil {
-					return false, err
-				}
-				m.value = lazyproto.NewOneOfString(v, int(AnyValueStringValue))
-			case 7:
-				// Decode "bytesValue".
-				v, err := value.AsBytesUnsafe()
-				if err != nil {
-					return false, err
-				}
-				m.value = lazyproto.NewOneOfBytes(v, int(AnyValueBytesValue))
-			}
-			return true, nil
-		},
-	)
-	if err2 != nil {
-		return err2
-	}
-	return nil
-}
-
-var preparedAnyValueStringValue = molecule.PrepareStringField(1)
-var preparedAnyValueBytesValue = molecule.PrepareBytesField(7)
-
-func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
-	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
-		// Marshal "value".
-		switch AnyValueValue(m.value.FieldIndex()) {
-		case AnyValueValueNone:
-			// Nothing to do, oneof is unset.
-		case AnyValueStringValue:
-			// Marshal "stringValue".
-			ps.StringPrepared(preparedAnyValueStringValue, m.value.StringVal())
-		case AnyValueBytesValue:
-			// Marshal "bytesValue".
-			ps.BytesPrepared(preparedAnyValueBytesValue, m.value.BytesVal())
-		}
-	} else {
-		// Message is unchanged. Used original bytes.
-		ps.Raw(m.protoMessage.Bytes)
-	}
-	return nil
-}
-
-// Pool of AnyValue structs.
-type anyValuePoolType struct {
-	pool []*AnyValue
-	mux  sync.Mutex
-}
-
-var anyValuePool = anyValuePoolType{}
-
-// Get one element from the pool. Creates a new element if the pool is empty.
-func (p *anyValuePoolType) Get() *AnyValue {
-	p.mux.Lock()
-	defer p.mux.Unlock()
-
-	// Have elements in the pool?
-	if len(p.pool) >= 1 {
-		// Get the last element.
-		r := p.pool[len(p.pool)-1]
-		// Shrink the pool.
-		p.pool = p.pool[:len(p.pool)-1]
-		return r
-	}
-
-	// Pool is empty, create a new element.
-	return &AnyValue{}
-}
-
-func (p *anyValuePoolType) GetSlice(count int) []*AnyValue {
-	// Create a new slice.
-	r := make([]*AnyValue, count)
-
-	p.mux.Lock()
-	defer p.mux.Unlock()
-
-	// Have enough elements in the pool?
-	if len(p.pool) >= count {
-		// Copy the elements from the end of the pool.
-		copy(r, p.pool[len(p.pool)-count:])
-
-		// Shrink the pool.
-		p.pool = p.pool[:len(p.pool)-count]
-
-		return r
-	}
-
-	// Initialize with what remains in the pool.
-	copied := copy(r, p.pool)
-	p.pool = nil
-
-	if copied < count {
-		// Create remaining elements.
-		storage := make([]AnyValue, count-copied)
-		j := 0
-		for ; copied < count; copied++ {
-			r[copied] = &storage[j]
-			j++
-		}
-	}
-
-	return r
-}
-
-// ReleaseSlice releases a slice of elements back to the pool.
-func (p *anyValuePoolType) ReleaseSlice(slice []*AnyValue) {
-	for _, elem := range slice {
-
-		// Zero-initialize the released element.
-		*elem = AnyValue{}
-	}
-
-	p.mux.Lock()
-	defer p.mux.Unlock()
-
-	// Add the slice to the end of the pool.
-	p.pool = append(p.pool, slice...)
-}
-
-// Release an element back to the pool.
-func (p *anyValuePoolType) Release(elem *AnyValue) {
-
-	// Zero-initialize the released element.
-	*elem = AnyValue{}
-
-	p.mux.Lock()
-	defer p.mux.Unlock()
-
-	// Add the slice to the end of the pool.
-	p.pool = append(p.pool, elem)
-}
-
 // ====================== LogsData message implementation ======================
 
 // LogsData contains all log data
@@ -2178,7 +1958,7 @@ func (p *logRecordPoolType) Release(elem *LogRecord) {
 type KeyValue struct {
 	protoMessage lazyproto.ProtoMessage
 	key          string
-	value        string
+	value        *AnyValue
 }
 
 func UnmarshalKeyValue(bytes []byte) (*KeyValue, error) {
@@ -2193,6 +1973,9 @@ func UnmarshalKeyValue(bytes []byte) (*KeyValue, error) {
 func (m *KeyValue) Free() {
 	keyValuePool.Release(m)
 }
+
+// Bitmasks that indicate that the particular nested message is decoded.
+const flagKeyValueValueDecoded = 0x0000000000000002
 
 // Key returns the value of the key.
 func (m *KeyValue) Key() string {
@@ -2210,13 +1993,24 @@ func (m *KeyValue) SetKey(v string) {
 }
 
 // Value returns the value of the value.
-func (m *KeyValue) Value() string {
+func (m *KeyValue) Value() *AnyValue {
+	if m.protoMessage.Flags&flagKeyValueValueDecoded == 0 {
+		// Decode nested message(s).
+		if m.value != nil {
+			// TODO: decide how to handle decoding errors.
+			_ = m.value.decode()
+		}
+		m.protoMessage.Flags |= flagKeyValueValueDecoded
+	}
 	return m.value
 }
 
 // SetValue sets the value of the value.
-func (m *KeyValue) SetValue(v string) {
+func (m *KeyValue) SetValue(v *AnyValue) {
 	m.value = v
+
+	// Make sure the field's Parent points to this message.
+	m.value.protoMessage.Parent = &m.protoMessage
 
 	// Mark this message modified, if not already.
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
@@ -2240,11 +2034,13 @@ func (m *KeyValue) decode() error {
 				m.key = v
 			case 2:
 				// Decode "value".
-				v, err := value.AsStringUnsafe()
+				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
 				}
-				m.value = v
+				m.value = anyValuePool.Get()
+				m.value.protoMessage.Parent = &m.protoMessage
+				m.value.protoMessage.Bytes = v
 			}
 			return true, nil
 		},
@@ -2256,14 +2052,20 @@ func (m *KeyValue) decode() error {
 }
 
 var preparedKeyValueKey = molecule.PrepareStringField(1)
-var preparedKeyValueValue = molecule.PrepareStringField(2)
+var preparedKeyValueValue = molecule.PrepareEmbeddedField(2)
 
 func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
 	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
 		// Marshal "key".
 		ps.StringPrepared(preparedKeyValueKey, m.key)
 		// Marshal "value".
-		ps.StringPrepared(preparedKeyValueValue, m.value)
+		if m.value != nil {
+			token := ps.BeginEmbedded()
+			if err := m.value.Marshal(ps); err != nil {
+				return err
+			}
+			ps.EndEmbeddedPrepared(token, preparedKeyValueValue)
+		}
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(m.protoMessage.Bytes)
@@ -2335,6 +2137,10 @@ func (p *keyValuePoolType) GetSlice(count int) []*KeyValue {
 // ReleaseSlice releases a slice of elements back to the pool.
 func (p *keyValuePoolType) ReleaseSlice(slice []*KeyValue) {
 	for _, elem := range slice {
+		// Release nested value recursively to their pool.
+		if elem.value != nil {
+			anyValuePool.Release(elem.value)
+		}
 
 		// Zero-initialize the released element.
 		*elem = KeyValue{}
@@ -2349,9 +2155,233 @@ func (p *keyValuePoolType) ReleaseSlice(slice []*KeyValue) {
 
 // Release an element back to the pool.
 func (p *keyValuePoolType) Release(elem *KeyValue) {
+	// Release nested value recursively to their pool.
+	if elem.value != nil {
+		anyValuePool.Release(elem.value)
+	}
 
 	// Zero-initialize the released element.
 	*elem = KeyValue{}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, elem)
+}
+
+// ====================== AnyValue message implementation ======================
+
+type AnyValue struct {
+	protoMessage lazyproto.ProtoMessage
+	value        lazyproto.OneOf
+}
+
+func UnmarshalAnyValue(bytes []byte) (*AnyValue, error) {
+	m := anyValuePool.Get()
+	m.protoMessage.Bytes = bytes
+	if err := m.decode(); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (m *AnyValue) Free() {
+	anyValuePool.Release(m)
+}
+
+// AnyValueValue defines the possible types for oneof field "value".
+type AnyValueValue int
+
+const (
+	// AnyValueValueNone indicates that none of the oneof choices is set.
+	AnyValueValueNone AnyValueValue = 0
+	// AnyValueStringValue indicates that oneof field "stringValue" is set.
+	AnyValueStringValue AnyValueValue = 1
+	// AnyValueBytesValue indicates that oneof field "bytesValue" is set.
+	AnyValueBytesValue AnyValueValue = 2
+)
+
+// ValueType returns the type of the current stored oneof "value".
+// To set the type use one of the setters.
+func (m *AnyValue) ValueType() AnyValueValue {
+	return AnyValueValue(m.value.FieldIndex())
+}
+
+// ValueUnset unsets the oneof field "value", so that it contains none of the choices.
+func (m *AnyValue) ValueUnset() {
+	m.value = lazyproto.NewOneOfNone()
+}
+
+// StringValue returns the value of the stringValue.
+// If the field "value" is not set to "stringValue" then the returned value is undefined.
+func (m *AnyValue) StringValue() string {
+	return m.value.StringVal()
+}
+
+// SetStringValue sets the value of the stringValue.
+// The oneof field "value" will be set to "stringValue".
+func (m *AnyValue) SetStringValue(v string) {
+	m.value = lazyproto.NewOneOfString(v, int(AnyValueStringValue))
+
+	// Mark this message modified, if not already.
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+// BytesValue returns the value of the bytesValue.
+// If the field "value" is not set to "bytesValue" then the returned value is undefined.
+func (m *AnyValue) BytesValue() []byte {
+	return m.value.BytesVal()
+}
+
+// SetBytesValue sets the value of the bytesValue.
+// The oneof field "value" will be set to "bytesValue".
+func (m *AnyValue) SetBytesValue(v []byte) {
+	m.value = lazyproto.NewOneOfBytes(v, int(AnyValueBytesValue))
+
+	// Mark this message modified, if not already.
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
+func (m *AnyValue) decode() error {
+	buf := codec.NewBuffer(m.protoMessage.Bytes)
+
+	// Iterate and decode the fields.
+	err2 := molecule.MessageEach(
+		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
+			switch fieldNum {
+			case 1:
+				// Decode "stringValue".
+				v, err := value.AsStringUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.value = lazyproto.NewOneOfString(v, int(AnyValueStringValue))
+			case 7:
+				// Decode "bytesValue".
+				v, err := value.AsBytesUnsafe()
+				if err != nil {
+					return false, err
+				}
+				m.value = lazyproto.NewOneOfBytes(v, int(AnyValueBytesValue))
+			}
+			return true, nil
+		},
+	)
+	if err2 != nil {
+		return err2
+	}
+	return nil
+}
+
+var preparedAnyValueStringValue = molecule.PrepareStringField(1)
+var preparedAnyValueBytesValue = molecule.PrepareBytesField(7)
+
+func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified != 0 {
+		// Marshal "value".
+		switch AnyValueValue(m.value.FieldIndex()) {
+		case AnyValueValueNone:
+			// Nothing to do, oneof is unset.
+		case AnyValueStringValue:
+			// Marshal "stringValue".
+			ps.StringPrepared(preparedAnyValueStringValue, m.value.StringVal())
+		case AnyValueBytesValue:
+			// Marshal "bytesValue".
+			ps.BytesPrepared(preparedAnyValueBytesValue, m.value.BytesVal())
+		}
+	} else {
+		// Message is unchanged. Used original bytes.
+		ps.Raw(m.protoMessage.Bytes)
+	}
+	return nil
+}
+
+// Pool of AnyValue structs.
+type anyValuePoolType struct {
+	pool []*AnyValue
+	mux  sync.Mutex
+}
+
+var anyValuePool = anyValuePoolType{}
+
+// Get one element from the pool. Creates a new element if the pool is empty.
+func (p *anyValuePoolType) Get() *AnyValue {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have elements in the pool?
+	if len(p.pool) >= 1 {
+		// Get the last element.
+		r := p.pool[len(p.pool)-1]
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-1]
+		return r
+	}
+
+	// Pool is empty, create a new element.
+	return &AnyValue{}
+}
+
+func (p *anyValuePoolType) GetSlice(count int) []*AnyValue {
+	// Create a new slice.
+	r := make([]*AnyValue, count)
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Have enough elements in the pool?
+	if len(p.pool) >= count {
+		// Copy the elements from the end of the pool.
+		copy(r, p.pool[len(p.pool)-count:])
+
+		// Shrink the pool.
+		p.pool = p.pool[:len(p.pool)-count]
+
+		return r
+	}
+
+	// Initialize with what remains in the pool.
+	copied := copy(r, p.pool)
+	p.pool = nil
+
+	if copied < count {
+		// Create remaining elements.
+		storage := make([]AnyValue, count-copied)
+		j := 0
+		for ; copied < count; copied++ {
+			r[copied] = &storage[j]
+			j++
+		}
+	}
+
+	return r
+}
+
+// ReleaseSlice releases a slice of elements back to the pool.
+func (p *anyValuePoolType) ReleaseSlice(slice []*AnyValue) {
+	for _, elem := range slice {
+
+		// Zero-initialize the released element.
+		*elem = AnyValue{}
+	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	// Add the slice to the end of the pool.
+	p.pool = append(p.pool, slice...)
+}
+
+// Release an element back to the pool.
+func (p *anyValuePoolType) Release(elem *AnyValue) {
+
+	// Zero-initialize the released element.
+	*elem = AnyValue{}
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
