@@ -2202,8 +2202,10 @@ const (
 	AnyValueBoolValue AnyValueValue = 2
 	// AnyValueIntValue indicates that oneof field "intValue" is set.
 	AnyValueIntValue AnyValueValue = 3
+	// AnyValueDoubleValue indicates that oneof field "doubleValue" is set.
+	AnyValueDoubleValue AnyValueValue = 4
 	// AnyValueBytesValue indicates that oneof field "bytesValue" is set.
-	AnyValueBytesValue AnyValueValue = 4
+	AnyValueBytesValue AnyValueValue = 5
 )
 
 // ValueType returns the type of the current stored oneof "value".
@@ -2268,6 +2270,23 @@ func (m *AnyValue) SetIntValue(v int64) {
 	}
 }
 
+// DoubleValue returns the value of the doubleValue.
+// If the field "value" is not set to "doubleValue" then the returned value is undefined.
+func (m *AnyValue) DoubleValue() float64 {
+	return m.value.DoubleVal()
+}
+
+// SetDoubleValue sets the value of the doubleValue.
+// The oneof field "value" will be set to "doubleValue".
+func (m *AnyValue) SetDoubleValue(v float64) {
+	m.value = lazyproto.NewOneOfDouble(v, int(AnyValueDoubleValue))
+
+	// Mark this message modified, if not already.
+	if m.protoMessage.Flags&lazyproto.FlagsMessageModified == 0 {
+		m.protoMessage.MarkModified()
+	}
+}
+
 // BytesValue returns the value of the bytesValue.
 // If the field "value" is not set to "bytesValue" then the returned value is undefined.
 func (m *AnyValue) BytesValue() []byte {
@@ -2313,6 +2332,13 @@ func (m *AnyValue) decode() error {
 					return false, err
 				}
 				m.value = lazyproto.NewOneOfInt64(v, int(AnyValueIntValue))
+			case 4:
+				// Decode "doubleValue".
+				v, err := value.AsDouble()
+				if err != nil {
+					return false, err
+				}
+				m.value = lazyproto.NewOneOfDouble(v, int(AnyValueDoubleValue))
 			case 7:
 				// Decode "bytesValue".
 				v, err := value.AsBytesUnsafe()
@@ -2333,6 +2359,7 @@ func (m *AnyValue) decode() error {
 var preparedAnyValueStringValue = molecule.PrepareStringField(1)
 var preparedAnyValueBoolValue = molecule.PrepareBoolField(2)
 var preparedAnyValueIntValue = molecule.PrepareInt64Field(3)
+var preparedAnyValueDoubleValue = molecule.PrepareDoubleField(4)
 var preparedAnyValueBytesValue = molecule.PrepareBytesField(7)
 
 func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
@@ -2350,6 +2377,9 @@ func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
 		case AnyValueIntValue:
 			// Marshal "intValue".
 			ps.Int64Prepared(preparedAnyValueIntValue, m.value.Int64Val())
+		case AnyValueDoubleValue:
+			// Marshal "doubleValue".
+			ps.DoublePrepared(preparedAnyValueDoubleValue, m.value.DoubleVal())
 		case AnyValueBytesValue:
 			// Marshal "bytesValue".
 			ps.BytesPrepared(preparedAnyValueBytesValue, m.value.BytesVal())

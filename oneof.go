@@ -35,6 +35,13 @@ func NewOneOfInt64(v int64, fieldIdx int) OneOf {
 	}
 }
 
+func NewOneOfDouble(v float64, fieldIdx int) OneOf {
+	return OneOf{
+		lenAndFieldIdx: int64(fieldIdx),
+		capOrVal:       *(*int64)(unsafe.Pointer(&v)),
+	}
+}
+
 func boolToInt64(b bool) int64 {
 	if b {
 		return 1
@@ -80,6 +87,10 @@ func (v *OneOf) FieldIndex() int {
 
 func (v *OneOf) Int64Val() int64 {
 	return v.capOrVal
+}
+
+func (v *OneOf) DoubleVal() float64 {
+	return *(*float64)(unsafe.Pointer(&v.capOrVal))
 }
 
 func (v *OneOf) BoolVal() bool {

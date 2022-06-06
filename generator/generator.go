@@ -174,6 +174,8 @@ func (g *generator) convertTypeToGo(field *Field) string {
 		s += "uint32"
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		s += "uint32"
+	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		s += "float64"
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		s += "string"
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
@@ -443,6 +445,9 @@ func (g *generator) oFieldDecode(fields []*Field) string {
 		case descriptor.FieldDescriptorProto_TYPE_UINT32:
 			g.oFieldDecodePrimitive("Uint32", "Uint32")
 
+		case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+			g.oFieldDecodePrimitive("Double", "Double")
+
 		case descriptor.FieldDescriptorProto_TYPE_ENUM:
 			g.oFieldDecodeEnum(field.GetEnumType().GetName())
 
@@ -628,6 +633,8 @@ func (g *generator) oFieldGetter() error {
 			g.o("	return m.%s.BoolVal()", g.field.GetOneOf().GetName())
 		case descriptor.FieldDescriptorProto_TYPE_INT64:
 			g.o("	return m.%s.Int64Val()", g.field.GetOneOf().GetName())
+		case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+			g.o("	return m.%s.DoubleVal()", g.field.GetOneOf().GetName())
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
 			g.o("	return m.%s.StringVal()", g.field.GetOneOf().GetName())
 		case descriptor.FieldDescriptorProto_TYPE_BYTES:
@@ -686,6 +693,11 @@ func (g *generator) oFieldSetter() error {
 		case descriptor.FieldDescriptorProto_TYPE_INT64:
 			g.o(
 				"	m.%s = lazyproto.NewOneOfInt64(v, int(%s))",
+				g.field.GetOneOf().GetName(), choiceName,
+			)
+		case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+			g.o(
+				"	m.%s = lazyproto.NewOneOfDouble(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
@@ -840,15 +852,15 @@ func embeddedFieldName(msg *Message, field *Field) string {
 	return fmt.Sprintf("prepared%s%s", msg.GetName(), field.GetCapitalName())
 }
 
-func (g *generator) oMarshalPreparedField(typeName string) {
+func (g *generator) oMarshalPreparedField(protoTypeName string) {
 	if g.field.GetOneOf() != nil {
 		g.o(
 			"ps.%[1]sPrepared(prepared$MessageName$FieldName, m.%[2]s.%[1]sVal())",
-			typeName,
+			protoTypeName,
 			g.field.GetOneOf().GetName(),
 		)
 	} else {
-		g.o("ps.%sPrepared(prepared$MessageName$FieldName, m.$fieldName)", typeName)
+		g.o("ps.%sPrepared(prepared$MessageName$FieldName, m.$fieldName)", protoTypeName)
 	}
 }
 
@@ -875,6 +887,9 @@ func (g *generator) oMarshalField() {
 
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		g.oMarshalPreparedField("Uint32")
+
+	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		g.oMarshalPreparedField("Double")
 
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		g.o("ps.Uint32Prepared(prepared$MessageName$FieldName, uint32(m.$fieldName))")
@@ -934,6 +949,9 @@ func (g *generator) oPrepareMarshalField(msg *Message, field *Field) {
 
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		g.o(g.preparedFieldDecl(msg, field, "Uint32"))
+
+	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		g.o(g.preparedFieldDecl(msg, field, "Double"))
 
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		g.o(g.preparedFieldDecl(msg, field, "Uint32"))
@@ -1102,17 +1120,17 @@ func (p *$messagePoolType) Release(elem *$MessageName) {`,
 }
 
 func (g *generator) preparedFieldDecl(
-	msg *Message, field *Field, typeName string,
+	msg *Message, field *Field, protoTypeName string,
 ) string {
 	if g.useSizedMarshaler {
 		return fmt.Sprintf(
 			"var prepared%s%s = protostream.Prepare%sField(%d)", msg.GetName(),
-			field.GetCapitalName(), typeName, field.GetNumber(),
+			field.GetCapitalName(), protoTypeName, field.GetNumber(),
 		)
 	} else {
 		return fmt.Sprintf(
 			"var prepared%s%s = molecule.Prepare%sField(%d)", msg.GetName(),
-			field.GetCapitalName(), typeName, field.GetNumber(),
+			field.GetCapitalName(), protoTypeName, field.GetNumber(),
 		)
 	}
 }

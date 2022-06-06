@@ -94,6 +94,7 @@ message AnyValue {
     string string_value = 1;
     bool bool_value = 2;
     int64 int_value = 3;
+    double double_value = 4;
     bytes bytes_value = 7;
   }
 }
