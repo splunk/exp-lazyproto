@@ -108,3 +108,8 @@ message ArrayValue {
 message KeyValueList {
   repeated KeyValue values = 1;
 }
+
+message PlainMessage {
+  string key = 1;
+  string value = 2;
+}

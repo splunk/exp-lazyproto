@@ -260,7 +260,13 @@ func (g *generator) oMsgStruct() error {
 
 	g.o("type $MessageName struct {")
 	g.i(1)
-	g.o("protoMessage lazyproto.ProtoMessage")
+	g.o("_protoMessage lazyproto.ProtoMessage")
+
+	if g.msg.HasEmbeddedMsg {
+		g.o("_flags uint64")
+	}
+	g.o("")
+
 	for _, field := range g.msg.Fields {
 		if field.GetOneOf() != nil {
 			// Skip oneof fields for now. They will be generated separately.
@@ -363,7 +369,7 @@ func (g *generator) oUnmarshalFree() error {
 		`
 func Unmarshal$MessageName(bytes []byte) (*$MessageName, error) {
 	m := $messagePool.Get()
-	m.protoMessage.Bytes = bytes
+	m._protoMessage.Bytes = bytes
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -382,7 +388,7 @@ func (g *generator) oMsgDecodeFunc(msg *Message) error {
 	g.o(
 		`
 func (m *$MessageName) decode() error {
-	buf := codec.NewBuffer(m.protoMessage.Bytes)`,
+	buf := codec.NewBuffer(m._protoMessage.Bytes)`,
 	)
 
 	g.i(1)
@@ -501,16 +507,16 @@ if err != nil {
 // The slice is pre-allocated, assign to the appropriate index.
 elem := m.$fieldName[%[1]s]
 %[1]s++
-elem.protoMessage.Parent = &m.protoMessage
-elem.protoMessage.Bytes = v`, counterName,
+elem._protoMessage.Parent = &m._protoMessage
+elem._protoMessage.Bytes = v`, counterName,
 				)
 			} else if field.GetOneOf() != nil {
 				choiceName := composeOneOfChoiceName(g.msg, field)
 				g.o(
 					`
 elem := $fieldTypeMessagePool.Get()
-elem.protoMessage.Parent = &m.protoMessage
-elem.protoMessage.Bytes = v
+elem._protoMessage.Parent = &m._protoMessage
+elem._protoMessage.Bytes = v
 m.%s = lazyproto.NewOneOfPtr(unsafe.Pointer(elem), int(%s))`,
 					field.GetOneOf().GetName(), choiceName,
 				)
@@ -518,8 +524,8 @@ m.%s = lazyproto.NewOneOfPtr(unsafe.Pointer(elem), int(%s))`,
 				g.o(
 					`
 m.$fieldName = $fieldTypeMessagePool.Get()
-m.$fieldName.protoMessage.Parent = &m.protoMessage
-m.$fieldName.protoMessage.Bytes = v`,
+m.$fieldName._protoMessage.Parent = &m._protoMessage
+m.$fieldName._protoMessage.Bytes = v`,
 				)
 			}
 
@@ -574,7 +580,7 @@ func (g *generator) oRepeatedFieldCounts(msg *Message) {
 	}
 	g.o("")
 	g.o("// Reset the buffer to start iterating over the fields again")
-	g.o("buf.Reset(m.protoMessage.Bytes)")
+	g.o("buf.Reset(m._protoMessage.Bytes)")
 	g.o("")
 	g.o("// Set slice indexes to 0 to begin iterating over repeated fields.")
 	for _, field := range fields {
@@ -595,22 +601,18 @@ func (g *generator) getRepeatedFields(msg *Message) []*Field {
 }
 
 func (g *generator) oFieldsAccessors(msg *Message) error {
-	// Generate decode bit flags
-	bitMask := uint64(2) // Start from 2 since bit 1 is used for "flagsMessageModified"
-	firstFlag := true
-	for _, field := range msg.Fields {
-		g.setField(field)
-		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			if firstFlag {
-				g.o("// Bitmasks that indicate that the particular nested message is decoded.")
-			}
+	if msg.HasEmbeddedMsg {
+		// Generate decode bit flags
+		g.o("// Bitmasks that indicate that the particular nested message is decoded.")
+		bitMask := uint64(1)
+		for _, field := range msg.Fields {
+			g.setField(field)
+			if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 
-			g.o("const %s = 0x%016X", g.fieldFlagName(), bitMask)
-			bitMask *= 2
-			firstFlag = false
+				g.o("const %s = 0x%016X", g.fieldFlagName(), bitMask)
+				bitMask *= 2
+			}
 		}
-	}
-	if !firstFlag {
 		g.o("")
 	}
 
@@ -646,7 +648,7 @@ func (g *generator) oFieldGetter() error {
 
 	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		g.i(1)
-		g.o("if m.protoMessage.Flags&%s == 0 {", g.fieldFlagName())
+		g.o("if m._flags&%s == 0 {", g.fieldFlagName())
 		g.i(1)
 		g.o("// Decode nested message(s).")
 		if g.field.IsRepeated() {
@@ -682,7 +684,7 @@ func (g *generator) oFieldGetter() error {
 		}
 		g.i(-1)
 
-		g.o("	m.protoMessage.Flags |= %s", g.fieldFlagName())
+		g.o("	m._flags |= %s", g.fieldFlagName())
 		g.o("}")
 		g.i(-1)
 	}
@@ -789,15 +791,15 @@ func (g *generator) oFieldSetter() error {
 		g.o("	// Make sure the field's Parent points to this message.")
 		if g.field.IsRepeated() {
 			g.o("	for _, elem := range m.$fieldName {")
-			g.o("		elem.protoMessage.Parent = &m.protoMessage")
+			g.o("		elem._protoMessage.Parent = &m._protoMessage")
 			g.o("	}")
 		} else {
-			g.o("	v.protoMessage.Parent = &m.protoMessage")
+			g.o("	v._protoMessage.Parent = &m._protoMessage")
 		}
 	}
 	g.o("")
 	g.o("	// Mark this message modified, if not already.")
-	g.o("	m.protoMessage.MarkModified()")
+	g.o("	m._protoMessage.MarkModified()")
 	g.o("}\n")
 
 	if g.field.IsRepeated() {
@@ -832,7 +834,7 @@ func (m *$MessageName) $FieldNameRemoveIf(f func(*$FieldMessageTypeName) bool) {
 	if newLen != len(m.$fieldName) {
 		m.$fieldName = m.$fieldName[:newLen]
 		// Mark this message modified, if not already.
-		m.protoMessage.MarkModified()
+		m._protoMessage.MarkModified()
 	}
 }
 `,
@@ -853,7 +855,7 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 		g.o("func (m *$MessageName) Marshal(ps *molecule.ProtoStream) error {")
 	}
 	g.i(1)
-	g.o("if m.protoMessage.IsModified() {")
+	g.o("if m._protoMessage.IsModified() {")
 	g.i(1)
 
 	// Order the fields by their number to ensure marshaling is done in an
@@ -903,7 +905,7 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 	g.i(-1)
 	g.o("} else {")
 	g.o("	// Message is unchanged. Used original bytes.")
-	g.o("	ps.Raw(m.protoMessage.Bytes)")
+	g.o("	ps.Raw(m._protoMessage.Bytes)")
 	g.o("}")
 	g.o("return nil")
 	g.i(-1)

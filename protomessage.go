@@ -10,8 +10,8 @@ type ProtoMessage struct {
 	// and can save memory by eliminating it.
 	// Bytes are set to nil when the message is modified (i.e. marshaling will do
 	// full field-by-field encoding).
-	Bytes  []byte
-	Flags  uint64
+	Bytes []byte
+	//Flags  uint64
 	Parent *ProtoMessage
 }
 

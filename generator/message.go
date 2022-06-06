@@ -3,6 +3,7 @@ package generator
 import (
 	"strings"
 
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/jhump/protoreflect/desc"
 )
 
@@ -12,8 +13,9 @@ type File struct {
 
 type Message struct {
 	desc.MessageDescriptor
-	Fields    []*Field
-	FieldsMap map[string]*Field
+	Fields         []*Field
+	FieldsMap      map[string]*Field
+	HasEmbeddedMsg bool
 }
 
 func NewMessage(descr *desc.MessageDescriptor) *Message {
@@ -30,6 +32,10 @@ func NewMessage(descr *desc.MessageDescriptor) *Message {
 		}
 		m.Fields = append(m.Fields, f)
 		m.FieldsMap[field.GetName()] = f
+
+		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			m.HasEmbeddedMsg = true
+		}
 	}
 	return m
 }
