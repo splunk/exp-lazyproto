@@ -117,6 +117,8 @@ import (
 	"unsafe"
 
 	"github.com/tigrannajaryan/lazyproto/internal/protomessage"
+	"github.com/tigrannajaryan/lazyproto/internal/oneof"
+
 	"github.com/tigrannajaryan/molecule"
 	"github.com/tigrannajaryan/molecule/src/codec"
 )
@@ -301,7 +303,7 @@ func (g *generator) oMsgStruct() error {
 
 	// Generate oneof fields.
 	for _, oneof := range g.msg.GetOneOfs() {
-		g.o("%s protomessage.OneOf", oneof.GetName())
+		g.o("%s oneof.OneOf", oneof.GetName())
 	}
 	g.i(-1)
 	g.o("}")
@@ -379,7 +381,7 @@ func (g *generator) oOneOfTypeFunc(oneof *desc.OneOfDescriptor) {
 		funcName, oneof.GetName(),
 	)
 	g.o("func (m *$MessageName) %s() {", funcName)
-	g.o("	m.%s = protomessage.NewOneOfNone()", oneof.GetName())
+	g.o("	m.%s = oneof.NewOneOfNone()", oneof.GetName())
 	g.o("}\n")
 }
 
@@ -457,7 +459,7 @@ if err != nil {
 	if g.field.GetOneOf() != nil {
 		choiceName := composeOneOfChoiceName(g.msg, g.field)
 		g.o(
-			"m.%s = protomessage.NewOneOf%s(v, int(%s))", g.field.GetOneOf().GetName(),
+			"m.%s = oneof.NewOneOf%s(v, int(%s))", g.field.GetOneOf().GetName(),
 			oneOfType, choiceName,
 		)
 	} else {
@@ -536,7 +538,7 @@ elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)`, counterName,
 elem := $fieldTypeMessagePool.Get()
 elem._protoMessage.Parent = &m._protoMessage
 elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
-m.%s = protomessage.NewOneOfPtr(unsafe.Pointer(elem), int(%s))`,
+m.%s = oneof.NewOneOfPtr(unsafe.Pointer(elem), int(%s))`,
 					field.GetOneOf().GetName(), choiceName,
 				)
 			} else {
@@ -770,32 +772,32 @@ func (g *generator) oFieldSetter() error {
 		switch g.field.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
 			g.o(
-				"	m.%s = protomessage.NewOneOfBool(v, int(%s))",
+				"	m.%s = oneof.NewOneOfBool(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_INT64:
 			g.o(
-				"	m.%s = protomessage.NewOneOfInt64(v, int(%s))",
+				"	m.%s = oneof.NewOneOfInt64(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 			g.o(
-				"	m.%s = protomessage.NewOneOfDouble(v, int(%s))",
+				"	m.%s = oneof.NewOneOfDouble(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
 			g.o(
-				"	m.%s = protomessage.NewOneOfString(v, int(%s))",
+				"	m.%s = oneof.NewOneOfString(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_BYTES:
 			g.o(
-				"	m.%s = protomessage.NewOneOfBytes(v, int(%s))",
+				"	m.%s = oneof.NewOneOfBytes(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			g.o(
-				"	m.%s = protomessage.NewOneOfPtr(unsafe.Pointer(v), int(%s))",
+				"	m.%s = oneof.NewOneOfPtr(unsafe.Pointer(v), int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		default:

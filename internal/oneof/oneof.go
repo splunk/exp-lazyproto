@@ -1,4 +1,4 @@
-package protomessage
+package oneof
 
 import (
 	"reflect"

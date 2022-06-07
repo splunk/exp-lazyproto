@@ -4,7 +4,9 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/tigrannajaryan/lazyproto/internal/oneof"
 	"github.com/tigrannajaryan/lazyproto/internal/protomessage"
+
 	"github.com/tigrannajaryan/molecule"
 	"github.com/tigrannajaryan/molecule/src/codec"
 )
@@ -2137,7 +2139,7 @@ type AnyValue struct {
 	_protoMessage protomessage.ProtoMessage
 	_flags        uint8
 
-	value protomessage.OneOf
+	value oneof.OneOf
 }
 
 func UnmarshalAnyValue(bytes []byte) (*AnyValue, error) {
@@ -2183,7 +2185,7 @@ func (m *AnyValue) ValueType() AnyValueValue {
 
 // ValueUnset unsets the oneof field "value", so that it contains none of the choices.
 func (m *AnyValue) ValueUnset() {
-	m.value = protomessage.NewOneOfNone()
+	m.value = oneof.NewOneOfNone()
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
@@ -2199,7 +2201,7 @@ func (m *AnyValue) StringValue() string {
 // SetStringValue sets the value of the stringValue.
 // The oneof field "value" will be set to "stringValue".
 func (m *AnyValue) SetStringValue(v string) {
-	m.value = protomessage.NewOneOfString(v, int(AnyValueStringValue))
+	m.value = oneof.NewOneOfString(v, int(AnyValueStringValue))
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -2214,7 +2216,7 @@ func (m *AnyValue) BoolValue() bool {
 // SetBoolValue sets the value of the boolValue.
 // The oneof field "value" will be set to "boolValue".
 func (m *AnyValue) SetBoolValue(v bool) {
-	m.value = protomessage.NewOneOfBool(v, int(AnyValueBoolValue))
+	m.value = oneof.NewOneOfBool(v, int(AnyValueBoolValue))
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -2229,7 +2231,7 @@ func (m *AnyValue) IntValue() int64 {
 // SetIntValue sets the value of the intValue.
 // The oneof field "value" will be set to "intValue".
 func (m *AnyValue) SetIntValue(v int64) {
-	m.value = protomessage.NewOneOfInt64(v, int(AnyValueIntValue))
+	m.value = oneof.NewOneOfInt64(v, int(AnyValueIntValue))
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -2244,7 +2246,7 @@ func (m *AnyValue) DoubleValue() float64 {
 // SetDoubleValue sets the value of the doubleValue.
 // The oneof field "value" will be set to "doubleValue".
 func (m *AnyValue) SetDoubleValue(v float64) {
-	m.value = protomessage.NewOneOfDouble(v, int(AnyValueDoubleValue))
+	m.value = oneof.NewOneOfDouble(v, int(AnyValueDoubleValue))
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -2270,7 +2272,7 @@ func (m *AnyValue) ArrayValue() *ArrayValue {
 // SetArrayValue sets the value of the arrayValue.
 // The oneof field "value" will be set to "arrayValue".
 func (m *AnyValue) SetArrayValue(v *ArrayValue) {
-	m.value = protomessage.NewOneOfPtr(unsafe.Pointer(v), int(AnyValueArrayValue))
+	m.value = oneof.NewOneOfPtr(unsafe.Pointer(v), int(AnyValueArrayValue))
 
 	// Make sure the field's Parent points to this message.
 	v._protoMessage.Parent = &m._protoMessage
@@ -2299,7 +2301,7 @@ func (m *AnyValue) KvlistValue() *KeyValueList {
 // SetKvlistValue sets the value of the kvlistValue.
 // The oneof field "value" will be set to "kvlistValue".
 func (m *AnyValue) SetKvlistValue(v *KeyValueList) {
-	m.value = protomessage.NewOneOfPtr(unsafe.Pointer(v), int(AnyValueKvlistValue))
+	m.value = oneof.NewOneOfPtr(unsafe.Pointer(v), int(AnyValueKvlistValue))
 
 	// Make sure the field's Parent points to this message.
 	v._protoMessage.Parent = &m._protoMessage
@@ -2317,7 +2319,7 @@ func (m *AnyValue) BytesValue() []byte {
 // SetBytesValue sets the value of the bytesValue.
 // The oneof field "value" will be set to "bytesValue".
 func (m *AnyValue) SetBytesValue(v []byte) {
-	m.value = protomessage.NewOneOfBytes(v, int(AnyValueBytesValue))
+	m.value = oneof.NewOneOfBytes(v, int(AnyValueBytesValue))
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -2336,28 +2338,28 @@ func (m *AnyValue) decode() error {
 				if err != nil {
 					return false, err
 				}
-				m.value = protomessage.NewOneOfString(v, int(AnyValueStringValue))
+				m.value = oneof.NewOneOfString(v, int(AnyValueStringValue))
 			case 2:
 				// Decode "boolValue".
 				v, err := value.AsBool()
 				if err != nil {
 					return false, err
 				}
-				m.value = protomessage.NewOneOfBool(v, int(AnyValueBoolValue))
+				m.value = oneof.NewOneOfBool(v, int(AnyValueBoolValue))
 			case 3:
 				// Decode "intValue".
 				v, err := value.AsInt64()
 				if err != nil {
 					return false, err
 				}
-				m.value = protomessage.NewOneOfInt64(v, int(AnyValueIntValue))
+				m.value = oneof.NewOneOfInt64(v, int(AnyValueIntValue))
 			case 4:
 				// Decode "doubleValue".
 				v, err := value.AsDouble()
 				if err != nil {
 					return false, err
 				}
-				m.value = protomessage.NewOneOfDouble(v, int(AnyValueDoubleValue))
+				m.value = oneof.NewOneOfDouble(v, int(AnyValueDoubleValue))
 			case 5:
 				// Decode "arrayValue".
 				v, err := value.AsBytesUnsafe()
@@ -2367,7 +2369,7 @@ func (m *AnyValue) decode() error {
 				elem := arrayValuePool.Get()
 				elem._protoMessage.Parent = &m._protoMessage
 				elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
-				m.value = protomessage.NewOneOfPtr(unsafe.Pointer(elem), int(AnyValueArrayValue))
+				m.value = oneof.NewOneOfPtr(unsafe.Pointer(elem), int(AnyValueArrayValue))
 			case 6:
 				// Decode "kvlistValue".
 				v, err := value.AsBytesUnsafe()
@@ -2377,14 +2379,14 @@ func (m *AnyValue) decode() error {
 				elem := keyValueListPool.Get()
 				elem._protoMessage.Parent = &m._protoMessage
 				elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
-				m.value = protomessage.NewOneOfPtr(unsafe.Pointer(elem), int(AnyValueKvlistValue))
+				m.value = oneof.NewOneOfPtr(unsafe.Pointer(elem), int(AnyValueKvlistValue))
 			case 7:
 				// Decode "bytesValue".
 				v, err := value.AsBytesUnsafe()
 				if err != nil {
 					return false, err
 				}
-				m.value = protomessage.NewOneOfBytes(v, int(AnyValueBytesValue))
+				m.value = oneof.NewOneOfBytes(v, int(AnyValueBytesValue))
 			}
 			return true, nil
 		},
