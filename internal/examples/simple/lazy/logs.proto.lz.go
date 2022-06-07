@@ -54,7 +54,7 @@ type LogsData struct {
 
 func UnmarshalLogsData(bytes []byte) (*LogsData, error) {
 	m := logsDataPool.Get()
-	m._protoMessage.Bytes = bytes
+	m._protoMessage.Bytes = lazyproto.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (m *LogsData) ResourceLogsRemoveIf(f func(*ResourceLogs) bool) {
 }
 
 func (m *LogsData) decode() error {
-	buf := codec.NewBuffer(m._protoMessage.Bytes)
+	buf := codec.NewBuffer(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Count all repeated fields. We need one counter per field.
 	resourceLogsCount := 0
@@ -138,7 +138,7 @@ func (m *LogsData) decode() error {
 	m.resourceLogs = resourceLogsPool.GetSlice(resourceLogsCount)
 
 	// Reset the buffer to start iterating over the fields again
-	buf.Reset(m._protoMessage.Bytes)
+	buf.Reset(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	resourceLogsCount = 0
@@ -157,7 +157,7 @@ func (m *LogsData) decode() error {
 				elem := m.resourceLogs[resourceLogsCount]
 				resourceLogsCount++
 				elem._protoMessage.Parent = &m._protoMessage
-				elem._protoMessage.Bytes = v
+				elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 			}
 			return true, nil
 		},
@@ -182,7 +182,7 @@ func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
 		}
 	} else {
 		// Message is unchanged. Used original bytes.
-		ps.Raw(m._protoMessage.Bytes)
+		ps.Raw(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
 }
@@ -295,7 +295,7 @@ type ResourceLogs struct {
 
 func UnmarshalResourceLogs(bytes []byte) (*ResourceLogs, error) {
 	m := resourceLogsPool.Get()
-	m._protoMessage.Bytes = bytes
+	m._protoMessage.Bytes = lazyproto.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -399,7 +399,7 @@ func (m *ResourceLogs) SetSchemaUrl(v string) {
 }
 
 func (m *ResourceLogs) decode() error {
-	buf := codec.NewBuffer(m._protoMessage.Bytes)
+	buf := codec.NewBuffer(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Count all repeated fields. We need one counter per field.
 	scopeLogsCount := 0
@@ -418,7 +418,7 @@ func (m *ResourceLogs) decode() error {
 	m.scopeLogs = scopeLogsPool.GetSlice(scopeLogsCount)
 
 	// Reset the buffer to start iterating over the fields again
-	buf.Reset(m._protoMessage.Bytes)
+	buf.Reset(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	scopeLogsCount = 0
@@ -435,7 +435,7 @@ func (m *ResourceLogs) decode() error {
 				}
 				m.resource = resourcePool.Get()
 				m.resource._protoMessage.Parent = &m._protoMessage
-				m.resource._protoMessage.Bytes = v
+				m.resource._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 			case 2:
 				// Decode "scopeLogs".
 				v, err := value.AsBytesUnsafe()
@@ -446,7 +446,7 @@ func (m *ResourceLogs) decode() error {
 				elem := m.scopeLogs[scopeLogsCount]
 				scopeLogsCount++
 				elem._protoMessage.Parent = &m._protoMessage
-				elem._protoMessage.Bytes = v
+				elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 			case 3:
 				// Decode "schemaUrl".
 				v, err := value.AsStringUnsafe()
@@ -491,7 +491,7 @@ func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 		ps.StringPrepared(preparedResourceLogsSchemaUrl, m.schemaUrl)
 	} else {
 		// Message is unchanged. Used original bytes.
-		ps.Raw(m._protoMessage.Bytes)
+		ps.Raw(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
 }
@@ -609,7 +609,7 @@ type Resource struct {
 
 func UnmarshalResource(bytes []byte) (*Resource, error) {
 	m := resourcePool.Get()
-	m._protoMessage.Bytes = bytes
+	m._protoMessage.Bytes = lazyproto.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -687,7 +687,7 @@ func (m *Resource) SetDroppedAttributesCount(v uint32) {
 }
 
 func (m *Resource) decode() error {
-	buf := codec.NewBuffer(m._protoMessage.Bytes)
+	buf := codec.NewBuffer(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
@@ -706,7 +706,7 @@ func (m *Resource) decode() error {
 	m.attributes = keyValuePool.GetSlice(attributesCount)
 
 	// Reset the buffer to start iterating over the fields again
-	buf.Reset(m._protoMessage.Bytes)
+	buf.Reset(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	attributesCount = 0
@@ -725,7 +725,7 @@ func (m *Resource) decode() error {
 				elem := m.attributes[attributesCount]
 				attributesCount++
 				elem._protoMessage.Parent = &m._protoMessage
-				elem._protoMessage.Bytes = v
+				elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 			case 2:
 				// Decode "droppedAttributesCount".
 				v, err := value.AsUint32()
@@ -760,7 +760,7 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 		ps.Uint32Prepared(preparedResourceDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
-		ps.Raw(m._protoMessage.Bytes)
+		ps.Raw(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
 }
@@ -874,7 +874,7 @@ type ScopeLogs struct {
 
 func UnmarshalScopeLogs(bytes []byte) (*ScopeLogs, error) {
 	m := scopeLogsPool.Get()
-	m._protoMessage.Bytes = bytes
+	m._protoMessage.Bytes = lazyproto.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -978,7 +978,7 @@ func (m *ScopeLogs) SetSchemaUrl(v string) {
 }
 
 func (m *ScopeLogs) decode() error {
-	buf := codec.NewBuffer(m._protoMessage.Bytes)
+	buf := codec.NewBuffer(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Count all repeated fields. We need one counter per field.
 	logRecordsCount := 0
@@ -997,7 +997,7 @@ func (m *ScopeLogs) decode() error {
 	m.logRecords = logRecordPool.GetSlice(logRecordsCount)
 
 	// Reset the buffer to start iterating over the fields again
-	buf.Reset(m._protoMessage.Bytes)
+	buf.Reset(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	logRecordsCount = 0
@@ -1014,7 +1014,7 @@ func (m *ScopeLogs) decode() error {
 				}
 				m.scope = instrumentationScopePool.Get()
 				m.scope._protoMessage.Parent = &m._protoMessage
-				m.scope._protoMessage.Bytes = v
+				m.scope._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 			case 2:
 				// Decode "logRecords".
 				v, err := value.AsBytesUnsafe()
@@ -1025,7 +1025,7 @@ func (m *ScopeLogs) decode() error {
 				elem := m.logRecords[logRecordsCount]
 				logRecordsCount++
 				elem._protoMessage.Parent = &m._protoMessage
-				elem._protoMessage.Bytes = v
+				elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 			case 3:
 				// Decode "schemaUrl".
 				v, err := value.AsStringUnsafe()
@@ -1070,7 +1070,7 @@ func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 		ps.StringPrepared(preparedScopeLogsSchemaUrl, m.schemaUrl)
 	} else {
 		// Message is unchanged. Used original bytes.
-		ps.Raw(m._protoMessage.Bytes)
+		ps.Raw(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
 }
@@ -1190,7 +1190,7 @@ type InstrumentationScope struct {
 
 func UnmarshalInstrumentationScope(bytes []byte) (*InstrumentationScope, error) {
 	m := instrumentationScopePool.Get()
-	m._protoMessage.Bytes = bytes
+	m._protoMessage.Bytes = lazyproto.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -1294,7 +1294,7 @@ func (m *InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 }
 
 func (m *InstrumentationScope) decode() error {
-	buf := codec.NewBuffer(m._protoMessage.Bytes)
+	buf := codec.NewBuffer(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
@@ -1313,7 +1313,7 @@ func (m *InstrumentationScope) decode() error {
 	m.attributes = keyValuePool.GetSlice(attributesCount)
 
 	// Reset the buffer to start iterating over the fields again
-	buf.Reset(m._protoMessage.Bytes)
+	buf.Reset(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	attributesCount = 0
@@ -1346,7 +1346,7 @@ func (m *InstrumentationScope) decode() error {
 				elem := m.attributes[attributesCount]
 				attributesCount++
 				elem._protoMessage.Parent = &m._protoMessage
-				elem._protoMessage.Bytes = v
+				elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 			case 4:
 				// Decode "droppedAttributesCount".
 				v, err := value.AsUint32()
@@ -1387,7 +1387,7 @@ func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 		ps.Uint32Prepared(preparedInstrumentationScopeDroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
-		ps.Raw(m._protoMessage.Bytes)
+		ps.Raw(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
 }
@@ -1504,7 +1504,7 @@ type LogRecord struct {
 
 func UnmarshalLogRecord(bytes []byte) (*LogRecord, error) {
 	m := logRecordPool.Get()
-	m._protoMessage.Bytes = bytes
+	m._protoMessage.Bytes = lazyproto.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -1673,7 +1673,7 @@ func (m *LogRecord) SetSpanId(v []byte) {
 }
 
 func (m *LogRecord) decode() error {
-	buf := codec.NewBuffer(m._protoMessage.Bytes)
+	buf := codec.NewBuffer(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
@@ -1692,7 +1692,7 @@ func (m *LogRecord) decode() error {
 	m.attributes = keyValuePool.GetSlice(attributesCount)
 
 	// Reset the buffer to start iterating over the fields again
-	buf.Reset(m._protoMessage.Bytes)
+	buf.Reset(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	attributesCount = 0
@@ -1739,7 +1739,7 @@ func (m *LogRecord) decode() error {
 				elem := m.attributes[attributesCount]
 				attributesCount++
 				elem._protoMessage.Parent = &m._protoMessage
-				elem._protoMessage.Bytes = v
+				elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 			case 7:
 				// Decode "droppedAttributesCount".
 				v, err := value.AsUint32()
@@ -1816,7 +1816,7 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 		ps.Fixed64Prepared(preparedLogRecordObservedTimeUnixNano, m.observedTimeUnixNano)
 	} else {
 		// Message is unchanged. Used original bytes.
-		ps.Raw(m._protoMessage.Bytes)
+		ps.Raw(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
 }
@@ -1926,7 +1926,7 @@ type KeyValue struct {
 
 func UnmarshalKeyValue(bytes []byte) (*KeyValue, error) {
 	m := keyValuePool.Get()
-	m._protoMessage.Bytes = bytes
+	m._protoMessage.Bytes = lazyproto.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -1979,7 +1979,7 @@ func (m *KeyValue) SetValue(v *AnyValue) {
 }
 
 func (m *KeyValue) decode() error {
-	buf := codec.NewBuffer(m._protoMessage.Bytes)
+	buf := codec.NewBuffer(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
@@ -2000,7 +2000,7 @@ func (m *KeyValue) decode() error {
 				}
 				m.value = anyValuePool.Get()
 				m.value._protoMessage.Parent = &m._protoMessage
-				m.value._protoMessage.Bytes = v
+				m.value._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 			}
 			return true, nil
 		},
@@ -2029,7 +2029,7 @@ func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
 		}
 	} else {
 		// Message is unchanged. Used original bytes.
-		ps.Raw(m._protoMessage.Bytes)
+		ps.Raw(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
 }
@@ -2142,7 +2142,7 @@ type AnyValue struct {
 
 func UnmarshalAnyValue(bytes []byte) (*AnyValue, error) {
 	m := anyValuePool.Get()
-	m._protoMessage.Bytes = bytes
+	m._protoMessage.Bytes = lazyproto.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -2324,7 +2324,7 @@ func (m *AnyValue) SetBytesValue(v []byte) {
 }
 
 func (m *AnyValue) decode() error {
-	buf := codec.NewBuffer(m._protoMessage.Bytes)
+	buf := codec.NewBuffer(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
@@ -2366,7 +2366,7 @@ func (m *AnyValue) decode() error {
 				}
 				elem := arrayValuePool.Get()
 				elem._protoMessage.Parent = &m._protoMessage
-				elem._protoMessage.Bytes = v
+				elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 				m.value = lazyproto.NewOneOfPtr(unsafe.Pointer(elem), int(AnyValueArrayValue))
 			case 6:
 				// Decode "kvlistValue".
@@ -2376,7 +2376,7 @@ func (m *AnyValue) decode() error {
 				}
 				elem := keyValueListPool.Get()
 				elem._protoMessage.Parent = &m._protoMessage
-				elem._protoMessage.Bytes = v
+				elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 				m.value = lazyproto.NewOneOfPtr(unsafe.Pointer(elem), int(AnyValueKvlistValue))
 			case 7:
 				// Decode "bytesValue".
@@ -2447,7 +2447,7 @@ func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
 		}
 	} else {
 		// Message is unchanged. Used original bytes.
-		ps.Raw(m._protoMessage.Bytes)
+		ps.Raw(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
 }
@@ -2576,7 +2576,7 @@ type ArrayValue struct {
 
 func UnmarshalArrayValue(bytes []byte) (*ArrayValue, error) {
 	m := arrayValuePool.Get()
-	m._protoMessage.Bytes = bytes
+	m._protoMessage.Bytes = lazyproto.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -2641,7 +2641,7 @@ func (m *ArrayValue) ValuesRemoveIf(f func(*AnyValue) bool) {
 }
 
 func (m *ArrayValue) decode() error {
-	buf := codec.NewBuffer(m._protoMessage.Bytes)
+	buf := codec.NewBuffer(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Count all repeated fields. We need one counter per field.
 	valuesCount := 0
@@ -2660,7 +2660,7 @@ func (m *ArrayValue) decode() error {
 	m.values = anyValuePool.GetSlice(valuesCount)
 
 	// Reset the buffer to start iterating over the fields again
-	buf.Reset(m._protoMessage.Bytes)
+	buf.Reset(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	valuesCount = 0
@@ -2679,7 +2679,7 @@ func (m *ArrayValue) decode() error {
 				elem := m.values[valuesCount]
 				valuesCount++
 				elem._protoMessage.Parent = &m._protoMessage
-				elem._protoMessage.Bytes = v
+				elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 			}
 			return true, nil
 		},
@@ -2704,7 +2704,7 @@ func (m *ArrayValue) Marshal(ps *molecule.ProtoStream) error {
 		}
 	} else {
 		// Message is unchanged. Used original bytes.
-		ps.Raw(m._protoMessage.Bytes)
+		ps.Raw(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
 }
@@ -2813,7 +2813,7 @@ type KeyValueList struct {
 
 func UnmarshalKeyValueList(bytes []byte) (*KeyValueList, error) {
 	m := keyValueListPool.Get()
-	m._protoMessage.Bytes = bytes
+	m._protoMessage.Bytes = lazyproto.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -2878,7 +2878,7 @@ func (m *KeyValueList) ValuesRemoveIf(f func(*KeyValue) bool) {
 }
 
 func (m *KeyValueList) decode() error {
-	buf := codec.NewBuffer(m._protoMessage.Bytes)
+	buf := codec.NewBuffer(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Count all repeated fields. We need one counter per field.
 	valuesCount := 0
@@ -2897,7 +2897,7 @@ func (m *KeyValueList) decode() error {
 	m.values = keyValuePool.GetSlice(valuesCount)
 
 	// Reset the buffer to start iterating over the fields again
-	buf.Reset(m._protoMessage.Bytes)
+	buf.Reset(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	valuesCount = 0
@@ -2916,7 +2916,7 @@ func (m *KeyValueList) decode() error {
 				elem := m.values[valuesCount]
 				valuesCount++
 				elem._protoMessage.Parent = &m._protoMessage
-				elem._protoMessage.Bytes = v
+				elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 			}
 			return true, nil
 		},
@@ -2941,7 +2941,7 @@ func (m *KeyValueList) Marshal(ps *molecule.ProtoStream) error {
 		}
 	} else {
 		// Message is unchanged. Used original bytes.
-		ps.Raw(m._protoMessage.Bytes)
+		ps.Raw(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
 }
@@ -3050,7 +3050,7 @@ type PlainMessage struct {
 
 func UnmarshalPlainMessage(bytes []byte) (*PlainMessage, error) {
 	m := plainMessagePool.Get()
-	m._protoMessage.Bytes = bytes
+	m._protoMessage.Bytes = lazyproto.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -3088,7 +3088,7 @@ func (m *PlainMessage) SetValue(v string) {
 }
 
 func (m *PlainMessage) decode() error {
-	buf := codec.NewBuffer(m._protoMessage.Bytes)
+	buf := codec.NewBuffer(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
@@ -3129,7 +3129,7 @@ func (m *PlainMessage) Marshal(ps *molecule.ProtoStream) error {
 		ps.StringPrepared(preparedPlainMessageValue, m.value)
 	} else {
 		// Message is unchanged. Used original bytes.
-		ps.Raw(m._protoMessage.Bytes)
+		ps.Raw(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
 }

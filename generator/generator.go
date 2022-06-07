@@ -388,7 +388,7 @@ func (g *generator) oUnmarshalFree() error {
 		`
 func Unmarshal$MessageName(bytes []byte) (*$MessageName, error) {
 	m := $messagePool.Get()
-	m._protoMessage.Bytes = bytes
+	m._protoMessage.Bytes = lazyproto.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -407,7 +407,7 @@ func (g *generator) oMsgDecodeFunc(msg *Message) error {
 	g.o(
 		`
 func (m *$MessageName) decode() error {
-	buf := codec.NewBuffer(m._protoMessage.Bytes)`,
+	buf := codec.NewBuffer(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))`,
 	)
 
 	g.i(1)
@@ -527,7 +527,7 @@ if err != nil {
 elem := m.$fieldName[%[1]s]
 %[1]s++
 elem._protoMessage.Parent = &m._protoMessage
-elem._protoMessage.Bytes = v`, counterName,
+elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)`, counterName,
 				)
 			} else if field.GetOneOf() != nil {
 				choiceName := composeOneOfChoiceName(g.msg, field)
@@ -535,7 +535,7 @@ elem._protoMessage.Bytes = v`, counterName,
 					`
 elem := $fieldTypeMessagePool.Get()
 elem._protoMessage.Parent = &m._protoMessage
-elem._protoMessage.Bytes = v
+elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
 m.%s = lazyproto.NewOneOfPtr(unsafe.Pointer(elem), int(%s))`,
 					field.GetOneOf().GetName(), choiceName,
 				)
@@ -544,7 +544,7 @@ m.%s = lazyproto.NewOneOfPtr(unsafe.Pointer(elem), int(%s))`,
 					`
 m.$fieldName = $fieldTypeMessagePool.Get()
 m.$fieldName._protoMessage.Parent = &m._protoMessage
-m.$fieldName._protoMessage.Bytes = v`,
+m.$fieldName._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)`,
 				)
 			}
 
@@ -599,7 +599,7 @@ func (g *generator) oRepeatedFieldCounts(msg *Message) {
 	}
 	g.o("")
 	g.o("// Reset the buffer to start iterating over the fields again")
-	g.o("buf.Reset(m._protoMessage.Bytes)")
+	g.o("buf.Reset(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))")
 	g.o("")
 	g.o("// Set slice indexes to 0 to begin iterating over repeated fields.")
 	for _, field := range fields {
@@ -924,7 +924,7 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 	g.i(-1)
 	g.o("} else {")
 	g.o("	// Message is unchanged. Used original bytes.")
-	g.o("	ps.Raw(m._protoMessage.Bytes)")
+	g.o("	ps.Raw(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))")
 	g.o("}")
 	g.o("return nil")
 	g.i(-1)
