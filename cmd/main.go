@@ -38,7 +38,9 @@ func main() {
 		os.Exit(-1)
 	}
 
-	if err := generator.Generate(protoPath, files, outDir); err != nil {
+	options := generator.Options{}
+
+	if err := generator.Generate(protoPath, files, outDir, options); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(-2)
 	}

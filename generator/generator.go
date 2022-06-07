@@ -16,10 +16,17 @@ import (
 	_ "github.com/jhump/protoreflect/desc/protoparse"
 )
 
-func Generate(protoPath string, inputProtoFiles []string, outputDir string) error {
+type Options struct {
+	WithPresence bool
+}
+
+func Generate(
+	protoPath string, inputProtoFiles []string, outputDir string, options Options,
+) error {
 	g := generator{
 		protoPath:    protoPath,
 		outputDir:    outputDir,
+		options:      options,
 		templateData: map[string]string{},
 	}
 
@@ -34,8 +41,11 @@ func Generate(protoPath string, inputProtoFiles []string, outputDir string) erro
 type generator struct {
 	protoPath string
 	outputDir string
-	outBuf    *bytes.Buffer
-	lastErr   error
+
+	options Options
+
+	outBuf  *bytes.Buffer
+	lastErr error
 
 	file         *File
 	msg          *Message
@@ -70,7 +80,12 @@ func (g *generator) processFile(inputFilePath string) error {
 		for _, descr := range fdescr.GetMessageTypes() {
 			msg := NewMessage(descr)
 			g.setMessage(msg)
-			if err := g.oMessage(msg); err != nil {
+
+			if err := g.prepareMessage(); err != nil {
+				return err
+			}
+
+			if err := g.oMessage(); err != nil {
 				return err
 			}
 		}
@@ -130,6 +145,61 @@ import (
 	}
 
 	return g.lastErr
+}
+
+func (g *generator) prepareMessage() error {
+	for _, field := range g.msg.Fields {
+		maskVal := uint64(1) << g.msg.FlagsBitCount
+		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			g.msg.HasEmbeddedMessages = true
+			flagName := fmt.Sprintf(
+				"flag%s%sDecoded", g.msg.GetName(), field.GetCapitalName(),
+			)
+			g.msg.DecodedFlags = append(
+				g.msg.DecodedFlags, flagBitDef{
+					flagName: flagName,
+					maskVal:  maskVal,
+				},
+			)
+			g.msg.DecodedFlagName[field] = flagName
+			g.msg.FlagsBitCount++
+		} else {
+			// Note that embedded messages don't need a bit for presence since the
+			// use non-nil pointer's to indicate presence instead.
+			if g.options.WithPresence {
+				flagName := fmt.Sprintf(
+					"flag%s%sDecoded", g.msg.GetName(), field.GetCapitalName(),
+				)
+				g.msg.PresenceFlags = append(
+					g.msg.PresenceFlags, flagBitDef{
+						flagName: flagName,
+						maskVal:  maskVal,
+					},
+				)
+				g.msg.PresenceFlagName[field] = flagName
+				g.msg.FlagsBitCount++
+			}
+		}
+	}
+
+	if g.msg.FlagsBitCount > 0 {
+		switch {
+		case g.msg.FlagsBitCount <= 8:
+			g.msg.FlagsUnderlyingType = "uint8"
+		case g.msg.FlagsBitCount <= 16:
+			g.msg.FlagsUnderlyingType = "uint16"
+		case g.msg.FlagsBitCount <= 32:
+			g.msg.FlagsUnderlyingType = "uint32"
+		case g.msg.FlagsBitCount <= 64:
+			g.msg.FlagsUnderlyingType = "uint64"
+		default:
+			return fmt.Errorf("more than 64 bits flags not supported")
+		}
+
+		g.msg.FlagsType = fmt.Sprintf("%sFlags", g.msg.GetName())
+	}
+
+	return nil
 }
 
 func (g *generator) setMessage(msg *Message) {
@@ -222,7 +292,7 @@ func getLeadingComment(si *descriptor.SourceCodeInfo_Location) string {
 	return ""
 }
 
-func (g *generator) oMessage(msg *Message) error {
+func (g *generator) oMessage() error {
 	g.o("// ====================== $MessageName message implementation ======================")
 	g.o("")
 
@@ -238,19 +308,23 @@ func (g *generator) oMessage(msg *Message) error {
 		return err
 	}
 
-	if err := g.oFieldsAccessors(msg); err != nil {
+	if err := g.oFlagConsts(); err != nil {
 		return err
 	}
 
-	if err := g.oMsgDecodeFunc(msg); err != nil {
+	if err := g.oFieldsAccessors(); err != nil {
 		return err
 	}
 
-	if err := g.oMarshalFunc(msg); err != nil {
+	if err := g.oMsgDecodeFunc(); err != nil {
 		return err
 	}
 
-	if err := g.oPool(msg); err != nil {
+	if err := g.oMarshalFunc(); err != nil {
+		return err
+	}
+
+	if err := g.oPool(); err != nil {
 		return err
 	}
 
@@ -269,21 +343,8 @@ func (g *generator) oMsgStruct() error {
 	g.i(1)
 	g.o("_protoMessage protomessage.ProtoMessage")
 
-	if g.msg.NeedBitFlag {
-		switch {
-		case g.msg.FlagBitCount <= 8:
-			g.msg.BitCountFieldType = "uint8"
-		case g.msg.FlagBitCount <= 16:
-			g.msg.BitCountFieldType = "uint16"
-		case g.msg.FlagBitCount <= 32:
-			g.msg.BitCountFieldType = "uint32"
-		case g.msg.FlagBitCount <= 64:
-			g.msg.BitCountFieldType = "uint64"
-		default:
-			return fmt.Errorf("more than 64 bits flags not supported")
-		}
-
-		g.o("_flags %s", g.msg.BitCountFieldType)
+	if g.msg.FlagsBitCount > 0 {
+		g.o("_flags %s", g.msg.FlagsType)
 	}
 	g.o("")
 
@@ -404,7 +465,7 @@ func (m *$MessageName) Free() {
 	return g.lastErr
 }
 
-func (g *generator) oMsgDecodeFunc(msg *Message) error {
+func (g *generator) oMsgDecodeFunc() error {
 	g.o(
 		`
 func (m *$MessageName) decode() error {
@@ -415,11 +476,8 @@ func (m *$MessageName) decode() error {
 	g.i(1)
 
 	var decodeFlagNames []string
-	for _, field := range msg.Fields {
-		g.setField(field)
-		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			decodeFlagNames = append(decodeFlagNames, g.fieldFlagName())
-		}
+	for _, name := range g.msg.DecodedFlagName {
+		decodeFlagNames = append(decodeFlagNames, name)
 	}
 	if len(decodeFlagNames) > 0 {
 		g.o(
@@ -437,7 +495,7 @@ func (m *$MessageName) decode() error {
 		g.o("m._flags &= ^(%s)\n", strings.Join(decodeFlagNames, "|"))
 	}
 
-	g.oRepeatedFieldCounts(msg)
+	g.oRepeatedFieldCounts()
 
 	g.o(
 		`
@@ -448,7 +506,7 @@ err2 := molecule.MessageEach(
 	)
 
 	g.i(2)
-	g.oFieldDecode(msg.Fields)
+	g.oFieldDecode(g.msg.Fields)
 	g.i(-2)
 
 	g.i(-1)
@@ -582,8 +640,8 @@ m.$fieldName._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)`,
 	return ""
 }
 
-func (g *generator) oRepeatedFieldCounts(msg *Message) {
-	fields := g.getRepeatedFields(msg)
+func (g *generator) oRepeatedFieldCounts() {
+	fields := g.getRepeatedFields()
 	if len(fields) == 0 {
 		return
 	}
@@ -634,9 +692,9 @@ func (g *generator) oRepeatedFieldCounts(msg *Message) {
 	}
 }
 
-func (g *generator) getRepeatedFields(msg *Message) []*Field {
+func (g *generator) getRepeatedFields() []*Field {
 	var r []*Field
-	for _, field := range msg.Fields {
+	for _, field := range g.msg.Fields {
 		if field.IsRepeated() {
 			r = append(r, field)
 		}
@@ -644,26 +702,38 @@ func (g *generator) getRepeatedFields(msg *Message) []*Field {
 	return r
 }
 
-func (g *generator) oFieldsAccessors(msg *Message) error {
-	if msg.NeedBitFlag {
-		// Generate decode bit flags
-		g.o("// Bitmasks that indicate that the particular nested message is decoded.")
-		bitMask := uint64(1)
-		for _, field := range msg.Fields {
-			g.setField(field)
-			if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+func (g *generator) oFlagConsts() error {
+	if len(g.msg.DecodedFlags) > 0 || len(g.msg.PresenceFlags) > 0 {
+		g.o("// %s is the type of the bit flags.", g.msg.FlagsType)
+		g.o("type %s %s", g.msg.FlagsType, g.msg.FlagsUnderlyingType)
+	}
 
-				g.o(
-					"const %s %s = 0x%016X", g.fieldFlagName(), g.msg.BitCountFieldType,
-					bitMask,
-				)
-				bitMask *= 2
-			}
+	if len(g.msg.DecodedFlags) > 0 {
+		g.o("// Bitmasks that indicate that the particular nested message is decoded.")
+		for _, bitDef := range g.msg.DecodedFlags {
+			g.o(
+				"const %s %s = 0x%X", bitDef.flagName, g.msg.FlagsType,
+				bitDef.maskVal,
+			)
 		}
 		g.o("")
 	}
 
-	for _, field := range msg.Fields {
+	if len(g.msg.PresenceFlags) > 0 {
+		g.o("// Bitmasks that indicate that the particular field is present.")
+		for _, bitDef := range g.msg.PresenceFlags {
+			g.o(
+				"const %s %s = 0x%X", bitDef.flagName, g.msg.FlagsType,
+				bitDef.maskVal,
+			)
+		}
+		g.o("")
+	}
+	return g.lastErr
+}
+
+func (g *generator) oFieldsAccessors() error {
+	for _, field := range g.msg.Fields {
 		g.setField(field)
 		if err := g.oFieldGetter(); err != nil {
 			return err
@@ -675,9 +745,9 @@ func (g *generator) oFieldsAccessors(msg *Message) error {
 	return nil
 }
 
-func (g *generator) fieldFlagName() string {
-	return fmt.Sprintf("flag%s%sDecoded", g.msg.GetName(), g.field.GetCapitalName())
-}
+//func (g *generator) fieldFlagName() string {
+//	return fmt.Sprintf("flag%s%sDecoded", g.msg.GetName(), g.field.GetCapitalName())
+//}
 
 func (g *generator) oFieldGetter() error {
 	g.o("// $FieldName returns the value of the $fieldName.")
@@ -695,7 +765,7 @@ func (g *generator) oFieldGetter() error {
 
 	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		g.i(1)
-		g.o("if m._flags&%s == 0 {", g.fieldFlagName())
+		g.o("if m._flags&%s == 0 {", g.msg.DecodedFlagName[g.field])
 		g.i(1)
 		g.o("// Decode nested message(s).")
 		if g.field.IsRepeated() {
@@ -731,7 +801,7 @@ func (g *generator) oFieldGetter() error {
 		}
 		g.i(-1)
 
-		g.o("	m._flags |= %s", g.fieldFlagName())
+		g.o("	m._flags |= %s", g.msg.DecodedFlagName[g.field])
 		g.o("}")
 		g.i(-1)
 	}
@@ -889,10 +959,10 @@ func (m *$MessageName) $FieldNameRemoveIf(f func(*$FieldMessageTypeName) bool) {
 	return g.lastErr
 }
 
-func (g *generator) oMarshalFunc(msg *Message) error {
-	for _, field := range msg.Fields {
+func (g *generator) oMarshalFunc() error {
+	for _, field := range g.msg.Fields {
 		g.setField(field)
-		g.oPrepareMarshalField(msg, field)
+		g.oPrepareMarshalField(field)
 	}
 
 	g.o("")
@@ -908,8 +978,8 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 	// Order the fields by their number to ensure marshaling is done in an
 	// order that we can rely on in the tests (same order as other as Protobuf
 	// libs so that we can compare the results).
-	fields := make([]*Field, len(msg.Fields))
-	copy(fields, msg.Fields)
+	fields := make([]*Field, len(g.msg.Fields))
+	copy(fields, g.msg.Fields)
 	sort.Slice(
 		fields, func(i, j int) bool {
 			return fields[i].GetNumber() < fields[j].GetNumber()
@@ -1048,37 +1118,37 @@ func (g *generator) oMarshalMessageTypeField() {
 	g.o("}")
 }
 
-func (g *generator) oPrepareMarshalField(msg *Message, field *Field) {
+func (g *generator) oPrepareMarshalField(field *Field) {
 	switch field.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		g.o(g.preparedFieldDecl(msg, field, "Bool"))
+		g.o(g.preparedFieldDecl(g.msg, field, "Bool"))
 
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		g.o(g.preparedFieldDecl(msg, field, "String"))
+		g.o(g.preparedFieldDecl(g.msg, field, "String"))
 
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
-		g.o(g.preparedFieldDecl(msg, field, "Bytes"))
+		g.o(g.preparedFieldDecl(g.msg, field, "Bytes"))
 
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
-		g.o(g.preparedFieldDecl(msg, field, "Fixed64"))
+		g.o(g.preparedFieldDecl(g.msg, field, "Fixed64"))
 
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
-		g.o(g.preparedFieldDecl(msg, field, "Int64"))
+		g.o(g.preparedFieldDecl(g.msg, field, "Int64"))
 
 	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
-		g.o(g.preparedFieldDecl(msg, field, "Fixed32"))
+		g.o(g.preparedFieldDecl(g.msg, field, "Fixed32"))
 
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
-		g.o(g.preparedFieldDecl(msg, field, "Uint32"))
+		g.o(g.preparedFieldDecl(g.msg, field, "Uint32"))
 
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-		g.o(g.preparedFieldDecl(msg, field, "Double"))
+		g.o(g.preparedFieldDecl(g.msg, field, "Double"))
 
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
-		g.o(g.preparedFieldDecl(msg, field, "Uint32"))
+		g.o(g.preparedFieldDecl(g.msg, field, "Uint32"))
 
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		g.o(g.preparedFieldDecl(msg, field, "Embedded"))
+		g.o(g.preparedFieldDecl(g.msg, field, "Embedded"))
 
 	default:
 		g.lastErr = fmt.Errorf("unsupported field type %v", field.GetType())
@@ -1089,7 +1159,7 @@ func unexportedName(name string) string {
 	return strings.ToLower(name[0:1]) + name[1:]
 }
 
-func (g *generator) oPool(msg *Message) error {
+func (g *generator) oPool() error {
 	g.o("")
 	g.o(
 		`
@@ -1155,8 +1225,8 @@ func (p *$messagePoolType) GetSlice(count int) []*$MessageName {
 }`,
 	)
 
-	g.oPoolReleaseSlice(msg)
-	g.oPoolRelease(msg)
+	g.oPoolReleaseFuncs()
+	g.oPoolRelease()
 
 	return g.lastErr
 }
@@ -1165,8 +1235,8 @@ func getPoolName(msgName string) string {
 	return unexportedName(msgName) + "Pool"
 }
 
-func (g *generator) oPoolReleaseElem(msg *Message) {
-	for _, field := range msg.Fields {
+func (g *generator) oPoolReleaseElem() {
+	for _, field := range g.msg.Fields {
 		g.setField(field)
 
 		if field.GetOneOf() != nil {
@@ -1223,7 +1293,7 @@ func (g *generator) oPoolReleaseElem(msg *Message) {
 	)
 }
 
-func (g *generator) oPoolReleaseSlice(msg *Message) {
+func (g *generator) oPoolReleaseFuncs() {
 	g.o("")
 	g.o(
 		`
@@ -1233,7 +1303,7 @@ func (p *$messagePoolType) ReleaseSlice(slice []*$MessageName) {
 	)
 
 	g.i(2)
-	g.oPoolReleaseElem(msg)
+	g.oPoolReleaseElem()
 	g.i(-2)
 
 	g.o(
@@ -1248,7 +1318,7 @@ func (p *$messagePoolType) ReleaseSlice(slice []*$MessageName) {
 	)
 }
 
-func (g *generator) oPoolRelease(msg *Message) {
+func (g *generator) oPoolRelease() {
 	g.o("")
 	g.o(
 		`
@@ -1257,7 +1327,7 @@ func (p *$messagePoolType) Release(elem *$MessageName) {`,
 	)
 
 	g.i(1)
-	g.oPoolReleaseElem(msg)
+	g.oPoolReleaseElem()
 	g.i(-1)
 
 	g.o("")

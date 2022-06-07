@@ -3,7 +3,6 @@ package generator
 import (
 	"strings"
 
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/jhump/protoreflect/desc"
 )
 
@@ -16,15 +15,28 @@ type Message struct {
 	Fields    []*Field
 	FieldsMap map[string]*Field
 
-	FlagBitCount      int
-	NeedBitFlag       bool
-	BitCountFieldType string
+	FlagsType           string
+	FlagsBitCount       int
+	HasEmbeddedMessages bool
+	FlagsUnderlyingType string
+
+	DecodedFlags     []flagBitDef
+	PresenceFlags    []flagBitDef
+	DecodedFlagName  map[*Field]string
+	PresenceFlagName map[*Field]string
+}
+
+type flagBitDef struct {
+	flagName string
+	maskVal  uint64
 }
 
 func NewMessage(descr *desc.MessageDescriptor) *Message {
 	m := &Message{
 		MessageDescriptor: *descr,
 		FieldsMap:         map[string]*Field{},
+		DecodedFlagName:   map[*Field]string{},
+		PresenceFlagName:  map[*Field]string{},
 	}
 	for _, field := range descr.GetFields() {
 		name := camelCase(field.GetName())
@@ -35,11 +47,6 @@ func NewMessage(descr *desc.MessageDescriptor) *Message {
 		}
 		m.Fields = append(m.Fields, f)
 		m.FieldsMap[field.GetName()] = f
-
-		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			m.NeedBitFlag = true
-			m.FlagBitCount++
-		}
 	}
 	return m
 }

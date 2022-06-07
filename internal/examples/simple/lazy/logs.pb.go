@@ -48,7 +48,7 @@ const (
 // LogsData contains all log data
 type LogsData struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        uint8
+	_flags        LogsDataFlags
 
 	// List of ResourceLogs
 	resourceLogs []*ResourceLogs
@@ -67,8 +67,11 @@ func (m *LogsData) Free() {
 	logsDataPool.Release(m)
 }
 
+// LogsDataFlags is the type of the bit flags.
+type LogsDataFlags uint8
+
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagLogsDataResourceLogsDecoded uint8 = 0x0000000000000001
+const flagLogsDataResourceLogsDecoded LogsDataFlags = 0x1
 
 // ResourceLogs returns the value of the resourceLogs.
 func (m *LogsData) ResourceLogs() []*ResourceLogs {
@@ -296,7 +299,7 @@ func (p *logsDataPoolType) Release(elem *LogsData) {
 
 type ResourceLogs struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        uint8
+	_flags        ResourceLogsFlags
 
 	// The Resource
 	resource *Resource
@@ -318,9 +321,12 @@ func (m *ResourceLogs) Free() {
 	resourceLogsPool.Release(m)
 }
 
+// ResourceLogsFlags is the type of the bit flags.
+type ResourceLogsFlags uint8
+
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagResourceLogsResourceDecoded uint8 = 0x0000000000000001
-const flagResourceLogsScopeLogsDecoded uint8 = 0x0000000000000002
+const flagResourceLogsResourceDecoded ResourceLogsFlags = 0x1
+const flagResourceLogsScopeLogsDecoded ResourceLogsFlags = 0x2
 
 // Resource returns the value of the resource.
 func (m *ResourceLogs) Resource() *Resource {
@@ -623,7 +629,7 @@ func (p *resourceLogsPoolType) Release(elem *ResourceLogs) {
 
 type Resource struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        uint8
+	_flags        ResourceFlags
 
 	attributes             []*KeyValue
 	droppedAttributesCount uint32
@@ -642,8 +648,11 @@ func (m *Resource) Free() {
 	resourcePool.Release(m)
 }
 
+// ResourceFlags is the type of the bit flags.
+type ResourceFlags uint8
+
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagResourceAttributesDecoded uint8 = 0x0000000000000001
+const flagResourceAttributesDecoded ResourceFlags = 0x1
 
 // Attributes returns the value of the attributes.
 func (m *Resource) Attributes() []*KeyValue {
@@ -895,7 +904,7 @@ func (p *resourcePoolType) Release(elem *Resource) {
 // A collection of Logs produced by a Scope.
 type ScopeLogs struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        uint8
+	_flags        ScopeLogsFlags
 
 	scope *InstrumentationScope
 	// A list of log records.
@@ -917,9 +926,12 @@ func (m *ScopeLogs) Free() {
 	scopeLogsPool.Release(m)
 }
 
+// ScopeLogsFlags is the type of the bit flags.
+type ScopeLogsFlags uint8
+
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagScopeLogsScopeDecoded uint8 = 0x0000000000000001
-const flagScopeLogsLogRecordsDecoded uint8 = 0x0000000000000002
+const flagScopeLogsScopeDecoded ScopeLogsFlags = 0x1
+const flagScopeLogsLogRecordsDecoded ScopeLogsFlags = 0x2
 
 // Scope returns the value of the scope.
 func (m *ScopeLogs) Scope() *InstrumentationScope {
@@ -1222,7 +1234,7 @@ func (p *scopeLogsPoolType) Release(elem *ScopeLogs) {
 
 type InstrumentationScope struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        uint8
+	_flags        InstrumentationScopeFlags
 
 	name                   string
 	version                string
@@ -1243,8 +1255,11 @@ func (m *InstrumentationScope) Free() {
 	instrumentationScopePool.Release(m)
 }
 
+// InstrumentationScopeFlags is the type of the bit flags.
+type InstrumentationScopeFlags uint8
+
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagInstrumentationScopeAttributesDecoded uint8 = 0x0000000000000001
+const flagInstrumentationScopeAttributesDecoded InstrumentationScopeFlags = 0x1
 
 // Name returns the value of the name.
 func (m *InstrumentationScope) Name() string {
@@ -1541,7 +1556,7 @@ func (p *instrumentationScopePoolType) Release(elem *InstrumentationScope) {
 
 type LogRecord struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        uint8
+	_flags        LogRecordFlags
 
 	timeUnixNano           uint64
 	observedTimeUnixNano   uint64
@@ -1567,8 +1582,11 @@ func (m *LogRecord) Free() {
 	logRecordPool.Release(m)
 }
 
+// LogRecordFlags is the type of the bit flags.
+type LogRecordFlags uint8
+
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagLogRecordAttributesDecoded uint8 = 0x0000000000000001
+const flagLogRecordAttributesDecoded LogRecordFlags = 0x1
 
 // TimeUnixNano returns the value of the timeUnixNano.
 func (m *LogRecord) TimeUnixNano() uint64 {
@@ -1980,7 +1998,7 @@ func (p *logRecordPoolType) Release(elem *LogRecord) {
 
 type KeyValue struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        uint8
+	_flags        KeyValueFlags
 
 	key   string
 	value *AnyValue
@@ -1999,8 +2017,11 @@ func (m *KeyValue) Free() {
 	keyValuePool.Release(m)
 }
 
+// KeyValueFlags is the type of the bit flags.
+type KeyValueFlags uint8
+
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagKeyValueValueDecoded uint8 = 0x0000000000000001
+const flagKeyValueValueDecoded KeyValueFlags = 0x1
 
 // Key returns the value of the key.
 func (m *KeyValue) Key() string {
@@ -2208,7 +2229,7 @@ func (p *keyValuePoolType) Release(elem *KeyValue) {
 
 type AnyValue struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        uint8
+	_flags        AnyValueFlags
 
 	value oneof.OneOf
 }
@@ -2259,9 +2280,12 @@ func (m *AnyValue) ValueUnset() {
 	m.value = oneof.NewOneOfNone()
 }
 
+// AnyValueFlags is the type of the bit flags.
+type AnyValueFlags uint8
+
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagAnyValueArrayValueDecoded uint8 = 0x0000000000000001
-const flagAnyValueKvlistValueDecoded uint8 = 0x0000000000000002
+const flagAnyValueArrayValueDecoded AnyValueFlags = 0x1
+const flagAnyValueKvlistValueDecoded AnyValueFlags = 0x2
 
 // StringValue returns the value of the stringValue.
 // If the field "value" is not set to "stringValue" then the returned value is undefined.
@@ -2653,7 +2677,7 @@ func (p *anyValuePoolType) Release(elem *AnyValue) {
 
 type ArrayValue struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        uint8
+	_flags        ArrayValueFlags
 
 	values []*AnyValue
 }
@@ -2671,8 +2695,11 @@ func (m *ArrayValue) Free() {
 	arrayValuePool.Release(m)
 }
 
+// ArrayValueFlags is the type of the bit flags.
+type ArrayValueFlags uint8
+
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagArrayValueValuesDecoded uint8 = 0x0000000000000001
+const flagArrayValueValuesDecoded ArrayValueFlags = 0x1
 
 // Values returns the value of the values.
 func (m *ArrayValue) Values() []*AnyValue {
@@ -2900,7 +2927,7 @@ func (p *arrayValuePoolType) Release(elem *ArrayValue) {
 
 type KeyValueList struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        uint8
+	_flags        KeyValueListFlags
 
 	values []*KeyValue
 }
@@ -2918,8 +2945,11 @@ func (m *KeyValueList) Free() {
 	keyValueListPool.Release(m)
 }
 
+// KeyValueListFlags is the type of the bit flags.
+type KeyValueListFlags uint8
+
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagKeyValueListValuesDecoded uint8 = 0x0000000000000001
+const flagKeyValueListValuesDecoded KeyValueListFlags = 0x1
 
 // Values returns the value of the values.
 func (m *KeyValueList) Values() []*KeyValue {
