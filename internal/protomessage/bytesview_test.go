@@ -1,6 +1,24 @@
 package protomessage
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestBytesViewNil(t *testing.T) {
+	var bv BytesView
+	b := BytesFromBytesView(bv)
+	assert.True(t, b == nil)
+}
+
+func TestBytesViewNotNil(t *testing.T) {
+	src := []byte{1, 2, 3}
+
+	bv := BytesViewFromBytes(src)
+	dest := BytesFromBytesView(bv)
+	assert.EqualValues(t, src, dest)
+}
 
 func BenchmarkEmptyOp(b *testing.B) {
 	for i := 0; i < b.N; i++ {
