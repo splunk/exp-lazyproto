@@ -1,4 +1,4 @@
-package lazyproto
+package protomessage
 
 import (
 	"reflect"

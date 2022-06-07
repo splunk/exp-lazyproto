@@ -117,6 +117,7 @@ import (
 	"unsafe"
 
 	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
+	"github.com/tigrannajaryan/exp-lazyproto/internal/protomessage"
 	"github.com/tigrannajaryan/molecule"
 	"github.com/tigrannajaryan/molecule/src/codec"
 )
@@ -265,7 +266,7 @@ func (g *generator) oMsgStruct() error {
 
 	g.o("type $MessageName struct {")
 	g.i(1)
-	g.o("_protoMessage lazyproto.ProtoMessage")
+	g.o("_protoMessage protomessage.ProtoMessage")
 
 	if g.msg.NeedBitFlag {
 		var bitCountFieldType string
@@ -301,7 +302,7 @@ func (g *generator) oMsgStruct() error {
 
 	// Generate oneof fields.
 	for _, oneof := range g.msg.GetOneOfs() {
-		g.o("%s lazyproto.OneOf", oneof.GetName())
+		g.o("%s protomessage.OneOf", oneof.GetName())
 	}
 	g.i(-1)
 	g.o("}")
@@ -379,7 +380,7 @@ func (g *generator) oOneOfTypeFunc(oneof *desc.OneOfDescriptor) {
 		funcName, oneof.GetName(),
 	)
 	g.o("func (m *$MessageName) %s() {", funcName)
-	g.o("	m.%s = lazyproto.NewOneOfNone()", oneof.GetName())
+	g.o("	m.%s = protomessage.NewOneOfNone()", oneof.GetName())
 	g.o("}\n")
 }
 
@@ -388,7 +389,7 @@ func (g *generator) oUnmarshalFree() error {
 		`
 func Unmarshal$MessageName(bytes []byte) (*$MessageName, error) {
 	m := $messagePool.Get()
-	m._protoMessage.Bytes = lazyproto.BytesViewFromBytes(bytes)
+	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -407,7 +408,7 @@ func (g *generator) oMsgDecodeFunc(msg *Message) error {
 	g.o(
 		`
 func (m *$MessageName) decode() error {
-	buf := codec.NewBuffer(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))`,
+	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))`,
 	)
 
 	g.i(1)
@@ -457,7 +458,7 @@ if err != nil {
 	if g.field.GetOneOf() != nil {
 		choiceName := composeOneOfChoiceName(g.msg, g.field)
 		g.o(
-			"m.%s = lazyproto.NewOneOf%s(v, int(%s))", g.field.GetOneOf().GetName(),
+			"m.%s = protomessage.NewOneOf%s(v, int(%s))", g.field.GetOneOf().GetName(),
 			oneOfType, choiceName,
 		)
 	} else {
@@ -527,7 +528,7 @@ if err != nil {
 elem := m.$fieldName[%[1]s]
 %[1]s++
 elem._protoMessage.Parent = &m._protoMessage
-elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)`, counterName,
+elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)`, counterName,
 				)
 			} else if field.GetOneOf() != nil {
 				choiceName := composeOneOfChoiceName(g.msg, field)
@@ -535,8 +536,8 @@ elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)`, counterName,
 					`
 elem := $fieldTypeMessagePool.Get()
 elem._protoMessage.Parent = &m._protoMessage
-elem._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)
-m.%s = lazyproto.NewOneOfPtr(unsafe.Pointer(elem), int(%s))`,
+elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
+m.%s = protomessage.NewOneOfPtr(unsafe.Pointer(elem), int(%s))`,
 					field.GetOneOf().GetName(), choiceName,
 				)
 			} else {
@@ -544,7 +545,7 @@ m.%s = lazyproto.NewOneOfPtr(unsafe.Pointer(elem), int(%s))`,
 					`
 m.$fieldName = $fieldTypeMessagePool.Get()
 m.$fieldName._protoMessage.Parent = &m._protoMessage
-m.$fieldName._protoMessage.Bytes = lazyproto.BytesViewFromBytes(v)`,
+m.$fieldName._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)`,
 				)
 			}
 
@@ -599,7 +600,7 @@ func (g *generator) oRepeatedFieldCounts(msg *Message) {
 	}
 	g.o("")
 	g.o("// Reset the buffer to start iterating over the fields again")
-	g.o("buf.Reset(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))")
+	g.o("buf.Reset(protomessage.BytesFromBytesView(m._protoMessage.Bytes))")
 	g.o("")
 	g.o("// Set slice indexes to 0 to begin iterating over repeated fields.")
 	for _, field := range fields {
@@ -770,32 +771,32 @@ func (g *generator) oFieldSetter() error {
 		switch g.field.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
 			g.o(
-				"	m.%s = lazyproto.NewOneOfBool(v, int(%s))",
+				"	m.%s = protomessage.NewOneOfBool(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_INT64:
 			g.o(
-				"	m.%s = lazyproto.NewOneOfInt64(v, int(%s))",
+				"	m.%s = protomessage.NewOneOfInt64(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 			g.o(
-				"	m.%s = lazyproto.NewOneOfDouble(v, int(%s))",
+				"	m.%s = protomessage.NewOneOfDouble(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
 			g.o(
-				"	m.%s = lazyproto.NewOneOfString(v, int(%s))",
+				"	m.%s = protomessage.NewOneOfString(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_BYTES:
 			g.o(
-				"	m.%s = lazyproto.NewOneOfBytes(v, int(%s))",
+				"	m.%s = protomessage.NewOneOfBytes(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			g.o(
-				"	m.%s = lazyproto.NewOneOfPtr(unsafe.Pointer(v), int(%s))",
+				"	m.%s = protomessage.NewOneOfPtr(unsafe.Pointer(v), int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		default:
@@ -924,7 +925,7 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 	g.i(-1)
 	g.o("} else {")
 	g.o("	// Message is unchanged. Used original bytes.")
-	g.o("	ps.Raw(lazyproto.BytesFromBytesView(m._protoMessage.Bytes))")
+	g.o("	ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))")
 	g.o("}")
 	g.o("return nil")
 	g.i(-1)
