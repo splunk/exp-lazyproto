@@ -83,7 +83,7 @@ func (g *generator) processFile(inputFilePath string) error {
 }
 
 func (g *generator) formatAndWriteToFile(fdescr *desc.FileDescriptor) error {
-	fname := path.Base(fdescr.GetName()) + ".lz.go"
+	fname := path.Base(strings.TrimSuffix(fdescr.GetName(), ".proto")) + ".pb.go"
 	fname = path.Join(g.outputDir, fname)
 	fdir := path.Dir(fname)
 	if err := os.MkdirAll(fdir, 0700); err != nil {
