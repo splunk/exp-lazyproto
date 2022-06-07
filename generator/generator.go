@@ -113,6 +113,7 @@ func (g *generator) formatAndWriteToFile(fdescr *desc.FileDescriptor) error {
 
 	srcCode, err := format.Source(g.outBuf.Bytes())
 	if err != nil {
+		f.Write(g.outBuf.Bytes())
 		return err
 	}
 
@@ -574,6 +575,9 @@ if err != nil {
 }
 m.$fieldName = %s(v)`, enumTypeName,
 	)
+	if g.options.WithPresence {
+		g.o("m._flags |= %s", g.msg.PresenceFlagName[g.field])
+	}
 }
 
 func (g *generator) oFieldDecode(fields []*Field) string {
@@ -752,6 +756,13 @@ func (g *generator) oFlagConsts() error {
 func (g *generator) oFieldsAccessors() error {
 	for _, field := range g.msg.Fields {
 		g.setField(field)
+
+		if g.options.WithPresence {
+			if err := g.oHasField(); err != nil {
+				return err
+			}
+		}
+
 		if err := g.oFieldGetter(); err != nil {
 			return err
 		}
@@ -761,10 +772,6 @@ func (g *generator) oFieldsAccessors() error {
 	}
 	return nil
 }
-
-//func (g *generator) fieldFlagName() string {
-//	return fmt.Sprintf("flag%s%sDecoded", g.msg.GetName(), g.field.GetCapitalName())
-//}
 
 func (g *generator) oFieldGetter() error {
 	g.o("// $FieldName returns the value of the $fieldName.")
@@ -953,6 +960,35 @@ func (g *generator) oFieldSetter() error {
 			return err
 		}
 	}
+
+	return g.lastErr
+}
+
+func (g *generator) oHasField() error {
+	if g.field.GetOneOf() != nil {
+		// Has() func is not needed for oneof fields since they have the Type() func.
+		return nil
+	}
+
+	g.o(`// Has$FieldName returns true if the $fieldName is present.`)
+	g.o("func (m *$MessageName) Has$FieldName() bool {")
+
+	g.i(1)
+
+	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+		if g.field.IsRepeated() {
+			g.o("return len(m.$fieldName) > 0")
+		} else {
+			g.o("return m.$fieldName != nil")
+		}
+	} else {
+		if g.field.GetType() != descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			g.o("return m._flags & %s != 0", g.msg.PresenceFlagName[g.field])
+		}
+	}
+
+	g.i(-1)
+	g.o("}\n")
 
 	return g.lastErr
 }

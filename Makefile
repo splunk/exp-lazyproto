@@ -4,7 +4,7 @@ test: gen-proto
 	go test ./...
 
 benchmark:
-	go test ./... -bench . --benchmem
+	go test ./... -bench . --benchmem $(OPTS)
 
 .PHONY: gen-proto
 gen-proto: gen-gogo gen-google gen-lazy
@@ -29,4 +29,4 @@ internal/examples/simple/google/gen/logs/logs.pb.go: internal/examples/simple/lo
             --go_out=plugins=grpc:./internal/examples/simple/google/ ${PWD}/internal/examples/simple/logs.proto
 
 internal/examples/simple/lazy/logs.pb.go: internal/examples/simple/logs.proto Makefile
-	go run cmd/main.go --proto_path internal/examples/simple --input logs.proto --out internal/examples/simple/lazy
+	go run cmd/main.go --proto_path internal/examples/simple --input logs.proto --out internal/examples/simple/lazy --with_presence

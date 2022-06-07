@@ -15,6 +15,8 @@ import (
 	"github.com/tigrannajaryan/molecule"
 )
 
+const scaleCount = 10
+
 func createAttr(k, v string) gogomsg.KeyValue {
 	return gogomsg.KeyValue{
 		Key: k,
@@ -100,7 +102,7 @@ func createScopedLogs(id int, n int) *gogomsg.ScopeLogs {
 		sl.Scope.Attributes[0] = createAttr("otel.profiling", "false")
 	}
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < scaleCount; i++ {
 		sl.LogRecords = append(sl.LogRecords, createLogRecord(id, i))
 	}
 
@@ -110,7 +112,7 @@ func createScopedLogs(id int, n int) *gogomsg.ScopeLogs {
 func createLogsData(id int) *gogomsg.LogsData {
 	src := &gogomsg.LogsData{}
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < scaleCount; i++ {
 		rl := &gogomsg.ResourceLogs{
 			Resource: gogomsg.Resource{
 				Attributes: []gogomsg.KeyValue{
@@ -124,7 +126,7 @@ func createLogsData(id int) *gogomsg.LogsData {
 			},
 		}
 
-		for j := 0; j < 10; j++ {
+		for j := 0; j < scaleCount; j++ {
 			rl.ScopeLogs = append(rl.ScopeLogs, createScopedLogs(id, j))
 		}
 
