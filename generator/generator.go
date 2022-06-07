@@ -163,22 +163,40 @@ func (g *generator) prepareMessage() error {
 			)
 			g.msg.DecodedFlagName[field] = flagName
 			g.msg.FlagsBitCount++
-		} else {
-			// Note that embedded messages don't need a bit for presence since the
-			// use non-nil pointer's to indicate presence instead.
-			if g.options.WithPresence {
-				flagName := fmt.Sprintf(
-					"flag%s%sDecoded", g.msg.GetName(), field.GetCapitalName(),
-				)
-				g.msg.PresenceFlags = append(
-					g.msg.PresenceFlags, flagBitDef{
-						flagName: flagName,
-						maskVal:  maskVal,
-					},
-				)
-				g.msg.PresenceFlagName[field] = flagName
-				g.msg.FlagsBitCount++
-			}
+		}
+	}
+
+	for _, field := range g.msg.Fields {
+		g.setField(field)
+
+		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			// Embedded messages don't need a bit for presence since they use
+			// non-nil pointer's to indicate presence instead.
+			continue
+		}
+
+		if g.isOneOfField() {
+			// Oneof fields don't need a bit for presence since they use
+			// oneof.OneOf's intrinsic ability to indicate presence instead.
+			continue
+		}
+
+		maskVal := uint64(1) << g.msg.FlagsBitCount
+
+		// Note that embedded messages and oneof fields don't need a bit for presence
+		// since they use non-nil pointer's to indicate presence instead.
+		if g.options.WithPresence {
+			flagName := fmt.Sprintf(
+				"flag%s%sPresent", g.msg.GetName(), field.GetCapitalName(),
+			)
+			g.msg.PresenceFlags = append(
+				g.msg.PresenceFlags, flagBitDef{
+					flagName: flagName,
+					maskVal:  maskVal,
+				},
+			)
+			g.msg.PresenceFlagName[field] = flagName
+			g.msg.FlagsBitCount++
 		}
 	}
 
@@ -475,11 +493,7 @@ func (m *$MessageName) decode() error {
 
 	g.i(1)
 
-	var decodeFlagNames []string
-	for _, name := range g.msg.DecodedFlagName {
-		decodeFlagNames = append(decodeFlagNames, name)
-	}
-	if len(decodeFlagNames) > 0 {
+	if g.msg.FlagsBitCount > 0 {
 		g.o(
 			`
 // If the user makes a mistake and takes a copy of this struct before decoding it
@@ -490,9 +504,9 @@ func (m *$MessageName) decode() error {
 // because the flag "decoded" flag is incorrectly set on nested message.
 // This will result in incorrect state of nested message returned by getter.
 // To make sure we correctly decode even after this mistake we reset all "decoded"
-// flags here.`,
+// and "presence" flags here.`,
 		)
-		g.o("m._flags &= ^(%s)\n", strings.Join(decodeFlagNames, "|"))
+		g.o("m._flags = 0\n")
 	}
 
 	g.oRepeatedFieldCounts()
@@ -545,6 +559,9 @@ if err != nil {
 		)
 	} else {
 		g.o("m.$fieldName = v")
+		if g.options.WithPresence {
+			g.o("m._flags |= %s", g.msg.PresenceFlagName[g.field])
+		}
 	}
 }
 
@@ -833,6 +850,10 @@ func (g *generator) oFieldGetter() error {
 
 func (g *generator) calcOneOfFieldIndex() int {
 	fieldIdx := -1
+	if g.field.GetOneOf() == nil {
+		return fieldIdx
+	}
+
 	for i, field := range g.field.GetOneOf().GetChoices() {
 		if g.field.GetNumber() == field.GetNumber() {
 			fieldIdx = i
@@ -843,6 +864,10 @@ func (g *generator) calcOneOfFieldIndex() int {
 		g.lastErr = fmt.Errorf("cannot find index of oneof field %s", g.field.GetName())
 	}
 	return fieldIdx
+}
+
+func (g *generator) isOneOfField() bool {
+	return g.calcOneOfFieldIndex() >= 0
 }
 
 func (g *generator) oFieldSetter() error {
@@ -858,8 +883,7 @@ func (g *generator) oFieldSetter() error {
 	g.o("func (m *$MessageName) Set$FieldName(v %s) {", g.convertTypeToGo(g.field))
 
 	if g.field.GetOneOf() != nil {
-		fieldIdx := g.calcOneOfFieldIndex()
-		if fieldIdx == -1 {
+		if !g.isOneOfField() {
 			return g.lastErr
 		}
 
@@ -901,6 +925,11 @@ func (g *generator) oFieldSetter() error {
 		}
 	} else {
 		g.o("	m.$fieldName = v")
+		if g.options.WithPresence {
+			if g.field.GetType() != descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+				g.o("m._flags |= %s", g.msg.PresenceFlagName[g.field])
+			}
+		}
 	}
 
 	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
@@ -1048,6 +1077,19 @@ func (g *generator) oMarshalPreparedField(protoTypeName string) {
 
 func (g *generator) oMarshalField() {
 	g.o(`// Marshal "$fieldName".`)
+
+	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+		g.oMarshalMessageTypeField()
+		return
+	}
+
+	usePresence := g.options.WithPresence && !g.isOneOfField()
+
+	if usePresence {
+		g.o("if m._flags&%s != 0 {", g.msg.PresenceFlagName[g.field])
+		g.i(1)
+	}
+
 	switch g.field.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
 		g.oMarshalPreparedField("Bool")
@@ -1077,10 +1119,14 @@ func (g *generator) oMarshalField() {
 		g.o("ps.Uint32Prepared(prepared$MessageName$FieldName, uint32(m.$fieldName))")
 
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		g.oMarshalMessageTypeField()
 
 	default:
 		g.lastErr = fmt.Errorf("unsupported field type %v", g.field.GetType())
+	}
+
+	if usePresence {
+		g.i(-1)
+		g.o("}")
 	}
 }
 

@@ -134,8 +134,8 @@ func (m *LogsData) decode() error {
 	// because the flag "decoded" flag is incorrectly set on nested message.
 	// This will result in incorrect state of nested message returned by getter.
 	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// flags here.
-	m._flags &= ^(flagLogsDataResourceLogsDecoded)
+	// and "presence" flags here.
+	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
 	resourceLogsCount := 0
@@ -427,8 +427,8 @@ func (m *ResourceLogs) decode() error {
 	// because the flag "decoded" flag is incorrectly set on nested message.
 	// This will result in incorrect state of nested message returned by getter.
 	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// flags here.
-	m._flags &= ^(flagResourceLogsResourceDecoded | flagResourceLogsScopeLogsDecoded)
+	// and "presence" flags here.
+	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
 	scopeLogsCount := 0
@@ -728,8 +728,8 @@ func (m *Resource) decode() error {
 	// because the flag "decoded" flag is incorrectly set on nested message.
 	// This will result in incorrect state of nested message returned by getter.
 	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// flags here.
-	m._flags &= ^(flagResourceAttributesDecoded)
+	// and "presence" flags here.
+	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
@@ -1032,8 +1032,8 @@ func (m *ScopeLogs) decode() error {
 	// because the flag "decoded" flag is incorrectly set on nested message.
 	// This will result in incorrect state of nested message returned by getter.
 	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// flags here.
-	m._flags &= ^(flagScopeLogsScopeDecoded | flagScopeLogsLogRecordsDecoded)
+	// and "presence" flags here.
+	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
 	logRecordsCount := 0
@@ -1361,8 +1361,8 @@ func (m *InstrumentationScope) decode() error {
 	// because the flag "decoded" flag is incorrectly set on nested message.
 	// This will result in incorrect state of nested message returned by getter.
 	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// flags here.
-	m._flags &= ^(flagInstrumentationScopeAttributesDecoded)
+	// and "presence" flags here.
+	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
@@ -1753,8 +1753,8 @@ func (m *LogRecord) decode() error {
 	// because the flag "decoded" flag is incorrectly set on nested message.
 	// This will result in incorrect state of nested message returned by getter.
 	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// flags here.
-	m._flags &= ^(flagLogRecordAttributesDecoded)
+	// and "presence" flags here.
+	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
@@ -2072,8 +2072,8 @@ func (m *KeyValue) decode() error {
 	// because the flag "decoded" flag is incorrectly set on nested message.
 	// This will result in incorrect state of nested message returned by getter.
 	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// flags here.
-	m._flags &= ^(flagKeyValueValueDecoded)
+	// and "presence" flags here.
+	m._flags = 0
 
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
@@ -2431,8 +2431,8 @@ func (m *AnyValue) decode() error {
 	// because the flag "decoded" flag is incorrectly set on nested message.
 	// This will result in incorrect state of nested message returned by getter.
 	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// flags here.
-	m._flags &= ^(flagAnyValueArrayValueDecoded | flagAnyValueKvlistValueDecoded)
+	// and "presence" flags here.
+	m._flags = 0
 
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
@@ -2762,8 +2762,8 @@ func (m *ArrayValue) decode() error {
 	// because the flag "decoded" flag is incorrectly set on nested message.
 	// This will result in incorrect state of nested message returned by getter.
 	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// flags here.
-	m._flags &= ^(flagArrayValueValuesDecoded)
+	// and "presence" flags here.
+	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
 	valuesCount := 0
@@ -3012,8 +3012,8 @@ func (m *KeyValueList) decode() error {
 	// because the flag "decoded" flag is incorrectly set on nested message.
 	// This will result in incorrect state of nested message returned by getter.
 	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// flags here.
-	m._flags &= ^(flagKeyValueListValuesDecoded)
+	// and "presence" flags here.
+	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
 	valuesCount := 0
