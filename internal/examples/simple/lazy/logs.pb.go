@@ -68,7 +68,7 @@ func (m *LogsData) Free() {
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagLogsDataResourceLogsDecoded = 0x0000000000000001
+const flagLogsDataResourceLogsDecoded uint8 = 0x0000000000000001
 
 // ResourceLogs returns the value of the resourceLogs.
 func (m *LogsData) ResourceLogs() []*ResourceLogs {
@@ -123,6 +123,17 @@ func (m *LogsData) ResourceLogsRemoveIf(f func(*ResourceLogs) bool) {
 func (m *LogsData) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
+	// If the user makes a mistake and takes a copy of this struct before decoding it
+	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
+	// messages will be marked as "decoded". Next time we try to access the nested
+	// message via getter func this decode() func will be called again and will overwrite
+	// nested message values, but the getter func will no longer attempt to decode it
+	// because the flag "decoded" flag is incorrectly set on nested message.
+	// This will result in incorrect state of nested message returned by getter.
+	// To make sure we correctly decode even after this mistake we reset all "decoded"
+	// flags here.
+	m._flags &= ^(flagLogsDataResourceLogsDecoded)
+
 	// Count all repeated fields. We need one counter per field.
 	resourceLogsCount := 0
 	err := molecule.MessageFieldNums(
@@ -144,7 +155,6 @@ func (m *LogsData) decode() error {
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	resourceLogsCount = 0
-
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -309,8 +319,8 @@ func (m *ResourceLogs) Free() {
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagResourceLogsResourceDecoded = 0x0000000000000001
-const flagResourceLogsScopeLogsDecoded = 0x0000000000000002
+const flagResourceLogsResourceDecoded uint8 = 0x0000000000000001
+const flagResourceLogsScopeLogsDecoded uint8 = 0x0000000000000002
 
 // Resource returns the value of the resource.
 func (m *ResourceLogs) Resource() *Resource {
@@ -403,6 +413,17 @@ func (m *ResourceLogs) SetSchemaUrl(v string) {
 func (m *ResourceLogs) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
+	// If the user makes a mistake and takes a copy of this struct before decoding it
+	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
+	// messages will be marked as "decoded". Next time we try to access the nested
+	// message via getter func this decode() func will be called again and will overwrite
+	// nested message values, but the getter func will no longer attempt to decode it
+	// because the flag "decoded" flag is incorrectly set on nested message.
+	// This will result in incorrect state of nested message returned by getter.
+	// To make sure we correctly decode even after this mistake we reset all "decoded"
+	// flags here.
+	m._flags &= ^(flagResourceLogsResourceDecoded | flagResourceLogsScopeLogsDecoded)
+
 	// Count all repeated fields. We need one counter per field.
 	scopeLogsCount := 0
 	err := molecule.MessageFieldNums(
@@ -424,7 +445,6 @@ func (m *ResourceLogs) decode() error {
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	scopeLogsCount = 0
-
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -623,7 +643,7 @@ func (m *Resource) Free() {
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagResourceAttributesDecoded = 0x0000000000000001
+const flagResourceAttributesDecoded uint8 = 0x0000000000000001
 
 // Attributes returns the value of the attributes.
 func (m *Resource) Attributes() []*KeyValue {
@@ -691,6 +711,17 @@ func (m *Resource) SetDroppedAttributesCount(v uint32) {
 func (m *Resource) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
+	// If the user makes a mistake and takes a copy of this struct before decoding it
+	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
+	// messages will be marked as "decoded". Next time we try to access the nested
+	// message via getter func this decode() func will be called again and will overwrite
+	// nested message values, but the getter func will no longer attempt to decode it
+	// because the flag "decoded" flag is incorrectly set on nested message.
+	// This will result in incorrect state of nested message returned by getter.
+	// To make sure we correctly decode even after this mistake we reset all "decoded"
+	// flags here.
+	m._flags &= ^(flagResourceAttributesDecoded)
+
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
 	err := molecule.MessageFieldNums(
@@ -712,7 +743,6 @@ func (m *Resource) decode() error {
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	attributesCount = 0
-
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -888,8 +918,8 @@ func (m *ScopeLogs) Free() {
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagScopeLogsScopeDecoded = 0x0000000000000001
-const flagScopeLogsLogRecordsDecoded = 0x0000000000000002
+const flagScopeLogsScopeDecoded uint8 = 0x0000000000000001
+const flagScopeLogsLogRecordsDecoded uint8 = 0x0000000000000002
 
 // Scope returns the value of the scope.
 func (m *ScopeLogs) Scope() *InstrumentationScope {
@@ -982,6 +1012,17 @@ func (m *ScopeLogs) SetSchemaUrl(v string) {
 func (m *ScopeLogs) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
+	// If the user makes a mistake and takes a copy of this struct before decoding it
+	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
+	// messages will be marked as "decoded". Next time we try to access the nested
+	// message via getter func this decode() func will be called again and will overwrite
+	// nested message values, but the getter func will no longer attempt to decode it
+	// because the flag "decoded" flag is incorrectly set on nested message.
+	// This will result in incorrect state of nested message returned by getter.
+	// To make sure we correctly decode even after this mistake we reset all "decoded"
+	// flags here.
+	m._flags &= ^(flagScopeLogsScopeDecoded | flagScopeLogsLogRecordsDecoded)
+
 	// Count all repeated fields. We need one counter per field.
 	logRecordsCount := 0
 	err := molecule.MessageFieldNums(
@@ -1003,7 +1044,6 @@ func (m *ScopeLogs) decode() error {
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	logRecordsCount = 0
-
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -1204,7 +1244,7 @@ func (m *InstrumentationScope) Free() {
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagInstrumentationScopeAttributesDecoded = 0x0000000000000001
+const flagInstrumentationScopeAttributesDecoded uint8 = 0x0000000000000001
 
 // Name returns the value of the name.
 func (m *InstrumentationScope) Name() string {
@@ -1298,6 +1338,17 @@ func (m *InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 func (m *InstrumentationScope) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
+	// If the user makes a mistake and takes a copy of this struct before decoding it
+	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
+	// messages will be marked as "decoded". Next time we try to access the nested
+	// message via getter func this decode() func will be called again and will overwrite
+	// nested message values, but the getter func will no longer attempt to decode it
+	// because the flag "decoded" flag is incorrectly set on nested message.
+	// This will result in incorrect state of nested message returned by getter.
+	// To make sure we correctly decode even after this mistake we reset all "decoded"
+	// flags here.
+	m._flags &= ^(flagInstrumentationScopeAttributesDecoded)
+
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
 	err := molecule.MessageFieldNums(
@@ -1319,7 +1370,6 @@ func (m *InstrumentationScope) decode() error {
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	attributesCount = 0
-
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -1518,7 +1568,7 @@ func (m *LogRecord) Free() {
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagLogRecordAttributesDecoded = 0x0000000000000001
+const flagLogRecordAttributesDecoded uint8 = 0x0000000000000001
 
 // TimeUnixNano returns the value of the timeUnixNano.
 func (m *LogRecord) TimeUnixNano() uint64 {
@@ -1677,6 +1727,17 @@ func (m *LogRecord) SetSpanId(v []byte) {
 func (m *LogRecord) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
+	// If the user makes a mistake and takes a copy of this struct before decoding it
+	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
+	// messages will be marked as "decoded". Next time we try to access the nested
+	// message via getter func this decode() func will be called again and will overwrite
+	// nested message values, but the getter func will no longer attempt to decode it
+	// because the flag "decoded" flag is incorrectly set on nested message.
+	// This will result in incorrect state of nested message returned by getter.
+	// To make sure we correctly decode even after this mistake we reset all "decoded"
+	// flags here.
+	m._flags &= ^(flagLogRecordAttributesDecoded)
+
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
 	err := molecule.MessageFieldNums(
@@ -1698,7 +1759,6 @@ func (m *LogRecord) decode() error {
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	attributesCount = 0
-
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -1940,7 +2000,7 @@ func (m *KeyValue) Free() {
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagKeyValueValueDecoded = 0x0000000000000001
+const flagKeyValueValueDecoded uint8 = 0x0000000000000001
 
 // Key returns the value of the key.
 func (m *KeyValue) Key() string {
@@ -1982,6 +2042,17 @@ func (m *KeyValue) SetValue(v *AnyValue) {
 
 func (m *KeyValue) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
+
+	// If the user makes a mistake and takes a copy of this struct before decoding it
+	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
+	// messages will be marked as "decoded". Next time we try to access the nested
+	// message via getter func this decode() func will be called again and will overwrite
+	// nested message values, but the getter func will no longer attempt to decode it
+	// because the flag "decoded" flag is incorrectly set on nested message.
+	// This will result in incorrect state of nested message returned by getter.
+	// To make sure we correctly decode even after this mistake we reset all "decoded"
+	// flags here.
+	m._flags &= ^(flagKeyValueValueDecoded)
 
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
@@ -2189,8 +2260,8 @@ func (m *AnyValue) ValueUnset() {
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagAnyValueArrayValueDecoded = 0x0000000000000001
-const flagAnyValueKvlistValueDecoded = 0x0000000000000002
+const flagAnyValueArrayValueDecoded uint8 = 0x0000000000000001
+const flagAnyValueKvlistValueDecoded uint8 = 0x0000000000000002
 
 // StringValue returns the value of the stringValue.
 // If the field "value" is not set to "stringValue" then the returned value is undefined.
@@ -2327,6 +2398,17 @@ func (m *AnyValue) SetBytesValue(v []byte) {
 
 func (m *AnyValue) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
+
+	// If the user makes a mistake and takes a copy of this struct before decoding it
+	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
+	// messages will be marked as "decoded". Next time we try to access the nested
+	// message via getter func this decode() func will be called again and will overwrite
+	// nested message values, but the getter func will no longer attempt to decode it
+	// because the flag "decoded" flag is incorrectly set on nested message.
+	// This will result in incorrect state of nested message returned by getter.
+	// To make sure we correctly decode even after this mistake we reset all "decoded"
+	// flags here.
+	m._flags &= ^(flagAnyValueArrayValueDecoded | flagAnyValueKvlistValueDecoded)
 
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
@@ -2590,7 +2672,7 @@ func (m *ArrayValue) Free() {
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagArrayValueValuesDecoded = 0x0000000000000001
+const flagArrayValueValuesDecoded uint8 = 0x0000000000000001
 
 // Values returns the value of the values.
 func (m *ArrayValue) Values() []*AnyValue {
@@ -2645,6 +2727,17 @@ func (m *ArrayValue) ValuesRemoveIf(f func(*AnyValue) bool) {
 func (m *ArrayValue) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
+	// If the user makes a mistake and takes a copy of this struct before decoding it
+	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
+	// messages will be marked as "decoded". Next time we try to access the nested
+	// message via getter func this decode() func will be called again and will overwrite
+	// nested message values, but the getter func will no longer attempt to decode it
+	// because the flag "decoded" flag is incorrectly set on nested message.
+	// This will result in incorrect state of nested message returned by getter.
+	// To make sure we correctly decode even after this mistake we reset all "decoded"
+	// flags here.
+	m._flags &= ^(flagArrayValueValuesDecoded)
+
 	// Count all repeated fields. We need one counter per field.
 	valuesCount := 0
 	err := molecule.MessageFieldNums(
@@ -2666,7 +2759,6 @@ func (m *ArrayValue) decode() error {
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	valuesCount = 0
-
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {
@@ -2827,7 +2919,7 @@ func (m *KeyValueList) Free() {
 }
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flagKeyValueListValuesDecoded = 0x0000000000000001
+const flagKeyValueListValuesDecoded uint8 = 0x0000000000000001
 
 // Values returns the value of the values.
 func (m *KeyValueList) Values() []*KeyValue {
@@ -2882,6 +2974,17 @@ func (m *KeyValueList) ValuesRemoveIf(f func(*KeyValue) bool) {
 func (m *KeyValueList) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
+	// If the user makes a mistake and takes a copy of this struct before decoding it
+	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
+	// messages will be marked as "decoded". Next time we try to access the nested
+	// message via getter func this decode() func will be called again and will overwrite
+	// nested message values, but the getter func will no longer attempt to decode it
+	// because the flag "decoded" flag is incorrectly set on nested message.
+	// This will result in incorrect state of nested message returned by getter.
+	// To make sure we correctly decode even after this mistake we reset all "decoded"
+	// flags here.
+	m._flags &= ^(flagKeyValueListValuesDecoded)
+
 	// Count all repeated fields. We need one counter per field.
 	valuesCount := 0
 	err := molecule.MessageFieldNums(
@@ -2903,7 +3006,6 @@ func (m *KeyValueList) decode() error {
 
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	valuesCount = 0
-
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
 		buf, func(fieldNum int32, value molecule.Value) (bool, error) {

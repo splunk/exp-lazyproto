@@ -270,21 +270,20 @@ func (g *generator) oMsgStruct() error {
 	g.o("_protoMessage protomessage.ProtoMessage")
 
 	if g.msg.NeedBitFlag {
-		var bitCountFieldType string
 		switch {
 		case g.msg.FlagBitCount <= 8:
-			bitCountFieldType = "uint8"
+			g.msg.BitCountFieldType = "uint8"
 		case g.msg.FlagBitCount <= 16:
-			bitCountFieldType = "uint16"
+			g.msg.BitCountFieldType = "uint16"
 		case g.msg.FlagBitCount <= 32:
-			bitCountFieldType = "uint32"
+			g.msg.BitCountFieldType = "uint32"
 		case g.msg.FlagBitCount <= 64:
-			bitCountFieldType = "uint64"
+			g.msg.BitCountFieldType = "uint64"
 		default:
 			return fmt.Errorf("more than 64 bits flags not supported")
 		}
 
-		g.o("_flags %s", bitCountFieldType)
+		g.o("_flags %s", g.msg.BitCountFieldType)
 	}
 	g.o("")
 
@@ -409,13 +408,37 @@ func (g *generator) oMsgDecodeFunc(msg *Message) error {
 	g.o(
 		`
 func (m *$MessageName) decode() error {
-	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))`,
+	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
+`,
 	)
 
 	g.i(1)
+
+	var decodeFlagNames []string
+	for _, field := range msg.Fields {
+		g.setField(field)
+		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			decodeFlagNames = append(decodeFlagNames, g.fieldFlagName())
+		}
+	}
+	if len(decodeFlagNames) > 0 {
+		g.o(
+			`
+// If the user makes a mistake and takes a copy of this struct before decoding it
+// the "decoded" flag will incorrectly set on the copy, not the original, but nested
+// messages will be marked as "decoded". Next time we try to access the nested
+// message via getter func this decode() func will be called again and will overwrite
+// nested message values, but the getter func will no longer attempt to decode it
+// because the flag "decoded" flag is incorrectly set on nested message.
+// This will result in incorrect state of nested message returned by getter.
+// To make sure we correctly decode even after this mistake we reset all "decoded"
+// flags here.`,
+		)
+		g.o("m._flags &= ^(%s)\n", strings.Join(decodeFlagNames, "|"))
+	}
+
 	g.oRepeatedFieldCounts(msg)
 
-	g.o("")
 	g.o(
 		`
 // Iterate and decode the fields.
@@ -630,7 +653,10 @@ func (g *generator) oFieldsAccessors(msg *Message) error {
 			g.setField(field)
 			if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 
-				g.o("const %s = 0x%016X", g.fieldFlagName(), bitMask)
+				g.o(
+					"const %s %s = 0x%016X", g.fieldFlagName(), g.msg.BitCountFieldType,
+					bitMask,
+				)
 				bitMask *= 2
 			}
 		}

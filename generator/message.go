@@ -16,8 +16,9 @@ type Message struct {
 	Fields    []*Field
 	FieldsMap map[string]*Field
 
-	FlagBitCount int
-	NeedBitFlag  bool
+	FlagBitCount      int
+	NeedBitFlag       bool
+	BitCountFieldType string
 }
 
 func NewMessage(descr *desc.MessageDescriptor) *Message {
