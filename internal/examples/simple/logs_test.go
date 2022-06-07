@@ -187,7 +187,7 @@ func TestDecode(t *testing.T) {
 	rl := lazy.ResourceLogs()
 	require.Len(t, rl, 1)
 
-	resource := *rl[0].Resource()
+	resource := rl[0].Resource()
 	assert.EqualValues(t, 12, resource.DroppedAttributesCount())
 	require.NotNil(t, resource)
 
@@ -298,47 +298,94 @@ func BenchmarkGogoMarshal(b *testing.B) {
 	}
 }
 
+func readAnyValue(v *lazymsg.AnyValue) {
+	switch v.ValueType() {
+	case lazymsg.AnyValueArrayValue:
+		for _, e := range v.ArrayValue().Values() {
+			readAnyValue(e)
+		}
+	case lazymsg.AnyValueKvlistValue:
+		readAttrs(v.KvlistValue().Values())
+	}
+}
+
+func readAttrs(v []*lazymsg.KeyValue) {
+	for _, e := range v {
+		e.Key()
+		readAnyValue(e.Value())
+	}
+}
+
 func countAttrsLazy(lazy *lazymsg.LogsData) int {
 	attrCount := 0
 	rls := lazy.ResourceLogs()
 	for _, rl := range rls {
-		resource := *rl.Resource()
+		resource := rl.Resource()
 
 		attrs := resource.Attributes()
 		attrCount += len(attrs)
+		readAttrs(attrs)
 
 		sls := rl.ScopeLogs()
 		for _, sl := range sls {
+			readAttrs(sl.Scope().Attributes())
+
 			logRecords := sl.LogRecords()
 
 			for _, logRecord := range logRecords {
 				attrs2 := logRecord.Attributes()
 				attrCount += len(attrs2)
+				readAttrs(attrs2)
 			}
 		}
 	}
 	return attrCount
 }
 
+func touchAnyValue(v *lazymsg.AnyValue) {
+	switch v.ValueType() {
+	case lazymsg.AnyValueStringValue:
+		v.SetStringValue(v.StringValue())
+	case lazymsg.AnyValueBoolValue:
+		v.SetBoolValue(v.BoolValue())
+	case lazymsg.AnyValueIntValue:
+		v.SetIntValue(v.IntValue())
+	case lazymsg.AnyValueDoubleValue:
+		v.SetDoubleValue(v.DoubleValue())
+	case lazymsg.AnyValueBytesValue:
+		v.SetBytesValue(v.BytesValue())
+	case lazymsg.AnyValueArrayValue:
+		for _, e := range v.ArrayValue().Values() {
+			touchAnyValue(e)
+		}
+	case lazymsg.AnyValueKvlistValue:
+		touchAttrs(v.KvlistValue().Values())
+	}
+}
+
+func touchAttrs(v []*lazymsg.KeyValue) {
+	for _, e := range v {
+		e.SetKey(e.Key())
+		touchAnyValue(e.Value())
+	}
+}
+
 func touchAll(lazy *lazymsg.LogsData) {
 	rls := lazy.ResourceLogs()
 	for _, rl := range rls {
-		resource := *rl.Resource()
+		resource := rl.Resource()
 
 		attrs := resource.Attributes()
-		for i := range attrs {
-			attrs[i].SetKey(attrs[i].Key())
-		}
+		touchAttrs(attrs)
 
 		sls := rl.ScopeLogs()
 		for _, sl := range sls {
+			touchAttrs(sl.Scope().Attributes())
+
 			logRecords := sl.LogRecords()
 
 			for _, logRecord := range logRecords {
-				attrs2 := logRecord.Attributes()
-				for i := range attrs2 {
-					attrs2[i].SetKey(attrs2[i].Key())
-				}
+				touchAttrs(logRecord.Attributes())
 			}
 		}
 	}
@@ -470,6 +517,27 @@ func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
 		countAttrsLazy(lazy)
 
 		lazy.Free()
+	}
+}
+
+func BenchmarkLazyUnmarshalAndReadAllNoPool(b *testing.B) {
+	src := createLogsData(1)
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(b, err)
+
+		// Traverse all data to get it loaded. This is the worst case.
+		countAttrsLazy(lazy)
+
+		// Don't free here. This mean the pools will be disabled and regular allocations
+		// will happen.
 	}
 }
 
