@@ -1,4 +1,4 @@
-module github.com/tigrannajaryan/exp-lazyproto
+module github.com/tigrannajaryan/lazyproto
 
 go 1.18
 

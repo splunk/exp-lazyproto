@@ -4,7 +4,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/tigrannajaryan/exp-lazyproto/internal/protomessage"
+	"github.com/tigrannajaryan/lazyproto/internal/protomessage"
 	"github.com/tigrannajaryan/molecule"
 	"github.com/tigrannajaryan/molecule/src/codec"
 )

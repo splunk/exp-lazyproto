@@ -116,7 +116,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/tigrannajaryan/exp-lazyproto/internal/protomessage"
+	"github.com/tigrannajaryan/lazyproto/internal/protomessage"
 	"github.com/tigrannajaryan/molecule"
 	"github.com/tigrannajaryan/molecule/src/codec"
 )
@@ -124,7 +124,7 @@ import (
 	)
 
 	if g.useSizedMarshaler {
-		g.o(`import "github.com/tigrannajaryan/exp-lazyproto/internal/streams/sizedstream"`)
+		g.o(`import "github.com/tigrannajaryan/lazyproto/internal/streams/sizedstream"`)
 	}
 
 	return g.lastErr

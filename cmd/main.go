@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/tigrannajaryan/exp-lazyproto/generator"
+	"github.com/tigrannajaryan/lazyproto/generator"
 )
 
 type flagList []string
