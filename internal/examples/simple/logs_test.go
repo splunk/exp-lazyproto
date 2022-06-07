@@ -1,6 +1,7 @@
 package simple
 
 import (
+	"sync"
 	"testing"
 
 	gogolib "github.com/gogo/protobuf/proto"
@@ -54,9 +55,9 @@ func createKVList() gogomsg.AnyValue {
 	}
 }
 
-func createLogRecord(n int) *gogomsg.LogRecord {
+func createLogRecord(id int, n int) *gogomsg.LogRecord {
 	sl := &gogomsg.LogRecord{
-		TimeUnixNano:   uint64(n * 10000),
+		TimeUnixNano:   uint64(id * 10000),
 		SeverityNumber: gogomsg.SeverityNumber(n % 25),
 		Attributes: []gogomsg.KeyValue{
 			createAttr("http.method", "GET"),
@@ -83,7 +84,7 @@ func createLogRecord(n int) *gogomsg.LogRecord {
 	return sl
 }
 
-func createScopedLogs(n int) *gogomsg.ScopeLogs {
+func createScopedLogs(id int, n int) *gogomsg.ScopeLogs {
 	sl := &gogomsg.ScopeLogs{
 		Scope: gogomsg.InstrumentationScope{
 			Name:    "library",
@@ -100,13 +101,13 @@ func createScopedLogs(n int) *gogomsg.ScopeLogs {
 	}
 
 	for i := 0; i < 10; i++ {
-		sl.LogRecords = append(sl.LogRecords, createLogRecord(i))
+		sl.LogRecords = append(sl.LogRecords, createLogRecord(id, i))
 	}
 
 	return sl
 }
 
-func createLogsData() *gogomsg.LogsData {
+func createLogsData(id int) *gogomsg.LogsData {
 	src := &gogomsg.LogsData{}
 
 	for i := 0; i < 10; i++ {
@@ -119,12 +120,12 @@ func createLogsData() *gogomsg.LogsData {
 						Value: createKVList(),
 					},
 				},
-				DroppedAttributesCount: 12,
+				DroppedAttributesCount: uint32(id),
 			},
 		}
 
 		for j := 0; j < 10; j++ {
-			rl.ScopeLogs = append(rl.ScopeLogs, createScopedLogs(j))
+			rl.ScopeLogs = append(rl.ScopeLogs, createScopedLogs(id, j))
 		}
 
 		src.ResourceLogs = append(src.ResourceLogs, rl)
@@ -248,7 +249,7 @@ func TestDecode(t *testing.T) {
 }
 
 func TestLazyPassthrough(t *testing.T) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(t, err)
@@ -270,7 +271,7 @@ func TestLazyPassthrough(t *testing.T) {
 }
 
 func BenchmarkGoogleMarshal(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 	bytes, err := gogolib.Marshal(src)
 	var ld googlemsg.LogsData
 	err = googlelib.Unmarshal(bytes, &ld)
@@ -286,7 +287,7 @@ func BenchmarkGoogleMarshal(b *testing.B) {
 }
 
 func BenchmarkGogoMarshal(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	b.ResetTimer()
 
@@ -344,7 +345,7 @@ func touchAll(lazy *lazymsg.LogsData) {
 }
 
 func BenchmarkLazyMarshalUnchanged(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -370,7 +371,7 @@ func BenchmarkLazyMarshalUnchanged(b *testing.B) {
 }
 
 func BenchmarkLazyMarshalFullModified(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -397,7 +398,7 @@ func BenchmarkLazyMarshalFullModified(b *testing.B) {
 }
 
 func BenchmarkGoogleUnmarshal(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	bytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -425,7 +426,7 @@ func BenchmarkGoogleUnmarshal(b *testing.B) {
 }
 
 func BenchmarkGogoUnmarshal(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	bytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -453,7 +454,7 @@ func BenchmarkGogoUnmarshal(b *testing.B) {
 }
 
 func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -473,7 +474,7 @@ func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
 }
 
 func TestLazyUnmarshalAndReadAll(t *testing.T) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(t, err)
@@ -491,7 +492,7 @@ func TestLazyUnmarshalAndReadAll(t *testing.T) {
 }
 
 func BenchmarkGooglePasssthrough(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	bytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -511,7 +512,7 @@ func BenchmarkGooglePasssthrough(b *testing.B) {
 }
 
 func BenchmarkGogoPasssthrough(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	bytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -534,7 +535,7 @@ func BenchmarkLazyPassthroughNoReadOrModify(b *testing.B) {
 	// This is the best case scenario for passthrough. We don't read or modify any
 	// data, just unmarshal and marshal it exactly as it is.
 
-	src := createLogsData()
+	src := createLogsData(1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -561,7 +562,7 @@ func BenchmarkLazyPassthroughFullReadNoModify(b *testing.B) {
 	// This is the best case scenario for passthrough. We don't read or modify any
 	// data, just unmarshal and marshal it exactly as it is.
 
-	src := createLogsData()
+	src := createLogsData(1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -591,7 +592,7 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 	// This is the worst case scenario. We read of data, so lazy loading has no
 	// performance benefit. We also modify all data, so we have to do full marshaling.
 
-	src := createLogsData()
+	src := createLogsData(1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -619,38 +620,56 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 	}
 }
 
-func TestLazyPassthroughFullModified(t *testing.T) {
-	// This is the worst case scenario. We read of data, so lazy loading has no
-	// performance benefit. We also modify all data, so we have to do full marshaling.
+func BenchmarkLazyPassthroughFullModifiedConc(b *testing.B) {
+	const concurrentCount = 10
 
-	src := createLogsData()
+	var goldenWireBytesSlice [][]byte
+	for j := 0; j < concurrentCount; j++ {
+		src := createLogsData(j)
+		bts, err := gogolib.Marshal(src)
+		require.NoError(b, err)
+		require.NotNil(b, bts)
 
-	goldenWireBytes, err := gogolib.Marshal(src)
-	require.NoError(t, err)
-	require.NotNil(t, goldenWireBytes)
-
-	ps := molecule.NewProtoStream()
-	for i := 0; i < 3; i++ {
-		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
-		require.NoError(t, err)
-
-		// Touch all attrs
-		touchAll(lazy)
-
-		ps.Reset()
-		err = lazy.Marshal(ps)
-		require.NoError(t, err)
-
-		lazyBytes, err := ps.BufferBytes()
-		assert.NoError(t, err)
-		assert.EqualValues(t, goldenWireBytes, lazyBytes)
-
-		lazy.Free()
+		goldenWireBytesSlice = append(goldenWireBytesSlice, bts)
 	}
+
+	b.ResetTimer()
+
+	var wg sync.WaitGroup
+
+	for j := 0; j < concurrentCount; j++ {
+		goldenWireBytes := goldenWireBytesSlice[j]
+
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			ps := molecule.NewProtoStream()
+			for i := 0; i < b.N; i++ {
+				lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+				require.NoError(b, err)
+
+				touchAll(lazy)
+
+				ps.Reset()
+				err = lazy.Marshal(ps)
+				require.NoError(b, err)
+
+				lazyBytes, err := ps.BufferBytes()
+				assert.NoError(b, err)
+				assert.EqualValues(b, goldenWireBytes, lazyBytes)
+
+				lazy.Free()
+			}
+		}()
+	}
+
+	wg.Wait()
 }
 
 func BenchmarkGogoInspectScopeAttr(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -686,7 +705,7 @@ func BenchmarkGogoInspectScopeAttr(b *testing.B) {
 }
 
 func BenchmarkLazyInspectScopeAttr(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -729,7 +748,7 @@ func BenchmarkLazyInspectScopeAttr(b *testing.B) {
 }
 
 func BenchmarkGogoFilterScopeAttr(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -770,7 +789,7 @@ func BenchmarkGogoFilterScopeAttr(b *testing.B) {
 }
 
 func BenchmarkLazyFilterScopeAttr(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -837,7 +856,7 @@ func gogoBatch(b *testing.B, inputWireBytes []byte) (batchedWireBytes []byte) {
 }
 
 func BenchmarkGogoBatch(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	inputWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -851,7 +870,7 @@ func BenchmarkGogoBatch(b *testing.B) {
 }
 
 func BenchmarkLazyBatch(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	inputWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -894,7 +913,7 @@ func BenchmarkLazyBatch(b *testing.B) {
 }
 
 func BenchmarkLazyTouchAll(b *testing.B) {
-	src := createLogsData()
+	src := createLogsData(1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
