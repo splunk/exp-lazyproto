@@ -1,4 +1,4 @@
-package protostream
+package sizedstream
 
 import (
 	"google.golang.org/protobuf/encoding/protowire"

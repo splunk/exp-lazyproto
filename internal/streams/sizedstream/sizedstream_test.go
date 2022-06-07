@@ -1,4 +1,4 @@
-package protostream
+package sizedstream
 
 import (
 	"math/rand"

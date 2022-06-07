@@ -116,7 +116,6 @@ import (
 	"sync"
 	"unsafe"
 
-	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 	"github.com/tigrannajaryan/exp-lazyproto/internal/protomessage"
 	"github.com/tigrannajaryan/molecule"
 	"github.com/tigrannajaryan/molecule/src/codec"
@@ -125,7 +124,7 @@ import (
 	)
 
 	if g.useSizedMarshaler {
-		g.o(`import "github.com/tigrannajaryan/exp-lazyproto/internal/protostream"`)
+		g.o(`import "github.com/tigrannajaryan/exp-lazyproto/internal/streams/sizedstream"`)
 	}
 
 	return g.lastErr
@@ -870,7 +869,7 @@ func (g *generator) oMarshalFunc(msg *Message) error {
 
 	g.o("")
 	if g.useSizedMarshaler {
-		g.o("func (m *$MessageName) Marshal(ps *protostream.ProtoStream) error {")
+		g.o("func (m *$MessageName) Marshal(ps *sizedstream.ProtoStream) error {")
 	} else {
 		g.o("func (m *$MessageName) Marshal(ps *molecule.ProtoStream) error {")
 	}
@@ -1250,7 +1249,7 @@ func (g *generator) preparedFieldDecl(
 ) string {
 	if g.useSizedMarshaler {
 		return fmt.Sprintf(
-			"var prepared%s%s = protostream.Prepare%sField(%d)", msg.GetName(),
+			"var prepared%s%s = sizedstream.Prepare%sField(%d)", msg.GetName(),
 			field.GetCapitalName(), protoTypeName, field.GetNumber(),
 		)
 	} else {

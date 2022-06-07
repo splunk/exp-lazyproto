@@ -1,4 +1,4 @@
-package stream
+package backwardstream
 
 import (
 	"bytes"
