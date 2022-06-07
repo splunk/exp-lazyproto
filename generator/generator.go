@@ -16,8 +16,12 @@ import (
 	_ "github.com/jhump/protoreflect/desc/protoparse"
 )
 
-func Generate(inputProtoFiles []string, outputDir string) error {
-	g := generator{outputDir: outputDir, templateData: map[string]string{}}
+func Generate(protoPath string, inputProtoFiles []string, outputDir string) error {
+	g := generator{
+		protoPath:    protoPath,
+		outputDir:    outputDir,
+		templateData: map[string]string{},
+	}
 
 	for _, f := range inputProtoFiles {
 		if err := g.processFile(f); err != nil {
@@ -28,6 +32,7 @@ func Generate(inputProtoFiles []string, outputDir string) error {
 }
 
 type generator struct {
+	protoPath string
 	outputDir string
 	outBuf    *bytes.Buffer
 	lastErr   error
@@ -44,7 +49,7 @@ type generator struct {
 func (g *generator) processFile(inputFilePath string) error {
 	p := protoparse.Parser{
 		Accessor: func(filename string) (io.ReadCloser, error) {
-			return os.Open(inputFilePath)
+			return os.Open(path.Join(g.protoPath, filename))
 		},
 		IncludeSourceCodeInfo: true,
 	}

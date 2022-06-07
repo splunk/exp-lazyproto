@@ -22,9 +22,14 @@ func (f *flagList) Set(value string) error {
 
 var files flagList
 var outDir string
+var protoPath string
 
 func main() {
 	flag.Var(&files, "input", "Input file list.")
+	flag.StringVar(
+		&protoPath, "proto_path", "",
+		"Directory relative to which all .proto files are found.",
+	)
 	flag.StringVar(&outDir, "out", "", "Output directory.")
 	flag.Parse()
 
@@ -33,7 +38,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	if err := generator.Generate(files, outDir); err != nil {
+	if err := generator.Generate(protoPath, files, outDir); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(-2)
 	}

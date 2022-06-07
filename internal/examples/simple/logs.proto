@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package simple;
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
 option go_package = "gen/logs";
 
 // LogsData contains all log data
@@ -71,8 +73,6 @@ enum SeverityNumber {
   SEVERITY_NUMBER_FATAL3 = 23;
   SEVERITY_NUMBER_FATAL4 = 24;
 }
-
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 message LogRecord {
   fixed64 time_unix_nano = 1;
