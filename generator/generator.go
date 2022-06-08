@@ -21,10 +21,10 @@ type Options struct {
 }
 
 func Generate(
-	protoPath string, inputProtoFiles []string, outputDir string, options Options,
+	protoPath []string, inputProtoFiles []string, outputDir string, options Options,
 ) error {
 	g := generator{
-		protoPath:    protoPath,
+		includePaths: protoPath,
 		outputDir:    outputDir,
 		options:      options,
 		templateData: map[string]string{},
@@ -39,8 +39,8 @@ func Generate(
 }
 
 type generator struct {
-	protoPath string
-	outputDir string
+	includePaths []string
+	outputDir    string
 
 	options Options
 
@@ -59,10 +59,21 @@ type generator struct {
 func (g *generator) processFile(inputFilePath string) error {
 	p := protoparse.Parser{
 		Accessor: func(filename string) (io.ReadCloser, error) {
-			return os.Open(path.Join(g.protoPath, filename))
+			for _, includePath := range g.includePaths {
+				f, err := os.Open(path.Join(includePath, filename))
+				if err == nil {
+					return f, nil
+				}
+			}
+			return nil, fmt.Errorf(
+				"file %s not found in paths %v", inputFilePath, g.includePaths,
+			)
 		},
 		IncludeSourceCodeInfo: true,
 	}
+
+	fmt.Printf("Reading %s\n", inputFilePath)
+
 	fdescrs, err := p.ParseFiles(inputFilePath)
 	if err != nil {
 		return err
@@ -101,6 +112,9 @@ func (g *generator) formatAndWriteToFile(fdescr *desc.FileDescriptor) error {
 	fname := path.Base(strings.TrimSuffix(fdescr.GetName(), ".proto")) + ".pb.go"
 	fname = path.Join(g.outputDir, fname)
 	fdir := path.Dir(fname)
+
+	fmt.Printf("Generating %s\n", fname)
+
 	if err := os.MkdirAll(fdir, 0700); err != nil {
 		return err
 	}
@@ -124,8 +138,14 @@ func (g *generator) formatAndWriteToFile(fdescr *desc.FileDescriptor) error {
 func (g *generator) oStartFile(fdescr *desc.FileDescriptor) error {
 	g.outBuf = bytes.NewBuffer(nil)
 
-	g.o("package %s", fdescr.GetPackage())
-	g.o("")
+	packagePath := strings.Split(fdescr.GetPackage(), ".")
+
+	if len(packagePath) > 0 {
+		packageName := packagePath[len(packagePath)-1]
+		g.o("package %s", packageName)
+		g.o("")
+	}
+
 	g.o(
 		`
 import (
@@ -352,11 +372,15 @@ func (g *generator) oMessage() error {
 	return nil
 }
 
-func (g *generator) oMsgStruct() error {
-	c := getLeadingComment(g.msg.GetSourceInfo())
-	if c != "" {
-		g.o("// %s", c)
+func (g *generator) oComment(comment string) {
+	lines := strings.Split(comment, "\n")
+	for _, line := range lines {
+		g.o("// %s", line)
 	}
+}
+
+func (g *generator) oMsgStruct() error {
+	g.oComment(getLeadingComment(g.msg.GetSourceInfo()))
 
 	g.o("type $MessageName struct {")
 	g.i(1)
@@ -373,10 +397,7 @@ func (g *generator) oMsgStruct() error {
 			continue
 		}
 		g.setField(field)
-		c := getLeadingComment(field.GetSourceInfo())
-		if c != "" {
-			g.o("// %s", c)
-		}
+		g.oComment(getLeadingComment(field.GetSourceInfo()))
 		g.o("$fieldName %s", g.convertTypeToGo(field))
 	}
 
@@ -1441,10 +1462,7 @@ func (g *generator) preparedFieldDecl(
 }
 
 func (g *generator) oEnum(enum *desc.EnumDescriptor) error {
-	c := getLeadingComment(enum.GetSourceInfo())
-	if c != "" {
-		g.o("// %s", c)
-	}
+	g.oComment(getLeadingComment(enum.GetSourceInfo()))
 	g.o(
 		`
 type %[1]s uint32
@@ -1454,10 +1472,7 @@ const (`, enum.GetName(),
 
 	g.i(1)
 	for _, value := range enum.GetValues() {
-		c := getLeadingComment(value.GetSourceInfo())
-		if c != "" {
-			g.o("// %s", c)
-		}
+		g.oComment(getLeadingComment(value.GetSourceInfo()))
 		g.o(
 			"%[1]s_%[2]s %[1]s = %[3]d", enum.GetName(), value.GetName(),
 			value.GetNumber(),

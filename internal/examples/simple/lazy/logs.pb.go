@@ -17,30 +17,54 @@ type SeverityNumber uint32
 const (
 	// SeverityNumber is not specified
 	SeverityNumber_SEVERITY_NUMBER_UNSPECIFIED SeverityNumber = 0
-	SeverityNumber_SEVERITY_NUMBER_TRACE       SeverityNumber = 1
-	SeverityNumber_SEVERITY_NUMBER_TRACE2      SeverityNumber = 2
-	SeverityNumber_SEVERITY_NUMBER_TRACE3      SeverityNumber = 3
-	SeverityNumber_SEVERITY_NUMBER_TRACE4      SeverityNumber = 4
-	SeverityNumber_SEVERITY_NUMBER_DEBUG       SeverityNumber = 5
-	SeverityNumber_SEVERITY_NUMBER_DEBUG2      SeverityNumber = 6
-	SeverityNumber_SEVERITY_NUMBER_DEBUG3      SeverityNumber = 7
-	SeverityNumber_SEVERITY_NUMBER_DEBUG4      SeverityNumber = 8
-	SeverityNumber_SEVERITY_NUMBER_INFO        SeverityNumber = 9
-	SeverityNumber_SEVERITY_NUMBER_INFO2       SeverityNumber = 10
-	SeverityNumber_SEVERITY_NUMBER_INFO3       SeverityNumber = 11
-	SeverityNumber_SEVERITY_NUMBER_INFO4       SeverityNumber = 12
-	SeverityNumber_SEVERITY_NUMBER_WARN        SeverityNumber = 13
-	SeverityNumber_SEVERITY_NUMBER_WARN2       SeverityNumber = 14
-	SeverityNumber_SEVERITY_NUMBER_WARN3       SeverityNumber = 15
-	SeverityNumber_SEVERITY_NUMBER_WARN4       SeverityNumber = 16
-	SeverityNumber_SEVERITY_NUMBER_ERROR       SeverityNumber = 17
-	SeverityNumber_SEVERITY_NUMBER_ERROR2      SeverityNumber = 18
-	SeverityNumber_SEVERITY_NUMBER_ERROR3      SeverityNumber = 19
-	SeverityNumber_SEVERITY_NUMBER_ERROR4      SeverityNumber = 20
-	SeverityNumber_SEVERITY_NUMBER_FATAL       SeverityNumber = 21
-	SeverityNumber_SEVERITY_NUMBER_FATAL2      SeverityNumber = 22
-	SeverityNumber_SEVERITY_NUMBER_FATAL3      SeverityNumber = 23
-	SeverityNumber_SEVERITY_NUMBER_FATAL4      SeverityNumber = 24
+	//
+	SeverityNumber_SEVERITY_NUMBER_TRACE SeverityNumber = 1
+	//
+	SeverityNumber_SEVERITY_NUMBER_TRACE2 SeverityNumber = 2
+	//
+	SeverityNumber_SEVERITY_NUMBER_TRACE3 SeverityNumber = 3
+	//
+	SeverityNumber_SEVERITY_NUMBER_TRACE4 SeverityNumber = 4
+	//
+	SeverityNumber_SEVERITY_NUMBER_DEBUG SeverityNumber = 5
+	//
+	SeverityNumber_SEVERITY_NUMBER_DEBUG2 SeverityNumber = 6
+	//
+	SeverityNumber_SEVERITY_NUMBER_DEBUG3 SeverityNumber = 7
+	//
+	SeverityNumber_SEVERITY_NUMBER_DEBUG4 SeverityNumber = 8
+	//
+	SeverityNumber_SEVERITY_NUMBER_INFO SeverityNumber = 9
+	//
+	SeverityNumber_SEVERITY_NUMBER_INFO2 SeverityNumber = 10
+	//
+	SeverityNumber_SEVERITY_NUMBER_INFO3 SeverityNumber = 11
+	//
+	SeverityNumber_SEVERITY_NUMBER_INFO4 SeverityNumber = 12
+	//
+	SeverityNumber_SEVERITY_NUMBER_WARN SeverityNumber = 13
+	//
+	SeverityNumber_SEVERITY_NUMBER_WARN2 SeverityNumber = 14
+	//
+	SeverityNumber_SEVERITY_NUMBER_WARN3 SeverityNumber = 15
+	//
+	SeverityNumber_SEVERITY_NUMBER_WARN4 SeverityNumber = 16
+	//
+	SeverityNumber_SEVERITY_NUMBER_ERROR SeverityNumber = 17
+	//
+	SeverityNumber_SEVERITY_NUMBER_ERROR2 SeverityNumber = 18
+	//
+	SeverityNumber_SEVERITY_NUMBER_ERROR3 SeverityNumber = 19
+	//
+	SeverityNumber_SEVERITY_NUMBER_ERROR4 SeverityNumber = 20
+	//
+	SeverityNumber_SEVERITY_NUMBER_FATAL SeverityNumber = 21
+	//
+	SeverityNumber_SEVERITY_NUMBER_FATAL2 SeverityNumber = 22
+	//
+	SeverityNumber_SEVERITY_NUMBER_FATAL3 SeverityNumber = 23
+	//
+	SeverityNumber_SEVERITY_NUMBER_FATAL4 SeverityNumber = 24
 )
 
 // ====================== LogsData message implementation ======================
@@ -302,6 +326,7 @@ func (p *logsDataPoolType) Release(elem *LogsData) {
 
 // ====================== ResourceLogs message implementation ======================
 
+//
 type ResourceLogs struct {
 	_protoMessage protomessage.ProtoMessage
 	_flags        ResourceLogsFlags
@@ -310,6 +335,7 @@ type ResourceLogs struct {
 	resource *Resource
 	// List of ScopeLogs
 	scopeLogs []*ScopeLogs
+	//
 	schemaUrl string
 }
 
@@ -654,11 +680,14 @@ func (p *resourceLogsPoolType) Release(elem *ResourceLogs) {
 
 // ====================== Resource message implementation ======================
 
+//
 type Resource struct {
 	_protoMessage protomessage.ProtoMessage
 	_flags        ResourceFlags
 
-	attributes             []*KeyValue
+	//
+	attributes []*KeyValue
+	//
 	droppedAttributesCount uint32
 }
 
@@ -950,6 +979,7 @@ type ScopeLogs struct {
 	_protoMessage protomessage.ProtoMessage
 	_flags        ScopeLogsFlags
 
+	//
 	scope *InstrumentationScope
 	// A list of log records.
 	logRecords []*LogRecord
@@ -1298,13 +1328,18 @@ func (p *scopeLogsPoolType) Release(elem *ScopeLogs) {
 
 // ====================== InstrumentationScope message implementation ======================
 
+//
 type InstrumentationScope struct {
 	_protoMessage protomessage.ProtoMessage
 	_flags        InstrumentationScopeFlags
 
-	name                   string
-	version                string
-	attributes             []*KeyValue
+	//
+	name string
+	//
+	version string
+	//
+	attributes []*KeyValue
+	//
 	droppedAttributesCount uint32
 }
 
@@ -1657,19 +1692,29 @@ func (p *instrumentationScopePoolType) Release(elem *InstrumentationScope) {
 
 // ====================== LogRecord message implementation ======================
 
+//
 type LogRecord struct {
 	_protoMessage protomessage.ProtoMessage
 	_flags        LogRecordFlags
 
-	timeUnixNano           uint64
-	observedTimeUnixNano   uint64
-	severityNumber         SeverityNumber
-	severityText           string
-	attributes             []*KeyValue
+	//
+	timeUnixNano uint64
+	//
+	observedTimeUnixNano uint64
+	//
+	severityNumber SeverityNumber
+	//
+	severityText string
+	//
+	attributes []*KeyValue
+	//
 	droppedAttributesCount uint32
-	flags                  uint32
-	traceId                []byte
-	spanId                 []byte
+	//
+	flags uint32
+	//
+	traceId []byte
+	//
+	spanId []byte
 }
 
 func UnmarshalLogRecord(bytes []byte) (*LogRecord, error) {
@@ -2186,11 +2231,14 @@ func (p *logRecordPoolType) Release(elem *LogRecord) {
 
 // ====================== KeyValue message implementation ======================
 
+//
 type KeyValue struct {
 	_protoMessage protomessage.ProtoMessage
 	_flags        KeyValueFlags
 
-	key   string
+	//
+	key string
+	//
 	value *AnyValue
 }
 
@@ -2434,6 +2482,7 @@ func (p *keyValuePoolType) Release(elem *KeyValue) {
 
 // ====================== AnyValue message implementation ======================
 
+//
 type AnyValue struct {
 	_protoMessage protomessage.ProtoMessage
 	_flags        AnyValueFlags
@@ -2882,10 +2931,12 @@ func (p *anyValuePoolType) Release(elem *AnyValue) {
 
 // ====================== ArrayValue message implementation ======================
 
+//
 type ArrayValue struct {
 	_protoMessage protomessage.ProtoMessage
 	_flags        ArrayValueFlags
 
+	//
 	values []*AnyValue
 }
 
@@ -3137,10 +3188,12 @@ func (p *arrayValuePoolType) Release(elem *ArrayValue) {
 
 // ====================== KeyValueList message implementation ======================
 
+//
 type KeyValueList struct {
 	_protoMessage protomessage.ProtoMessage
 	_flags        KeyValueListFlags
 
+	//
 	values []*KeyValue
 }
 
@@ -3392,11 +3445,14 @@ func (p *keyValueListPoolType) Release(elem *KeyValueList) {
 
 // ====================== PlainMessage message implementation ======================
 
+//
 type PlainMessage struct {
 	_protoMessage protomessage.ProtoMessage
 	_flags        PlainMessageFlags
 
-	key   string
+	//
+	key string
+	//
 	value string
 }
 
