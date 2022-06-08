@@ -300,14 +300,23 @@ func (g *generator) convertTypeToGo(field *Field) string {
 	switch field.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
 		s += "bool"
+
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 		s += "uint64"
+
+	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		fallthrough
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
 		s += "int64"
+
 	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
 		s += "uint32"
+
+	case descriptor.FieldDescriptorProto_TYPE_SINT32:
+		fallthrough
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		s += "uint32"
+
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		s += "float64"
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
@@ -614,11 +623,17 @@ func (g *generator) oFieldDecode(fields []*Field) string {
 		case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 			g.oFieldDecodePrimitive("Fixed64", "Int64")
 
+		case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+			g.oFieldDecodePrimitive("SFixed64", "Int64")
+
 		case descriptor.FieldDescriptorProto_TYPE_INT64:
 			g.oFieldDecodePrimitive("Int64", "Int64")
 
 		case descriptor.FieldDescriptorProto_TYPE_FIXED32:
 			g.oFieldDecodePrimitive("Fixed32", "Int32")
+
+		case descriptor.FieldDescriptorProto_TYPE_SINT32:
+			g.oFieldDecodePrimitive("Sint32", "Sint32")
 
 		case descriptor.FieldDescriptorProto_TYPE_UINT32:
 			g.oFieldDecodePrimitive("Uint32", "Uint32")
@@ -855,8 +870,12 @@ func (g *generator) oFieldGetter() error {
 		switch g.field.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
 			g.o("	return m.%s.BoolVal()", g.field.GetOneOf().GetName())
+
 		case descriptor.FieldDescriptorProto_TYPE_INT64:
+			fallthrough
+		case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
 			g.o("	return m.%s.Int64Val()", g.field.GetOneOf().GetName())
+
 		case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 			g.o("	return m.%s.DoubleVal()", g.field.GetOneOf().GetName())
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
@@ -923,11 +942,15 @@ func (g *generator) oFieldSetter() error {
 				"	m.%s = oneof.NewOneOfBool(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
+
 		case descriptor.FieldDescriptorProto_TYPE_INT64:
+			fallthrough
+		case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
 			g.o(
 				"	m.%s = oneof.NewOneOfInt64(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
+
 		case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 			g.o(
 				"	m.%s = oneof.NewOneOfDouble(v, int(%s))",
@@ -1160,6 +1183,9 @@ func (g *generator) oMarshalField() {
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 		g.oMarshalPreparedField("Fixed64")
 
+	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		g.oMarshalPreparedField("SFixed64")
+
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
 		g.oMarshalPreparedField("Int64")
 
@@ -1168,6 +1194,9 @@ func (g *generator) oMarshalField() {
 
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		g.oMarshalPreparedField("Uint32")
+
+	case descriptor.FieldDescriptorProto_TYPE_SINT32:
+		g.oMarshalPreparedField("Sint32")
 
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		g.oMarshalPreparedField("Double")
@@ -1235,6 +1264,9 @@ func (g *generator) oPrepareMarshalField(field *Field) {
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 		g.o(g.preparedFieldDecl(g.msg, field, "Fixed64"))
 
+	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		g.o(g.preparedFieldDecl(g.msg, field, "SFixed64"))
+
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
 		g.o(g.preparedFieldDecl(g.msg, field, "Int64"))
 
@@ -1243,6 +1275,9 @@ func (g *generator) oPrepareMarshalField(field *Field) {
 
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		g.o(g.preparedFieldDecl(g.msg, field, "Uint32"))
+
+	case descriptor.FieldDescriptorProto_TYPE_SINT32:
+		g.o(g.preparedFieldDecl(g.msg, field, "Sint32"))
 
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		g.o(g.preparedFieldDecl(g.msg, field, "Double"))
