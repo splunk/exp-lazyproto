@@ -588,6 +588,14 @@ if err != nil {
 			"m.%s = oneof.NewOneOf%s(v, int(%s))", g.field.GetOneOf().GetName(),
 			oneOfType, choiceName,
 		)
+	} else if g.field.IsRepeated() {
+		counterName := g.field.GetName() + "Count"
+		g.o(
+			`
+// The slice is pre-allocated, assign to the appropriate index.
+m.$fieldName[%[1]s] = v
+%[1]s++`, counterName,
+		)
 	} else {
 		g.o("m.$fieldName = v")
 		if g.options.WithPresence {
@@ -735,7 +743,12 @@ func (g *generator) oRepeatedFieldCounts() {
 	for _, field := range fields {
 		g.setField(field)
 		counterName := field.GetName() + "Count"
-		g.o("m.$fieldName = $fieldTypeMessagePool.GetSlice(%s)", counterName)
+
+		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			g.o("m.$fieldName = $fieldTypeMessagePool.GetSlice(%s)", counterName)
+		} else {
+			g.o("m.$fieldName = make(%s, %s)", g.convertTypeToGo(field), counterName)
+		}
 	}
 	g.o("")
 	g.o("// Reset the buffer to start iterating over the fields again")
@@ -999,7 +1012,7 @@ func (g *generator) oFieldSetter() error {
 	g.o("	m._protoMessage.MarkModified()")
 	g.o("}\n")
 
-	if g.field.IsRepeated() {
+	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE && g.field.IsRepeated() {
 		if err := g.oFieldSliceMethods(); err != nil {
 			return err
 		}
@@ -1143,12 +1156,24 @@ func embeddedFieldName(msg *Message, field *Field) string {
 	return fmt.Sprintf("prepared%s%s", msg.GetName(), field.GetCapitalName())
 }
 
+func convertProtoTypeToOneOfType(protoType string) string {
+	switch protoType {
+	case "SFixed64":
+		return "Int64"
+	case "SFixed32":
+		return "Int64"
+	default:
+		return protoType
+	}
+}
+
 func (g *generator) oMarshalPreparedField(protoTypeName string) {
 	if g.field.GetOneOf() != nil {
 		g.o(
-			"ps.%[1]sPrepared(prepared$MessageName$FieldName, m.%[2]s.%[1]sVal())",
+			"ps.%[1]sPrepared(prepared$MessageName$FieldName, m.%[2]s.%[3]sVal())",
 			protoTypeName,
 			g.field.GetOneOf().GetName(),
+			convertProtoTypeToOneOfType(protoTypeName),
 		)
 	} else {
 		g.o("ps.%sPrepared(prepared$MessageName$FieldName, m.$fieldName)", protoTypeName)
@@ -1265,7 +1290,7 @@ func (g *generator) oPrepareMarshalField(field *Field) {
 		g.o(g.preparedFieldDecl(g.msg, field, "Fixed64"))
 
 	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-		g.o(g.preparedFieldDecl(g.msg, field, "SFixed64"))
+		g.o(g.preparedFieldDecl(g.msg, field, "Fixed64"))
 
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
 		g.o(g.preparedFieldDecl(g.msg, field, "Int64"))
@@ -1481,17 +1506,17 @@ func (p *$messagePoolType) Release(elem *$MessageName) {`,
 }
 
 func (g *generator) preparedFieldDecl(
-	msg *Message, field *Field, protoTypeName string,
+	msg *Message, field *Field, prepareFuncNamePrefix string,
 ) string {
 	if g.useSizedMarshaler {
 		return fmt.Sprintf(
 			"var prepared%s%s = sizedstream.Prepare%sField(%d)", msg.GetName(),
-			field.GetCapitalName(), protoTypeName, field.GetNumber(),
+			field.GetCapitalName(), prepareFuncNamePrefix, field.GetNumber(),
 		)
 	} else {
 		return fmt.Sprintf(
 			"var prepared%s%s = molecule.Prepare%sField(%d)", msg.GetName(),
-			field.GetCapitalName(), protoTypeName, field.GetNumber(),
+			field.GetCapitalName(), prepareFuncNamePrefix, field.GetNumber(),
 		)
 	}
 }
