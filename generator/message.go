@@ -96,3 +96,25 @@ func camelCase(s string) string {
 	}
 	return strings.Join(parts, "")
 }
+
+type Enum struct {
+	desc.EnumDescriptor
+	FullName string
+}
+
+func NewEnum(parent *Message, descr *desc.EnumDescriptor) *Enum {
+	e := &Enum{
+		EnumDescriptor: *descr,
+	}
+
+	if parent != nil {
+		e.FullName = parent.GetName() + "_" + descr.GetName()
+	} else {
+		e.FullName = descr.GetName()
+	}
+	return e
+}
+
+func (e *Enum) GetName() string {
+	return e.FullName
+}

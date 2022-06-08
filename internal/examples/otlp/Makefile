@@ -24,6 +24,4 @@ PROTO_GEN_GO_DIR ?= $(GENDIR)/go
 # Generate gRPC/Protobuf implementation for Go.
 .PHONY: gen-go
 gen-go:
-	rm -rf ./$(PROTO_GEN_GO_DIR)
-	mkdir -p ./$(PROTO_GEN_GO_DIR)
 	$(foreach file,$(PROTO_FILES),$(call exec-command,$(PROTOC) --go_out=./$(PROTO_GEN_GO_DIR) $(file)))
