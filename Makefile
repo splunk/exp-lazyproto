@@ -2,6 +2,7 @@ all: gen-proto test
 
 test: gen-proto
 	go test ./...
+	$(MAKE) benchmark OPTS=-benchtime=1ms
 
 benchmark:
 	go test ./... -bench . --benchmem $(OPTS)

@@ -550,10 +550,10 @@ var preparedResourceLogsSchemaUrl = molecule.PrepareStringField(3)
 func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
 		// Marshal "resource".
-		elem := m.resource
-		if elem != nil {
+		resource := m.resource
+		if resource != nil {
 			token := ps.BeginEmbedded()
-			if err := elem.Marshal(ps); err != nil {
+			if err := resource.Marshal(ps); err != nil {
 				return err
 			}
 			ps.EndEmbeddedPrepared(token, preparedResourceLogsResource)
@@ -1198,10 +1198,10 @@ var preparedScopeLogsSchemaUrl = molecule.PrepareStringField(3)
 func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
 		// Marshal "scope".
-		elem := m.scope
-		if elem != nil {
+		scope := m.scope
+		if scope != nil {
 			token := ps.BeginEmbedded()
-			if err := elem.Marshal(ps); err != nil {
+			if err := scope.Marshal(ps); err != nil {
 				return err
 			}
 			ps.EndEmbeddedPrepared(token, preparedScopeLogsScope)
@@ -2368,10 +2368,10 @@ func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
 			ps.StringPrepared(preparedKeyValueKey, m.key)
 		}
 		// Marshal "value".
-		elem := m.value
-		if elem != nil {
+		value := m.value
+		if value != nil {
 			token := ps.BeginEmbedded()
-			if err := elem.Marshal(ps); err != nil {
+			if err := value.Marshal(ps); err != nil {
 				return err
 			}
 			ps.EndEmbeddedPrepared(token, preparedKeyValueValue)
@@ -2787,20 +2787,20 @@ func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
 			ps.DoublePrepared(preparedAnyValueDoubleValue, m.value.DoubleVal())
 		case AnyValueArrayValue:
 			// Marshal "arrayValue".
-			elem := (*ArrayValue)(m.value.PtrVal())
-			if elem != nil {
+			arrayValue := (*ArrayValue)(m.value.PtrVal())
+			if arrayValue != nil {
 				token := ps.BeginEmbedded()
-				if err := elem.Marshal(ps); err != nil {
+				if err := arrayValue.Marshal(ps); err != nil {
 					return err
 				}
 				ps.EndEmbeddedPrepared(token, preparedAnyValueArrayValue)
 			}
 		case AnyValueKvlistValue:
 			// Marshal "kvlistValue".
-			elem := (*KeyValueList)(m.value.PtrVal())
-			if elem != nil {
+			kvlistValue := (*KeyValueList)(m.value.PtrVal())
+			if kvlistValue != nil {
 				token := ps.BeginEmbedded()
-				if err := elem.Marshal(ps); err != nil {
+				if err := kvlistValue.Marshal(ps); err != nil {
 					return err
 				}
 				ps.EndEmbeddedPrepared(token, preparedAnyValueKvlistValue)

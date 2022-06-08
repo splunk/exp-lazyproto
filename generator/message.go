@@ -12,6 +12,10 @@ type File struct {
 
 type Message struct {
 	desc.MessageDescriptor
+
+	Parent   *Message
+	FullName string
+
 	Fields    []*Field
 	FieldsMap map[string]*Field
 
@@ -31,13 +35,20 @@ type flagBitDef struct {
 	maskVal  uint64
 }
 
-func NewMessage(descr *desc.MessageDescriptor) *Message {
+func NewMessage(parent *Message, descr *desc.MessageDescriptor) *Message {
 	m := &Message{
 		MessageDescriptor: *descr,
 		FieldsMap:         map[string]*Field{},
 		DecodedFlagName:   map[*Field]string{},
 		PresenceFlagName:  map[*Field]string{},
 	}
+
+	if parent != nil {
+		m.FullName = parent.GetName() + "_" + descr.GetName()
+	} else {
+		m.FullName = descr.GetName()
+	}
+
 	for _, field := range descr.GetFields() {
 		name := camelCase(field.GetName())
 
@@ -49,6 +60,10 @@ func NewMessage(descr *desc.MessageDescriptor) *Message {
 		m.FieldsMap[field.GetName()] = f
 	}
 	return m
+}
+
+func (f *Message) GetName() string {
+	return f.FullName
 }
 
 type Field struct {

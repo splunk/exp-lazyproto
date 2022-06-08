@@ -24,10 +24,11 @@ func Generate(
 	protoPath []string, inputProtoFiles []string, outputDir string, options Options,
 ) error {
 	g := generator{
-		includePaths: protoPath,
-		outputDir:    outputDir,
-		options:      options,
-		templateData: map[string]string{},
+		includePaths:          protoPath,
+		outputDir:             outputDir,
+		options:               options,
+		templateData:          map[string]string{},
+		messageDescrToMessage: map[*desc.MessageDescriptor]*Message{},
 	}
 
 	for _, f := range inputProtoFiles {
@@ -47,7 +48,11 @@ type generator struct {
 	outBuf  *bytes.Buffer
 	lastErr error
 
-	file         *File
+	file *File
+
+	messagesToGen         []*Message
+	messageDescrToMessage map[*desc.MessageDescriptor]*Message
+
 	msg          *Message
 	field        *Field
 	templateData map[string]string
@@ -74,22 +79,32 @@ func (g *generator) processFile(inputFilePath string) error {
 
 	fmt.Printf("Reading %s\n", inputFilePath)
 
-	fdescrs, err := p.ParseFiles(inputFilePath)
+	fileDescrs, err := p.ParseFiles(inputFilePath)
 	if err != nil {
 		return err
 	}
 
-	for _, fdescr := range fdescrs {
-		if err := g.oStartFile(fdescr); err != nil {
+	for _, fileDescr := range fileDescrs {
+		if err := g.oStartFile(fileDescr); err != nil {
 			return err
 		}
-		for _, enum := range fdescr.GetEnumTypes() {
+		for _, enum := range fileDescr.GetEnumTypes() {
 			if err := g.oEnum(enum); err != nil {
 				return err
 			}
 		}
-		for _, descr := range fdescr.GetMessageTypes() {
-			msg := NewMessage(descr)
+
+		// List to generate all messages declared in this file
+		g.listAllMessages(nil, fileDescr.GetMessageTypes(), true)
+
+		// List and remember all messages in dependencies, but without generating.
+		// We need these messages to be available for lookup if they are used as a
+		// field type.
+		for _, dep := range fileDescr.GetDependencies() {
+			g.listAllMessages(nil, dep.GetMessageTypes(), false)
+		}
+
+		for _, msg := range g.messagesToGen {
 			g.setMessage(msg)
 
 			if err := g.prepareMessage(); err != nil {
@@ -100,12 +115,27 @@ func (g *generator) processFile(inputFilePath string) error {
 				return err
 			}
 		}
-		if err := g.formatAndWriteToFile(fdescr); err != nil {
+		if err := g.formatAndWriteToFile(fileDescr); err != nil {
 			return err
 		}
 	}
 
 	return g.lastErr
+}
+
+func (g *generator) listAllMessages(
+	parent *Message, descrs []*desc.MessageDescriptor, toGen bool,
+) {
+	for _, descr := range descrs {
+		msg := NewMessage(parent, descr)
+
+		if toGen {
+			g.messagesToGen = append(g.messagesToGen, msg)
+		}
+		g.messageDescrToMessage[descr] = msg
+
+		g.listAllMessages(msg, msg.GetNestedMessageTypes(), toGen)
+	}
 }
 
 func (g *generator) formatAndWriteToFile(fdescr *desc.FileDescriptor) error {
@@ -252,9 +282,11 @@ func (g *generator) setField(field *Field) {
 	g.templateData["$fieldName"] = field.GetName()
 	g.templateData["$FieldName"] = field.GetCapitalName()
 
-	if field.GetMessageType() != nil {
-		g.templateData["$fieldTypeMessagePool"] = getPoolName(field.GetMessageType().GetName())
-		g.templateData["$FieldMessageTypeName"] = field.GetMessageType().GetName()
+	fieldMessage := g.messageDescrToMessage[field.GetMessageType()]
+
+	if fieldMessage != nil {
+		g.templateData["$fieldTypeMessagePool"] = getPoolName(fieldMessage.GetName())
+		g.templateData["$FieldMessageTypeName"] = fieldMessage.GetName()
 	} else {
 		g.templateData["$fieldTypeMessagePool"] = "$fieldTypeMessagePool not defined for " + field.GetName()
 		g.templateData["$FieldMessageTypeName"] = "$FieldMessageTypeName not defined for " + field.GetName()
@@ -302,6 +334,8 @@ func (g *generator) convertTypeToGo(field *Field) string {
 		s += "bool"
 
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
+		fallthrough
+	case descriptor.FieldDescriptorProto_TYPE_UINT64:
 		s += "uint64"
 
 	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
@@ -312,8 +346,10 @@ func (g *generator) convertTypeToGo(field *Field) string {
 	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
 		s += "uint32"
 
+	case descriptor.FieldDescriptorProto_TYPE_SFIXED32:
 	case descriptor.FieldDescriptorProto_TYPE_SINT32:
-		fallthrough
+		s += "int32"
+
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		s += "uint32"
 
@@ -324,7 +360,7 @@ func (g *generator) convertTypeToGo(field *Field) string {
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		s += "[]byte"
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		s += "*" + field.GetMessageType().GetName()
+		s += "*" + g.messageDescrToMessage[field.GetMessageType()].GetName()
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		s += field.GetEnumType().GetName()
 	default:
@@ -630,6 +666,9 @@ func (g *generator) oFieldDecode(fields []*Field) string {
 
 		case descriptor.FieldDescriptorProto_TYPE_FIXED64:
 			g.oFieldDecodePrimitive("Fixed64", "Int64")
+
+		case descriptor.FieldDescriptorProto_TYPE_UINT64:
+			g.oFieldDecodePrimitive("Uint64", "Uint32")
 
 		case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
 			g.oFieldDecodePrimitive("SFixed64", "Int64")
@@ -1084,6 +1123,12 @@ func (m *$MessageName) $FieldNameRemoveIf(f func(*$FieldMessageTypeName) bool) {
 func (g *generator) oMarshalFunc() error {
 	for _, field := range g.msg.Fields {
 		g.setField(field)
+
+		if field.IsRepeated() && field.GetType() != descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			// We don't use "prepared" for primitive repeated fields.
+			continue
+		}
+
 		g.oPrepareMarshalField(field)
 	}
 
@@ -1186,6 +1231,9 @@ func (g *generator) oMarshalField() {
 	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		g.oMarshalMessageTypeField()
 		return
+	} else if g.field.IsRepeated() {
+		g.oMarshalPrimitiveRepeated()
+		return
 	}
 
 	usePresence := g.options.WithPresence && !g.isOneOfField()
@@ -1210,6 +1258,9 @@ func (g *generator) oMarshalField() {
 
 	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
 		g.oMarshalPreparedField("SFixed64")
+
+	case descriptor.FieldDescriptorProto_TYPE_UINT64:
+		g.oMarshalPreparedField("Uint64")
 
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
 		g.oMarshalPreparedField("Int64")
@@ -1241,6 +1292,55 @@ func (g *generator) oMarshalField() {
 	}
 }
 
+func (g *generator) oMarshalPrimitiveRepeated() {
+	switch g.field.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		g.oMarshalPrimitiveRepeatedField("Bool")
+
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		g.oMarshalPrimitiveRepeatedField("String")
+
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		g.oMarshalPrimitiveRepeatedField("Bytes")
+
+	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
+		g.oMarshalPrimitiveRepeatedField("Fixed64")
+
+	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		g.oMarshalPrimitiveRepeatedField("SFixed64")
+
+	case descriptor.FieldDescriptorProto_TYPE_UINT64:
+		g.oMarshalPrimitiveRepeatedField("Uint64")
+
+	case descriptor.FieldDescriptorProto_TYPE_INT64:
+		g.oMarshalPrimitiveRepeatedField("Int64")
+
+	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
+		g.oMarshalPrimitiveRepeatedField("Fixed32")
+
+	case descriptor.FieldDescriptorProto_TYPE_UINT32:
+		g.oMarshalPrimitiveRepeatedField("Uint32")
+
+	case descriptor.FieldDescriptorProto_TYPE_SINT32:
+		g.oMarshalPrimitiveRepeatedField("Sint32")
+
+	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		g.oMarshalPrimitiveRepeatedField("Double")
+
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		g.o("ps.Uint32Prepared(prepared$MessageName$FieldName, uint32(m.$fieldName))")
+
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+
+	default:
+		g.lastErr = fmt.Errorf("unsupported field type %v", g.field.GetType())
+	}
+}
+
+func (g *generator) oMarshalPrimitiveRepeatedField(protoTypeName string) {
+	g.o("ps.%sPacked(%d, m.$fieldName)", protoTypeName, g.field.GetNumber())
+}
+
 func (g *generator) oMarshalMessageTypeField() {
 	if g.field.IsRepeated() {
 		g.o("for _, elem := range m.$fieldName {")
@@ -1255,16 +1355,16 @@ func (g *generator) oMarshalMessageTypeField() {
 	} else {
 		if g.field.GetOneOf() != nil {
 			g.o(
-				"elem := (*$FieldMessageTypeName)(m.%s.PtrVal())",
+				"$fieldName := (*$FieldMessageTypeName)(m.%s.PtrVal())",
 				g.field.GetOneOf().GetName(),
 			)
 		} else {
-			g.o("elem := m.$fieldName")
+			g.o("$fieldName := m.$fieldName")
 		}
 
-		g.o("if elem != nil {")
+		g.o("if $fieldName != nil {")
 		g.o("	token := ps.BeginEmbedded()")
-		g.o("	if err := elem.Marshal(ps); err != nil {")
+		g.o("	if err := $fieldName.Marshal(ps); err != nil {")
 		g.o("		return err")
 		g.o("	}")
 		g.o(
@@ -1291,6 +1391,9 @@ func (g *generator) oPrepareMarshalField(field *Field) {
 
 	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
 		g.o(g.preparedFieldDecl(g.msg, field, "Fixed64"))
+
+	case descriptor.FieldDescriptorProto_TYPE_UINT64:
+		g.o(g.preparedFieldDecl(g.msg, field, "Uint64"))
 
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
 		g.o(g.preparedFieldDecl(g.msg, field, "Int64"))
