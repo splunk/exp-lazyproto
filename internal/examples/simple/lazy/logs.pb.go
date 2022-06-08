@@ -54,7 +54,7 @@ const (
 // LogsData contains all log data
 type LogsData struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        LogsData_Flags
+	_flags        flags_LogsData
 
 	// List of ResourceLogs
 	resourceLogs []*ResourceLogs
@@ -73,11 +73,11 @@ func (m *LogsData) Free() {
 	logsDataPool.Release(m)
 }
 
-// LogsData_Flags is the type of the bit flags.
-type LogsData_Flags uint8
+// flags_LogsData is the type of the bit flags.
+type flags_LogsData uint8
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flag_LogsData_ResourceLogs_Decoded LogsData_Flags = 0x1
+const flags_LogsData_ResourceLogs_Decoded flags_LogsData = 0x1
 
 // HasResourceLogs returns true if the resourceLogs is present.
 func (m *LogsData) HasResourceLogs() bool {
@@ -86,13 +86,13 @@ func (m *LogsData) HasResourceLogs() bool {
 
 // ResourceLogs returns the value of the resourceLogs.
 func (m *LogsData) ResourceLogs() []*ResourceLogs {
-	if m._flags&flag_LogsData_ResourceLogs_Decoded == 0 {
+	if m._flags&flags_LogsData_ResourceLogs_Decoded == 0 {
 		// Decode nested message(s).
 		for i := range m.resourceLogs {
 			// TODO: decide how to handle decoding errors.
 			_ = m.resourceLogs[i].decode()
 		}
-		m._flags |= flag_LogsData_ResourceLogs_Decoded
+		m._flags |= flags_LogsData_ResourceLogs_Decoded
 	}
 	return m.resourceLogs
 }
@@ -137,15 +137,7 @@ func (m *LogsData) ResourceLogsRemoveIf(f func(*ResourceLogs) bool) {
 func (m *LogsData) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
-	// If the user makes a mistake and takes a copy of this struct before decoding it
-	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
-	// messages will be marked as "decoded". Next time we try to access the nested
-	// message via getter func this decode() func will be called again and will overwrite
-	// nested message values, but the getter func will no longer attempt to decode it
-	// because the flag "decoded" flag is incorrectly set on nested message.
-	// This will result in incorrect state of nested message returned by getter.
-	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// and "presence" flags here.
+	// Reset all "decoded" and "presence" flags.
 	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
@@ -310,10 +302,11 @@ func (p *logsDataPoolType) Release(elem *LogsData) {
 
 type ResourceLogs struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        ResourceLogs_Flags
+	_flags        flags_ResourceLogs
 
 	// The Resource
 	resource *Resource
+
 	// List of ScopeLogs
 	scopeLogs []*ScopeLogs
 	schemaUrl string
@@ -332,15 +325,15 @@ func (m *ResourceLogs) Free() {
 	resourceLogsPool.Release(m)
 }
 
-// ResourceLogs_Flags is the type of the bit flags.
-type ResourceLogs_Flags uint8
+// flags_ResourceLogs is the type of the bit flags.
+type flags_ResourceLogs uint8
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flag_ResourceLogs_Resource_Decoded ResourceLogs_Flags = 0x1
-const flag_ResourceLogs_ScopeLogs_Decoded ResourceLogs_Flags = 0x2
+const flags_ResourceLogs_Resource_Decoded flags_ResourceLogs = 0x1
+const flags_ResourceLogs_ScopeLogs_Decoded flags_ResourceLogs = 0x2
 
 // Bitmasks that indicate that the particular field is present.
-const flag_ResourceLogs_SchemaUrl_Present ResourceLogs_Flags = 0x4
+const flags_ResourceLogs_SchemaUrl_Present flags_ResourceLogs = 0x4
 
 // HasResource returns true if the resource is present.
 func (m *ResourceLogs) HasResource() bool {
@@ -349,14 +342,14 @@ func (m *ResourceLogs) HasResource() bool {
 
 // Resource returns the value of the resource.
 func (m *ResourceLogs) Resource() *Resource {
-	if m._flags&flag_ResourceLogs_Resource_Decoded == 0 {
+	if m._flags&flags_ResourceLogs_Resource_Decoded == 0 {
 		// Decode nested message(s).
 		resource := m.resource
 		if resource != nil {
 			// TODO: decide how to handle decoding errors.
 			_ = resource.decode()
 		}
-		m._flags |= flag_ResourceLogs_Resource_Decoded
+		m._flags |= flags_ResourceLogs_Resource_Decoded
 	}
 	return m.resource
 }
@@ -379,13 +372,13 @@ func (m *ResourceLogs) HasScopeLogs() bool {
 
 // ScopeLogs returns the value of the scopeLogs.
 func (m *ResourceLogs) ScopeLogs() []*ScopeLogs {
-	if m._flags&flag_ResourceLogs_ScopeLogs_Decoded == 0 {
+	if m._flags&flags_ResourceLogs_ScopeLogs_Decoded == 0 {
 		// Decode nested message(s).
 		for i := range m.scopeLogs {
 			// TODO: decide how to handle decoding errors.
 			_ = m.scopeLogs[i].decode()
 		}
-		m._flags |= flag_ResourceLogs_ScopeLogs_Decoded
+		m._flags |= flags_ResourceLogs_ScopeLogs_Decoded
 	}
 	return m.scopeLogs
 }
@@ -429,7 +422,7 @@ func (m *ResourceLogs) ScopeLogsRemoveIf(f func(*ScopeLogs) bool) {
 
 // HasSchemaUrl returns true if the schemaUrl is present.
 func (m *ResourceLogs) HasSchemaUrl() bool {
-	return m._flags&flag_ResourceLogs_SchemaUrl_Present != 0
+	return m._flags&flags_ResourceLogs_SchemaUrl_Present != 0
 }
 
 // SchemaUrl returns the value of the schemaUrl.
@@ -440,7 +433,7 @@ func (m *ResourceLogs) SchemaUrl() string {
 // SetSchemaUrl sets the value of the schemaUrl.
 func (m *ResourceLogs) SetSchemaUrl(v string) {
 	m.schemaUrl = v
-	m._flags |= flag_ResourceLogs_SchemaUrl_Present
+	m._flags |= flags_ResourceLogs_SchemaUrl_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -449,15 +442,7 @@ func (m *ResourceLogs) SetSchemaUrl(v string) {
 func (m *ResourceLogs) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
-	// If the user makes a mistake and takes a copy of this struct before decoding it
-	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
-	// messages will be marked as "decoded". Next time we try to access the nested
-	// message via getter func this decode() func will be called again and will overwrite
-	// nested message values, but the getter func will no longer attempt to decode it
-	// because the flag "decoded" flag is incorrectly set on nested message.
-	// This will result in incorrect state of nested message returned by getter.
-	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// and "presence" flags here.
+	// Reset all "decoded" and "presence" flags.
 	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
@@ -512,7 +497,7 @@ func (m *ResourceLogs) decode() error {
 					return false, err
 				}
 				m.schemaUrl = v
-				m._flags |= flag_ResourceLogs_SchemaUrl_Present
+				m._flags |= flags_ResourceLogs_SchemaUrl_Present
 			}
 			return true, nil
 		},
@@ -547,7 +532,7 @@ func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_ResourceLogs_ScopeLogs)
 		}
 		// Marshal "schemaUrl".
-		if m._flags&flag_ResourceLogs_SchemaUrl_Present != 0 {
+		if m._flags&flags_ResourceLogs_SchemaUrl_Present != 0 {
 			ps.StringPrepared(prepared_ResourceLogs_SchemaUrl, m.schemaUrl)
 		}
 	} else {
@@ -662,7 +647,7 @@ func (p *resourceLogsPoolType) Release(elem *ResourceLogs) {
 
 type Resource struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        Resource_Flags
+	_flags        flags_Resource
 
 	attributes             []*KeyValue
 	droppedAttributesCount uint32
@@ -681,14 +666,14 @@ func (m *Resource) Free() {
 	resourcePool.Release(m)
 }
 
-// Resource_Flags is the type of the bit flags.
-type Resource_Flags uint8
+// flags_Resource is the type of the bit flags.
+type flags_Resource uint8
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flag_Resource_Attributes_Decoded Resource_Flags = 0x1
+const flags_Resource_Attributes_Decoded flags_Resource = 0x1
 
 // Bitmasks that indicate that the particular field is present.
-const flag_Resource_DroppedAttributesCount_Present Resource_Flags = 0x2
+const flags_Resource_DroppedAttributesCount_Present flags_Resource = 0x2
 
 // HasAttributes returns true if the attributes is present.
 func (m *Resource) HasAttributes() bool {
@@ -697,13 +682,13 @@ func (m *Resource) HasAttributes() bool {
 
 // Attributes returns the value of the attributes.
 func (m *Resource) Attributes() []*KeyValue {
-	if m._flags&flag_Resource_Attributes_Decoded == 0 {
+	if m._flags&flags_Resource_Attributes_Decoded == 0 {
 		// Decode nested message(s).
 		for i := range m.attributes {
 			// TODO: decide how to handle decoding errors.
 			_ = m.attributes[i].decode()
 		}
-		m._flags |= flag_Resource_Attributes_Decoded
+		m._flags |= flags_Resource_Attributes_Decoded
 	}
 	return m.attributes
 }
@@ -747,7 +732,7 @@ func (m *Resource) AttributesRemoveIf(f func(*KeyValue) bool) {
 
 // HasDroppedAttributesCount returns true if the droppedAttributesCount is present.
 func (m *Resource) HasDroppedAttributesCount() bool {
-	return m._flags&flag_Resource_DroppedAttributesCount_Present != 0
+	return m._flags&flags_Resource_DroppedAttributesCount_Present != 0
 }
 
 // DroppedAttributesCount returns the value of the droppedAttributesCount.
@@ -758,7 +743,7 @@ func (m *Resource) DroppedAttributesCount() uint32 {
 // SetDroppedAttributesCount sets the value of the droppedAttributesCount.
 func (m *Resource) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
-	m._flags |= flag_Resource_DroppedAttributesCount_Present
+	m._flags |= flags_Resource_DroppedAttributesCount_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -767,15 +752,7 @@ func (m *Resource) SetDroppedAttributesCount(v uint32) {
 func (m *Resource) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
-	// If the user makes a mistake and takes a copy of this struct before decoding it
-	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
-	// messages will be marked as "decoded". Next time we try to access the nested
-	// message via getter func this decode() func will be called again and will overwrite
-	// nested message values, but the getter func will no longer attempt to decode it
-	// because the flag "decoded" flag is incorrectly set on nested message.
-	// This will result in incorrect state of nested message returned by getter.
-	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// and "presence" flags here.
+	// Reset all "decoded" and "presence" flags.
 	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
@@ -821,7 +798,7 @@ func (m *Resource) decode() error {
 					return false, err
 				}
 				m.droppedAttributesCount = v
-				m._flags |= flag_Resource_DroppedAttributesCount_Present
+				m._flags |= flags_Resource_DroppedAttributesCount_Present
 			}
 			return true, nil
 		},
@@ -846,7 +823,7 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_Resource_Attributes)
 		}
 		// Marshal "droppedAttributesCount".
-		if m._flags&flag_Resource_DroppedAttributesCount_Present != 0 {
+		if m._flags&flags_Resource_DroppedAttributesCount_Present != 0 {
 			ps.Uint32Prepared(prepared_Resource_DroppedAttributesCount, m.droppedAttributesCount)
 		}
 	} else {
@@ -954,11 +931,13 @@ func (p *resourcePoolType) Release(elem *Resource) {
 // A collection of Logs produced by a Scope.
 type ScopeLogs struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        ScopeLogs_Flags
+	_flags        flags_ScopeLogs
 
 	scope *InstrumentationScope
+
 	// A list of log records.
 	logRecords []*LogRecord
+
 	// This schema_url applies to all logs in the "logs" field.
 	schemaUrl string
 }
@@ -976,15 +955,15 @@ func (m *ScopeLogs) Free() {
 	scopeLogsPool.Release(m)
 }
 
-// ScopeLogs_Flags is the type of the bit flags.
-type ScopeLogs_Flags uint8
+// flags_ScopeLogs is the type of the bit flags.
+type flags_ScopeLogs uint8
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flag_ScopeLogs_Scope_Decoded ScopeLogs_Flags = 0x1
-const flag_ScopeLogs_LogRecords_Decoded ScopeLogs_Flags = 0x2
+const flags_ScopeLogs_Scope_Decoded flags_ScopeLogs = 0x1
+const flags_ScopeLogs_LogRecords_Decoded flags_ScopeLogs = 0x2
 
 // Bitmasks that indicate that the particular field is present.
-const flag_ScopeLogs_SchemaUrl_Present ScopeLogs_Flags = 0x4
+const flags_ScopeLogs_SchemaUrl_Present flags_ScopeLogs = 0x4
 
 // HasScope returns true if the scope is present.
 func (m *ScopeLogs) HasScope() bool {
@@ -993,14 +972,14 @@ func (m *ScopeLogs) HasScope() bool {
 
 // Scope returns the value of the scope.
 func (m *ScopeLogs) Scope() *InstrumentationScope {
-	if m._flags&flag_ScopeLogs_Scope_Decoded == 0 {
+	if m._flags&flags_ScopeLogs_Scope_Decoded == 0 {
 		// Decode nested message(s).
 		scope := m.scope
 		if scope != nil {
 			// TODO: decide how to handle decoding errors.
 			_ = scope.decode()
 		}
-		m._flags |= flag_ScopeLogs_Scope_Decoded
+		m._flags |= flags_ScopeLogs_Scope_Decoded
 	}
 	return m.scope
 }
@@ -1023,13 +1002,13 @@ func (m *ScopeLogs) HasLogRecords() bool {
 
 // LogRecords returns the value of the logRecords.
 func (m *ScopeLogs) LogRecords() []*LogRecord {
-	if m._flags&flag_ScopeLogs_LogRecords_Decoded == 0 {
+	if m._flags&flags_ScopeLogs_LogRecords_Decoded == 0 {
 		// Decode nested message(s).
 		for i := range m.logRecords {
 			// TODO: decide how to handle decoding errors.
 			_ = m.logRecords[i].decode()
 		}
-		m._flags |= flag_ScopeLogs_LogRecords_Decoded
+		m._flags |= flags_ScopeLogs_LogRecords_Decoded
 	}
 	return m.logRecords
 }
@@ -1073,7 +1052,7 @@ func (m *ScopeLogs) LogRecordsRemoveIf(f func(*LogRecord) bool) {
 
 // HasSchemaUrl returns true if the schemaUrl is present.
 func (m *ScopeLogs) HasSchemaUrl() bool {
-	return m._flags&flag_ScopeLogs_SchemaUrl_Present != 0
+	return m._flags&flags_ScopeLogs_SchemaUrl_Present != 0
 }
 
 // SchemaUrl returns the value of the schemaUrl.
@@ -1084,7 +1063,7 @@ func (m *ScopeLogs) SchemaUrl() string {
 // SetSchemaUrl sets the value of the schemaUrl.
 func (m *ScopeLogs) SetSchemaUrl(v string) {
 	m.schemaUrl = v
-	m._flags |= flag_ScopeLogs_SchemaUrl_Present
+	m._flags |= flags_ScopeLogs_SchemaUrl_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1093,15 +1072,7 @@ func (m *ScopeLogs) SetSchemaUrl(v string) {
 func (m *ScopeLogs) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
-	// If the user makes a mistake and takes a copy of this struct before decoding it
-	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
-	// messages will be marked as "decoded". Next time we try to access the nested
-	// message via getter func this decode() func will be called again and will overwrite
-	// nested message values, but the getter func will no longer attempt to decode it
-	// because the flag "decoded" flag is incorrectly set on nested message.
-	// This will result in incorrect state of nested message returned by getter.
-	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// and "presence" flags here.
+	// Reset all "decoded" and "presence" flags.
 	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
@@ -1156,7 +1127,7 @@ func (m *ScopeLogs) decode() error {
 					return false, err
 				}
 				m.schemaUrl = v
-				m._flags |= flag_ScopeLogs_SchemaUrl_Present
+				m._flags |= flags_ScopeLogs_SchemaUrl_Present
 			}
 			return true, nil
 		},
@@ -1191,7 +1162,7 @@ func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_ScopeLogs_LogRecords)
 		}
 		// Marshal "schemaUrl".
-		if m._flags&flag_ScopeLogs_SchemaUrl_Present != 0 {
+		if m._flags&flags_ScopeLogs_SchemaUrl_Present != 0 {
 			ps.StringPrepared(prepared_ScopeLogs_SchemaUrl, m.schemaUrl)
 		}
 	} else {
@@ -1306,7 +1277,7 @@ func (p *scopeLogsPoolType) Release(elem *ScopeLogs) {
 
 type InstrumentationScope struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        InstrumentationScope_Flags
+	_flags        flags_InstrumentationScope
 
 	name                   string
 	version                string
@@ -1327,20 +1298,20 @@ func (m *InstrumentationScope) Free() {
 	instrumentationScopePool.Release(m)
 }
 
-// InstrumentationScope_Flags is the type of the bit flags.
-type InstrumentationScope_Flags uint8
+// flags_InstrumentationScope is the type of the bit flags.
+type flags_InstrumentationScope uint8
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flag_InstrumentationScope_Attributes_Decoded InstrumentationScope_Flags = 0x1
+const flags_InstrumentationScope_Attributes_Decoded flags_InstrumentationScope = 0x1
 
 // Bitmasks that indicate that the particular field is present.
-const flag_InstrumentationScope_Name_Present InstrumentationScope_Flags = 0x2
-const flag_InstrumentationScope_Version_Present InstrumentationScope_Flags = 0x4
-const flag_InstrumentationScope_DroppedAttributesCount_Present InstrumentationScope_Flags = 0x8
+const flags_InstrumentationScope_Name_Present flags_InstrumentationScope = 0x2
+const flags_InstrumentationScope_Version_Present flags_InstrumentationScope = 0x4
+const flags_InstrumentationScope_DroppedAttributesCount_Present flags_InstrumentationScope = 0x8
 
 // HasName returns true if the name is present.
 func (m *InstrumentationScope) HasName() bool {
-	return m._flags&flag_InstrumentationScope_Name_Present != 0
+	return m._flags&flags_InstrumentationScope_Name_Present != 0
 }
 
 // Name returns the value of the name.
@@ -1351,7 +1322,7 @@ func (m *InstrumentationScope) Name() string {
 // SetName sets the value of the name.
 func (m *InstrumentationScope) SetName(v string) {
 	m.name = v
-	m._flags |= flag_InstrumentationScope_Name_Present
+	m._flags |= flags_InstrumentationScope_Name_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1359,7 +1330,7 @@ func (m *InstrumentationScope) SetName(v string) {
 
 // HasVersion returns true if the version is present.
 func (m *InstrumentationScope) HasVersion() bool {
-	return m._flags&flag_InstrumentationScope_Version_Present != 0
+	return m._flags&flags_InstrumentationScope_Version_Present != 0
 }
 
 // Version returns the value of the version.
@@ -1370,7 +1341,7 @@ func (m *InstrumentationScope) Version() string {
 // SetVersion sets the value of the version.
 func (m *InstrumentationScope) SetVersion(v string) {
 	m.version = v
-	m._flags |= flag_InstrumentationScope_Version_Present
+	m._flags |= flags_InstrumentationScope_Version_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1383,13 +1354,13 @@ func (m *InstrumentationScope) HasAttributes() bool {
 
 // Attributes returns the value of the attributes.
 func (m *InstrumentationScope) Attributes() []*KeyValue {
-	if m._flags&flag_InstrumentationScope_Attributes_Decoded == 0 {
+	if m._flags&flags_InstrumentationScope_Attributes_Decoded == 0 {
 		// Decode nested message(s).
 		for i := range m.attributes {
 			// TODO: decide how to handle decoding errors.
 			_ = m.attributes[i].decode()
 		}
-		m._flags |= flag_InstrumentationScope_Attributes_Decoded
+		m._flags |= flags_InstrumentationScope_Attributes_Decoded
 	}
 	return m.attributes
 }
@@ -1433,7 +1404,7 @@ func (m *InstrumentationScope) AttributesRemoveIf(f func(*KeyValue) bool) {
 
 // HasDroppedAttributesCount returns true if the droppedAttributesCount is present.
 func (m *InstrumentationScope) HasDroppedAttributesCount() bool {
-	return m._flags&flag_InstrumentationScope_DroppedAttributesCount_Present != 0
+	return m._flags&flags_InstrumentationScope_DroppedAttributesCount_Present != 0
 }
 
 // DroppedAttributesCount returns the value of the droppedAttributesCount.
@@ -1444,7 +1415,7 @@ func (m *InstrumentationScope) DroppedAttributesCount() uint32 {
 // SetDroppedAttributesCount sets the value of the droppedAttributesCount.
 func (m *InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
-	m._flags |= flag_InstrumentationScope_DroppedAttributesCount_Present
+	m._flags |= flags_InstrumentationScope_DroppedAttributesCount_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1453,15 +1424,7 @@ func (m *InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 func (m *InstrumentationScope) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
-	// If the user makes a mistake and takes a copy of this struct before decoding it
-	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
-	// messages will be marked as "decoded". Next time we try to access the nested
-	// message via getter func this decode() func will be called again and will overwrite
-	// nested message values, but the getter func will no longer attempt to decode it
-	// because the flag "decoded" flag is incorrectly set on nested message.
-	// This will result in incorrect state of nested message returned by getter.
-	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// and "presence" flags here.
+	// Reset all "decoded" and "presence" flags.
 	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
@@ -1496,7 +1459,7 @@ func (m *InstrumentationScope) decode() error {
 					return false, err
 				}
 				m.name = v
-				m._flags |= flag_InstrumentationScope_Name_Present
+				m._flags |= flags_InstrumentationScope_Name_Present
 			case 2:
 				// Decode "version".
 				v, err := value.AsStringUnsafe()
@@ -1504,7 +1467,7 @@ func (m *InstrumentationScope) decode() error {
 					return false, err
 				}
 				m.version = v
-				m._flags |= flag_InstrumentationScope_Version_Present
+				m._flags |= flags_InstrumentationScope_Version_Present
 			case 3:
 				// Decode "attributes".
 				v, err := value.AsBytesUnsafe()
@@ -1523,7 +1486,7 @@ func (m *InstrumentationScope) decode() error {
 					return false, err
 				}
 				m.droppedAttributesCount = v
-				m._flags |= flag_InstrumentationScope_DroppedAttributesCount_Present
+				m._flags |= flags_InstrumentationScope_DroppedAttributesCount_Present
 			}
 			return true, nil
 		},
@@ -1542,11 +1505,11 @@ var prepared_InstrumentationScope_DroppedAttributesCount = molecule.PrepareUint3
 func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
 		// Marshal "name".
-		if m._flags&flag_InstrumentationScope_Name_Present != 0 {
+		if m._flags&flags_InstrumentationScope_Name_Present != 0 {
 			ps.StringPrepared(prepared_InstrumentationScope_Name, m.name)
 		}
 		// Marshal "version".
-		if m._flags&flag_InstrumentationScope_Version_Present != 0 {
+		if m._flags&flags_InstrumentationScope_Version_Present != 0 {
 			ps.StringPrepared(prepared_InstrumentationScope_Version, m.version)
 		}
 		// Marshal "attributes".
@@ -1558,7 +1521,7 @@ func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_InstrumentationScope_Attributes)
 		}
 		// Marshal "droppedAttributesCount".
-		if m._flags&flag_InstrumentationScope_DroppedAttributesCount_Present != 0 {
+		if m._flags&flags_InstrumentationScope_DroppedAttributesCount_Present != 0 {
 			ps.Uint32Prepared(prepared_InstrumentationScope_DroppedAttributesCount, m.droppedAttributesCount)
 		}
 	} else {
@@ -1665,7 +1628,7 @@ func (p *instrumentationScopePoolType) Release(elem *InstrumentationScope) {
 
 type LogRecord struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        LogRecord_Flags
+	_flags        flags_LogRecord
 
 	timeUnixNano           uint64
 	observedTimeUnixNano   uint64
@@ -1691,25 +1654,25 @@ func (m *LogRecord) Free() {
 	logRecordPool.Release(m)
 }
 
-// LogRecord_Flags is the type of the bit flags.
-type LogRecord_Flags uint16
+// flags_LogRecord is the type of the bit flags.
+type flags_LogRecord uint16
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flag_LogRecord_Attributes_Decoded LogRecord_Flags = 0x1
+const flags_LogRecord_Attributes_Decoded flags_LogRecord = 0x1
 
 // Bitmasks that indicate that the particular field is present.
-const flag_LogRecord_TimeUnixNano_Present LogRecord_Flags = 0x2
-const flag_LogRecord_ObservedTimeUnixNano_Present LogRecord_Flags = 0x4
-const flag_LogRecord_SeverityNumber_Present LogRecord_Flags = 0x8
-const flag_LogRecord_SeverityText_Present LogRecord_Flags = 0x10
-const flag_LogRecord_DroppedAttributesCount_Present LogRecord_Flags = 0x20
-const flag_LogRecord_Flags_Present LogRecord_Flags = 0x40
-const flag_LogRecord_TraceId_Present LogRecord_Flags = 0x80
-const flag_LogRecord_SpanId_Present LogRecord_Flags = 0x100
+const flags_LogRecord_TimeUnixNano_Present flags_LogRecord = 0x2
+const flags_LogRecord_ObservedTimeUnixNano_Present flags_LogRecord = 0x4
+const flags_LogRecord_SeverityNumber_Present flags_LogRecord = 0x8
+const flags_LogRecord_SeverityText_Present flags_LogRecord = 0x10
+const flags_LogRecord_DroppedAttributesCount_Present flags_LogRecord = 0x20
+const flags_LogRecord_Flags_Present flags_LogRecord = 0x40
+const flags_LogRecord_TraceId_Present flags_LogRecord = 0x80
+const flags_LogRecord_SpanId_Present flags_LogRecord = 0x100
 
 // HasTimeUnixNano returns true if the timeUnixNano is present.
 func (m *LogRecord) HasTimeUnixNano() bool {
-	return m._flags&flag_LogRecord_TimeUnixNano_Present != 0
+	return m._flags&flags_LogRecord_TimeUnixNano_Present != 0
 }
 
 // TimeUnixNano returns the value of the timeUnixNano.
@@ -1720,7 +1683,7 @@ func (m *LogRecord) TimeUnixNano() uint64 {
 // SetTimeUnixNano sets the value of the timeUnixNano.
 func (m *LogRecord) SetTimeUnixNano(v uint64) {
 	m.timeUnixNano = v
-	m._flags |= flag_LogRecord_TimeUnixNano_Present
+	m._flags |= flags_LogRecord_TimeUnixNano_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1728,7 +1691,7 @@ func (m *LogRecord) SetTimeUnixNano(v uint64) {
 
 // HasObservedTimeUnixNano returns true if the observedTimeUnixNano is present.
 func (m *LogRecord) HasObservedTimeUnixNano() bool {
-	return m._flags&flag_LogRecord_ObservedTimeUnixNano_Present != 0
+	return m._flags&flags_LogRecord_ObservedTimeUnixNano_Present != 0
 }
 
 // ObservedTimeUnixNano returns the value of the observedTimeUnixNano.
@@ -1739,7 +1702,7 @@ func (m *LogRecord) ObservedTimeUnixNano() uint64 {
 // SetObservedTimeUnixNano sets the value of the observedTimeUnixNano.
 func (m *LogRecord) SetObservedTimeUnixNano(v uint64) {
 	m.observedTimeUnixNano = v
-	m._flags |= flag_LogRecord_ObservedTimeUnixNano_Present
+	m._flags |= flags_LogRecord_ObservedTimeUnixNano_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1747,7 +1710,7 @@ func (m *LogRecord) SetObservedTimeUnixNano(v uint64) {
 
 // HasSeverityNumber returns true if the severityNumber is present.
 func (m *LogRecord) HasSeverityNumber() bool {
-	return m._flags&flag_LogRecord_SeverityNumber_Present != 0
+	return m._flags&flags_LogRecord_SeverityNumber_Present != 0
 }
 
 // SeverityNumber returns the value of the severityNumber.
@@ -1758,7 +1721,7 @@ func (m *LogRecord) SeverityNumber() SeverityNumber {
 // SetSeverityNumber sets the value of the severityNumber.
 func (m *LogRecord) SetSeverityNumber(v SeverityNumber) {
 	m.severityNumber = v
-	m._flags |= flag_LogRecord_SeverityNumber_Present
+	m._flags |= flags_LogRecord_SeverityNumber_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1766,7 +1729,7 @@ func (m *LogRecord) SetSeverityNumber(v SeverityNumber) {
 
 // HasSeverityText returns true if the severityText is present.
 func (m *LogRecord) HasSeverityText() bool {
-	return m._flags&flag_LogRecord_SeverityText_Present != 0
+	return m._flags&flags_LogRecord_SeverityText_Present != 0
 }
 
 // SeverityText returns the value of the severityText.
@@ -1777,7 +1740,7 @@ func (m *LogRecord) SeverityText() string {
 // SetSeverityText sets the value of the severityText.
 func (m *LogRecord) SetSeverityText(v string) {
 	m.severityText = v
-	m._flags |= flag_LogRecord_SeverityText_Present
+	m._flags |= flags_LogRecord_SeverityText_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1790,13 +1753,13 @@ func (m *LogRecord) HasAttributes() bool {
 
 // Attributes returns the value of the attributes.
 func (m *LogRecord) Attributes() []*KeyValue {
-	if m._flags&flag_LogRecord_Attributes_Decoded == 0 {
+	if m._flags&flags_LogRecord_Attributes_Decoded == 0 {
 		// Decode nested message(s).
 		for i := range m.attributes {
 			// TODO: decide how to handle decoding errors.
 			_ = m.attributes[i].decode()
 		}
-		m._flags |= flag_LogRecord_Attributes_Decoded
+		m._flags |= flags_LogRecord_Attributes_Decoded
 	}
 	return m.attributes
 }
@@ -1840,7 +1803,7 @@ func (m *LogRecord) AttributesRemoveIf(f func(*KeyValue) bool) {
 
 // HasDroppedAttributesCount returns true if the droppedAttributesCount is present.
 func (m *LogRecord) HasDroppedAttributesCount() bool {
-	return m._flags&flag_LogRecord_DroppedAttributesCount_Present != 0
+	return m._flags&flags_LogRecord_DroppedAttributesCount_Present != 0
 }
 
 // DroppedAttributesCount returns the value of the droppedAttributesCount.
@@ -1851,7 +1814,7 @@ func (m *LogRecord) DroppedAttributesCount() uint32 {
 // SetDroppedAttributesCount sets the value of the droppedAttributesCount.
 func (m *LogRecord) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
-	m._flags |= flag_LogRecord_DroppedAttributesCount_Present
+	m._flags |= flags_LogRecord_DroppedAttributesCount_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1859,7 +1822,7 @@ func (m *LogRecord) SetDroppedAttributesCount(v uint32) {
 
 // HasFlags returns true if the flags is present.
 func (m *LogRecord) HasFlags() bool {
-	return m._flags&flag_LogRecord_Flags_Present != 0
+	return m._flags&flags_LogRecord_Flags_Present != 0
 }
 
 // Flags returns the value of the flags.
@@ -1870,7 +1833,7 @@ func (m *LogRecord) Flags() uint32 {
 // SetFlags sets the value of the flags.
 func (m *LogRecord) SetFlags(v uint32) {
 	m.flags = v
-	m._flags |= flag_LogRecord_Flags_Present
+	m._flags |= flags_LogRecord_Flags_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1878,7 +1841,7 @@ func (m *LogRecord) SetFlags(v uint32) {
 
 // HasTraceId returns true if the traceId is present.
 func (m *LogRecord) HasTraceId() bool {
-	return m._flags&flag_LogRecord_TraceId_Present != 0
+	return m._flags&flags_LogRecord_TraceId_Present != 0
 }
 
 // TraceId returns the value of the traceId.
@@ -1889,7 +1852,7 @@ func (m *LogRecord) TraceId() []byte {
 // SetTraceId sets the value of the traceId.
 func (m *LogRecord) SetTraceId(v []byte) {
 	m.traceId = v
-	m._flags |= flag_LogRecord_TraceId_Present
+	m._flags |= flags_LogRecord_TraceId_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1897,7 +1860,7 @@ func (m *LogRecord) SetTraceId(v []byte) {
 
 // HasSpanId returns true if the spanId is present.
 func (m *LogRecord) HasSpanId() bool {
-	return m._flags&flag_LogRecord_SpanId_Present != 0
+	return m._flags&flags_LogRecord_SpanId_Present != 0
 }
 
 // SpanId returns the value of the spanId.
@@ -1908,7 +1871,7 @@ func (m *LogRecord) SpanId() []byte {
 // SetSpanId sets the value of the spanId.
 func (m *LogRecord) SetSpanId(v []byte) {
 	m.spanId = v
-	m._flags |= flag_LogRecord_SpanId_Present
+	m._flags |= flags_LogRecord_SpanId_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1917,15 +1880,7 @@ func (m *LogRecord) SetSpanId(v []byte) {
 func (m *LogRecord) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
-	// If the user makes a mistake and takes a copy of this struct before decoding it
-	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
-	// messages will be marked as "decoded". Next time we try to access the nested
-	// message via getter func this decode() func will be called again and will overwrite
-	// nested message values, but the getter func will no longer attempt to decode it
-	// because the flag "decoded" flag is incorrectly set on nested message.
-	// This will result in incorrect state of nested message returned by getter.
-	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// and "presence" flags here.
+	// Reset all "decoded" and "presence" flags.
 	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
@@ -1960,7 +1915,7 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.timeUnixNano = v
-				m._flags |= flag_LogRecord_TimeUnixNano_Present
+				m._flags |= flags_LogRecord_TimeUnixNano_Present
 			case 11:
 				// Decode "observedTimeUnixNano".
 				v, err := value.AsFixed64()
@@ -1968,7 +1923,7 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.observedTimeUnixNano = v
-				m._flags |= flag_LogRecord_ObservedTimeUnixNano_Present
+				m._flags |= flags_LogRecord_ObservedTimeUnixNano_Present
 			case 2:
 				// Decode "severityNumber".
 				v, err := value.AsUint32()
@@ -1976,7 +1931,7 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.severityNumber = SeverityNumber(v)
-				m._flags |= flag_LogRecord_SeverityNumber_Present
+				m._flags |= flags_LogRecord_SeverityNumber_Present
 			case 3:
 				// Decode "severityText".
 				v, err := value.AsStringUnsafe()
@@ -1984,7 +1939,7 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.severityText = v
-				m._flags |= flag_LogRecord_SeverityText_Present
+				m._flags |= flags_LogRecord_SeverityText_Present
 			case 6:
 				// Decode "attributes".
 				v, err := value.AsBytesUnsafe()
@@ -2003,7 +1958,7 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.droppedAttributesCount = v
-				m._flags |= flag_LogRecord_DroppedAttributesCount_Present
+				m._flags |= flags_LogRecord_DroppedAttributesCount_Present
 			case 8:
 				// Decode "flags".
 				v, err := value.AsFixed32()
@@ -2011,7 +1966,7 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.flags = v
-				m._flags |= flag_LogRecord_Flags_Present
+				m._flags |= flags_LogRecord_Flags_Present
 			case 9:
 				// Decode "traceId".
 				v, err := value.AsBytesUnsafe()
@@ -2019,7 +1974,7 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.traceId = v
-				m._flags |= flag_LogRecord_TraceId_Present
+				m._flags |= flags_LogRecord_TraceId_Present
 			case 10:
 				// Decode "spanId".
 				v, err := value.AsBytesUnsafe()
@@ -2027,7 +1982,7 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.spanId = v
-				m._flags |= flag_LogRecord_SpanId_Present
+				m._flags |= flags_LogRecord_SpanId_Present
 			}
 			return true, nil
 		},
@@ -2051,15 +2006,15 @@ var prepared_LogRecord_SpanId = molecule.PrepareBytesField(10)
 func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
 		// Marshal "timeUnixNano".
-		if m._flags&flag_LogRecord_TimeUnixNano_Present != 0 {
+		if m._flags&flags_LogRecord_TimeUnixNano_Present != 0 {
 			ps.Fixed64Prepared(prepared_LogRecord_TimeUnixNano, m.timeUnixNano)
 		}
 		// Marshal "severityNumber".
-		if m._flags&flag_LogRecord_SeverityNumber_Present != 0 {
+		if m._flags&flags_LogRecord_SeverityNumber_Present != 0 {
 			ps.Uint32Prepared(prepared_LogRecord_SeverityNumber, uint32(m.severityNumber))
 		}
 		// Marshal "severityText".
-		if m._flags&flag_LogRecord_SeverityText_Present != 0 {
+		if m._flags&flags_LogRecord_SeverityText_Present != 0 {
 			ps.StringPrepared(prepared_LogRecord_SeverityText, m.severityText)
 		}
 		// Marshal "attributes".
@@ -2071,23 +2026,23 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_LogRecord_Attributes)
 		}
 		// Marshal "droppedAttributesCount".
-		if m._flags&flag_LogRecord_DroppedAttributesCount_Present != 0 {
+		if m._flags&flags_LogRecord_DroppedAttributesCount_Present != 0 {
 			ps.Uint32Prepared(prepared_LogRecord_DroppedAttributesCount, m.droppedAttributesCount)
 		}
 		// Marshal "flags".
-		if m._flags&flag_LogRecord_Flags_Present != 0 {
+		if m._flags&flags_LogRecord_Flags_Present != 0 {
 			ps.Fixed32Prepared(prepared_LogRecord_Flags, m.flags)
 		}
 		// Marshal "traceId".
-		if m._flags&flag_LogRecord_TraceId_Present != 0 {
+		if m._flags&flags_LogRecord_TraceId_Present != 0 {
 			ps.BytesPrepared(prepared_LogRecord_TraceId, m.traceId)
 		}
 		// Marshal "spanId".
-		if m._flags&flag_LogRecord_SpanId_Present != 0 {
+		if m._flags&flags_LogRecord_SpanId_Present != 0 {
 			ps.BytesPrepared(prepared_LogRecord_SpanId, m.spanId)
 		}
 		// Marshal "observedTimeUnixNano".
-		if m._flags&flag_LogRecord_ObservedTimeUnixNano_Present != 0 {
+		if m._flags&flags_LogRecord_ObservedTimeUnixNano_Present != 0 {
 			ps.Fixed64Prepared(prepared_LogRecord_ObservedTimeUnixNano, m.observedTimeUnixNano)
 		}
 	} else {
@@ -2194,7 +2149,7 @@ func (p *logRecordPoolType) Release(elem *LogRecord) {
 
 type KeyValue struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        KeyValue_Flags
+	_flags        flags_KeyValue
 
 	key   string
 	value *AnyValue
@@ -2213,18 +2168,18 @@ func (m *KeyValue) Free() {
 	keyValuePool.Release(m)
 }
 
-// KeyValue_Flags is the type of the bit flags.
-type KeyValue_Flags uint8
+// flags_KeyValue is the type of the bit flags.
+type flags_KeyValue uint8
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flag_KeyValue_Value_Decoded KeyValue_Flags = 0x1
+const flags_KeyValue_Value_Decoded flags_KeyValue = 0x1
 
 // Bitmasks that indicate that the particular field is present.
-const flag_KeyValue_Key_Present KeyValue_Flags = 0x2
+const flags_KeyValue_Key_Present flags_KeyValue = 0x2
 
 // HasKey returns true if the key is present.
 func (m *KeyValue) HasKey() bool {
-	return m._flags&flag_KeyValue_Key_Present != 0
+	return m._flags&flags_KeyValue_Key_Present != 0
 }
 
 // Key returns the value of the key.
@@ -2235,7 +2190,7 @@ func (m *KeyValue) Key() string {
 // SetKey sets the value of the key.
 func (m *KeyValue) SetKey(v string) {
 	m.key = v
-	m._flags |= flag_KeyValue_Key_Present
+	m._flags |= flags_KeyValue_Key_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -2248,14 +2203,14 @@ func (m *KeyValue) HasValue() bool {
 
 // Value returns the value of the value.
 func (m *KeyValue) Value() *AnyValue {
-	if m._flags&flag_KeyValue_Value_Decoded == 0 {
+	if m._flags&flags_KeyValue_Value_Decoded == 0 {
 		// Decode nested message(s).
 		value := m.value
 		if value != nil {
 			// TODO: decide how to handle decoding errors.
 			_ = value.decode()
 		}
-		m._flags |= flag_KeyValue_Value_Decoded
+		m._flags |= flags_KeyValue_Value_Decoded
 	}
 	return m.value
 }
@@ -2274,15 +2229,7 @@ func (m *KeyValue) SetValue(v *AnyValue) {
 func (m *KeyValue) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
-	// If the user makes a mistake and takes a copy of this struct before decoding it
-	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
-	// messages will be marked as "decoded". Next time we try to access the nested
-	// message via getter func this decode() func will be called again and will overwrite
-	// nested message values, but the getter func will no longer attempt to decode it
-	// because the flag "decoded" flag is incorrectly set on nested message.
-	// This will result in incorrect state of nested message returned by getter.
-	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// and "presence" flags here.
+	// Reset all "decoded" and "presence" flags.
 	m._flags = 0
 
 	// Iterate and decode the fields.
@@ -2296,7 +2243,7 @@ func (m *KeyValue) decode() error {
 					return false, err
 				}
 				m.key = v
-				m._flags |= flag_KeyValue_Key_Present
+				m._flags |= flags_KeyValue_Key_Present
 			case 2:
 				// Decode "value".
 				v, err := value.AsBytesUnsafe()
@@ -2322,7 +2269,7 @@ var prepared_KeyValue_Value = molecule.PrepareEmbeddedField(2)
 func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
 		// Marshal "key".
-		if m._flags&flag_KeyValue_Key_Present != 0 {
+		if m._flags&flags_KeyValue_Key_Present != 0 {
 			ps.StringPrepared(prepared_KeyValue_Key, m.key)
 		}
 		// Marshal "value".
@@ -2442,7 +2389,7 @@ func (p *keyValuePoolType) Release(elem *KeyValue) {
 
 type AnyValue struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        AnyValue_Flags
+	_flags        flags_AnyValue
 
 	value oneof.OneOf
 }
@@ -2493,12 +2440,12 @@ func (m *AnyValue) ValueUnset() {
 	m.value = oneof.NewOneOfNone()
 }
 
-// AnyValue_Flags is the type of the bit flags.
-type AnyValue_Flags uint8
+// flags_AnyValue is the type of the bit flags.
+type flags_AnyValue uint8
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flag_AnyValue_ArrayValue_Decoded AnyValue_Flags = 0x1
-const flag_AnyValue_KvlistValue_Decoded AnyValue_Flags = 0x2
+const flags_AnyValue_ArrayValue_Decoded flags_AnyValue = 0x1
+const flags_AnyValue_KvlistValue_Decoded flags_AnyValue = 0x2
 
 // StringValue returns the value of the stringValue.
 // If the field "value" is not set to "stringValue" then the returned value is undefined.
@@ -2563,7 +2510,7 @@ func (m *AnyValue) SetDoubleValue(v float64) {
 // ArrayValue returns the value of the arrayValue.
 // If the field "value" is not set to "arrayValue" then the returned value is undefined.
 func (m *AnyValue) ArrayValue() *ArrayValue {
-	if m._flags&flag_AnyValue_ArrayValue_Decoded == 0 {
+	if m._flags&flags_AnyValue_ArrayValue_Decoded == 0 {
 		// Decode nested message(s).
 		if m.value.FieldIndex() == int(AnyValueArrayValue) {
 			arrayValue := (*ArrayValue)(m.value.PtrVal())
@@ -2572,7 +2519,7 @@ func (m *AnyValue) ArrayValue() *ArrayValue {
 				_ = arrayValue.decode()
 			}
 		}
-		m._flags |= flag_AnyValue_ArrayValue_Decoded
+		m._flags |= flags_AnyValue_ArrayValue_Decoded
 	}
 	return (*ArrayValue)(m.value.PtrVal())
 }
@@ -2592,7 +2539,7 @@ func (m *AnyValue) SetArrayValue(v *ArrayValue) {
 // KvlistValue returns the value of the kvlistValue.
 // If the field "value" is not set to "kvlistValue" then the returned value is undefined.
 func (m *AnyValue) KvlistValue() *KeyValueList {
-	if m._flags&flag_AnyValue_KvlistValue_Decoded == 0 {
+	if m._flags&flags_AnyValue_KvlistValue_Decoded == 0 {
 		// Decode nested message(s).
 		if m.value.FieldIndex() == int(AnyValueKvlistValue) {
 			kvlistValue := (*KeyValueList)(m.value.PtrVal())
@@ -2601,7 +2548,7 @@ func (m *AnyValue) KvlistValue() *KeyValueList {
 				_ = kvlistValue.decode()
 			}
 		}
-		m._flags |= flag_AnyValue_KvlistValue_Decoded
+		m._flags |= flags_AnyValue_KvlistValue_Decoded
 	}
 	return (*KeyValueList)(m.value.PtrVal())
 }
@@ -2636,15 +2583,7 @@ func (m *AnyValue) SetBytesValue(v []byte) {
 func (m *AnyValue) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
-	// If the user makes a mistake and takes a copy of this struct before decoding it
-	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
-	// messages will be marked as "decoded". Next time we try to access the nested
-	// message via getter func this decode() func will be called again and will overwrite
-	// nested message values, but the getter func will no longer attempt to decode it
-	// because the flag "decoded" flag is incorrectly set on nested message.
-	// This will result in incorrect state of nested message returned by getter.
-	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// and "presence" flags here.
+	// Reset all "decoded" and "presence" flags.
 	m._flags = 0
 
 	// Iterate and decode the fields.
@@ -2890,7 +2829,7 @@ func (p *anyValuePoolType) Release(elem *AnyValue) {
 
 type ArrayValue struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        ArrayValue_Flags
+	_flags        flags_ArrayValue
 
 	values []*AnyValue
 }
@@ -2908,11 +2847,11 @@ func (m *ArrayValue) Free() {
 	arrayValuePool.Release(m)
 }
 
-// ArrayValue_Flags is the type of the bit flags.
-type ArrayValue_Flags uint8
+// flags_ArrayValue is the type of the bit flags.
+type flags_ArrayValue uint8
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flag_ArrayValue_Values_Decoded ArrayValue_Flags = 0x1
+const flags_ArrayValue_Values_Decoded flags_ArrayValue = 0x1
 
 // HasValues returns true if the values is present.
 func (m *ArrayValue) HasValues() bool {
@@ -2921,13 +2860,13 @@ func (m *ArrayValue) HasValues() bool {
 
 // Values returns the value of the values.
 func (m *ArrayValue) Values() []*AnyValue {
-	if m._flags&flag_ArrayValue_Values_Decoded == 0 {
+	if m._flags&flags_ArrayValue_Values_Decoded == 0 {
 		// Decode nested message(s).
 		for i := range m.values {
 			// TODO: decide how to handle decoding errors.
 			_ = m.values[i].decode()
 		}
-		m._flags |= flag_ArrayValue_Values_Decoded
+		m._flags |= flags_ArrayValue_Values_Decoded
 	}
 	return m.values
 }
@@ -2972,15 +2911,7 @@ func (m *ArrayValue) ValuesRemoveIf(f func(*AnyValue) bool) {
 func (m *ArrayValue) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
-	// If the user makes a mistake and takes a copy of this struct before decoding it
-	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
-	// messages will be marked as "decoded". Next time we try to access the nested
-	// message via getter func this decode() func will be called again and will overwrite
-	// nested message values, but the getter func will no longer attempt to decode it
-	// because the flag "decoded" flag is incorrectly set on nested message.
-	// This will result in incorrect state of nested message returned by getter.
-	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// and "presence" flags here.
+	// Reset all "decoded" and "presence" flags.
 	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
@@ -3145,7 +3076,7 @@ func (p *arrayValuePoolType) Release(elem *ArrayValue) {
 
 type KeyValueList struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        KeyValueList_Flags
+	_flags        flags_KeyValueList
 
 	values []*KeyValue
 }
@@ -3163,11 +3094,11 @@ func (m *KeyValueList) Free() {
 	keyValueListPool.Release(m)
 }
 
-// KeyValueList_Flags is the type of the bit flags.
-type KeyValueList_Flags uint8
+// flags_KeyValueList is the type of the bit flags.
+type flags_KeyValueList uint8
 
 // Bitmasks that indicate that the particular nested message is decoded.
-const flag_KeyValueList_Values_Decoded KeyValueList_Flags = 0x1
+const flags_KeyValueList_Values_Decoded flags_KeyValueList = 0x1
 
 // HasValues returns true if the values is present.
 func (m *KeyValueList) HasValues() bool {
@@ -3176,13 +3107,13 @@ func (m *KeyValueList) HasValues() bool {
 
 // Values returns the value of the values.
 func (m *KeyValueList) Values() []*KeyValue {
-	if m._flags&flag_KeyValueList_Values_Decoded == 0 {
+	if m._flags&flags_KeyValueList_Values_Decoded == 0 {
 		// Decode nested message(s).
 		for i := range m.values {
 			// TODO: decide how to handle decoding errors.
 			_ = m.values[i].decode()
 		}
-		m._flags |= flag_KeyValueList_Values_Decoded
+		m._flags |= flags_KeyValueList_Values_Decoded
 	}
 	return m.values
 }
@@ -3227,15 +3158,7 @@ func (m *KeyValueList) ValuesRemoveIf(f func(*KeyValue) bool) {
 func (m *KeyValueList) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
-	// If the user makes a mistake and takes a copy of this struct before decoding it
-	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
-	// messages will be marked as "decoded". Next time we try to access the nested
-	// message via getter func this decode() func will be called again and will overwrite
-	// nested message values, but the getter func will no longer attempt to decode it
-	// because the flag "decoded" flag is incorrectly set on nested message.
-	// This will result in incorrect state of nested message returned by getter.
-	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// and "presence" flags here.
+	// Reset all "decoded" and "presence" flags.
 	m._flags = 0
 
 	// Count all repeated fields. We need one counter per field.
@@ -3400,7 +3323,7 @@ func (p *keyValueListPoolType) Release(elem *KeyValueList) {
 
 type PlainMessage struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        PlainMessage_Flags
+	_flags        flags_PlainMessage
 
 	key   string
 	value string
@@ -3419,16 +3342,16 @@ func (m *PlainMessage) Free() {
 	plainMessagePool.Release(m)
 }
 
-// PlainMessage_Flags is the type of the bit flags.
-type PlainMessage_Flags uint8
+// flags_PlainMessage is the type of the bit flags.
+type flags_PlainMessage uint8
 
 // Bitmasks that indicate that the particular field is present.
-const flag_PlainMessage_Key_Present PlainMessage_Flags = 0x1
-const flag_PlainMessage_Value_Present PlainMessage_Flags = 0x2
+const flags_PlainMessage_Key_Present flags_PlainMessage = 0x1
+const flags_PlainMessage_Value_Present flags_PlainMessage = 0x2
 
 // HasKey returns true if the key is present.
 func (m *PlainMessage) HasKey() bool {
-	return m._flags&flag_PlainMessage_Key_Present != 0
+	return m._flags&flags_PlainMessage_Key_Present != 0
 }
 
 // Key returns the value of the key.
@@ -3439,7 +3362,7 @@ func (m *PlainMessage) Key() string {
 // SetKey sets the value of the key.
 func (m *PlainMessage) SetKey(v string) {
 	m.key = v
-	m._flags |= flag_PlainMessage_Key_Present
+	m._flags |= flags_PlainMessage_Key_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -3447,7 +3370,7 @@ func (m *PlainMessage) SetKey(v string) {
 
 // HasValue returns true if the value is present.
 func (m *PlainMessage) HasValue() bool {
-	return m._flags&flag_PlainMessage_Value_Present != 0
+	return m._flags&flags_PlainMessage_Value_Present != 0
 }
 
 // Value returns the value of the value.
@@ -3458,7 +3381,7 @@ func (m *PlainMessage) Value() string {
 // SetValue sets the value of the value.
 func (m *PlainMessage) SetValue(v string) {
 	m.value = v
-	m._flags |= flag_PlainMessage_Value_Present
+	m._flags |= flags_PlainMessage_Value_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -3467,15 +3390,7 @@ func (m *PlainMessage) SetValue(v string) {
 func (m *PlainMessage) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
-	// If the user makes a mistake and takes a copy of this struct before decoding it
-	// the "decoded" flag will incorrectly set on the copy, not the original, but nested
-	// messages will be marked as "decoded". Next time we try to access the nested
-	// message via getter func this decode() func will be called again and will overwrite
-	// nested message values, but the getter func will no longer attempt to decode it
-	// because the flag "decoded" flag is incorrectly set on nested message.
-	// This will result in incorrect state of nested message returned by getter.
-	// To make sure we correctly decode even after this mistake we reset all "decoded"
-	// and "presence" flags here.
+	// Reset all "decoded" and "presence" flags.
 	m._flags = 0
 
 	// Iterate and decode the fields.
@@ -3489,7 +3404,7 @@ func (m *PlainMessage) decode() error {
 					return false, err
 				}
 				m.key = v
-				m._flags |= flag_PlainMessage_Key_Present
+				m._flags |= flags_PlainMessage_Key_Present
 			case 2:
 				// Decode "value".
 				v, err := value.AsStringUnsafe()
@@ -3497,7 +3412,7 @@ func (m *PlainMessage) decode() error {
 					return false, err
 				}
 				m.value = v
-				m._flags |= flag_PlainMessage_Value_Present
+				m._flags |= flags_PlainMessage_Value_Present
 			}
 			return true, nil
 		},
@@ -3514,11 +3429,11 @@ var prepared_PlainMessage_Value = molecule.PrepareStringField(2)
 func (m *PlainMessage) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
 		// Marshal "key".
-		if m._flags&flag_PlainMessage_Key_Present != 0 {
+		if m._flags&flags_PlainMessage_Key_Present != 0 {
 			ps.StringPrepared(prepared_PlainMessage_Key, m.key)
 		}
 		// Marshal "value".
-		if m._flags&flag_PlainMessage_Value_Present != 0 {
+		if m._flags&flags_PlainMessage_Value_Present != 0 {
 			ps.StringPrepared(prepared_PlainMessage_Value, m.value)
 		}
 	} else {
