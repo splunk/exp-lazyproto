@@ -817,6 +817,86 @@ func BenchmarkLazyInspectScopeAttr(b *testing.B) {
 	}
 }
 
+func BenchmarkGogoInspectAttr(b *testing.B) {
+	src := createLogsData(1)
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var lazy gogomsg.LogsData
+		err := gogolib.Unmarshal(goldenWireBytes, &lazy)
+		require.NoError(b, err)
+
+		foundCount := 0
+		for _, rl := range lazy.ResourceLogs {
+			for _, sl := range rl.ScopeLogs {
+				for _, lr := range sl.LogRecords {
+					for _, attr := range lr.Attributes {
+						if attr.Key == "http.method" &&
+							attr.GetValue().Value.(*gogomsg.AnyValue_StringValue).StringValue == "GET" {
+							foundCount++
+						}
+					}
+				}
+			}
+		}
+		assert.Equal(b, 1000, foundCount)
+
+		destBytes, err := gogolib.Marshal(&lazy)
+		require.NoError(b, err)
+		assert.EqualValues(b, goldenWireBytes, destBytes)
+	}
+}
+
+func BenchmarkLazyInspectAttr(b *testing.B) {
+	src := createLogsData(1)
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	b.ResetTimer()
+
+	ps := molecule.NewProtoStream()
+	for i := 0; i < b.N; i++ {
+		inputMsg, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(b, err)
+
+		foundCount := 0
+		for _, rl := range inputMsg.ResourceLogs() {
+			for _, sl := range rl.ScopeLogs() {
+				if sl.Scope() == nil {
+					continue
+				}
+				for _, lr := range sl.LogRecords() {
+					for _, attr := range lr.Attributes() {
+						if attr.Key() == "http.method" &&
+							attr.Value().ValueType() == lazymsg.AnyValueStringValue &&
+							attr.Value().StringValue() == "GET" {
+							foundCount++
+						}
+					}
+				}
+			}
+		}
+		assert.Equal(b, 1000, foundCount)
+
+		ps.Reset()
+		err = inputMsg.Marshal(ps)
+		require.NoError(b, err)
+
+		lazyBytes, err := ps.BufferBytes()
+		assert.NoError(b, err)
+		assert.EqualValues(b, goldenWireBytes, lazyBytes)
+
+		inputMsg.Free()
+	}
+}
+
 func BenchmarkGogoFilterScopeAttr(b *testing.B) {
 	src := createLogsData(1)
 

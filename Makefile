@@ -30,4 +30,4 @@ internal/examples/simple/google/gen/logs/logs.pb.go: internal/examples/simple/lo
             --go_out=plugins=grpc:./internal/examples/simple/google/ ${PWD}/internal/examples/simple/logs.proto
 
 internal/examples/simple/lazy/logs.pb.go: internal/examples/simple/logs.proto Makefile
-	go run cmd/main.go --proto_path internal/examples/simple --go_out internal/examples/simple/lazy --with_presence logs.proto
+	go run cmd/main.go --proto_path internal/examples/simple --go_out internal/examples/simple/lazy logs.proto

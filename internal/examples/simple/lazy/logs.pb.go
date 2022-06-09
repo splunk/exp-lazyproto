@@ -79,11 +79,6 @@ type flags_LogsData uint8
 // Bitmasks that indicate that the particular nested message is decoded.
 const flags_LogsData_ResourceLogs_Decoded flags_LogsData = 0x1
 
-// HasResourceLogs returns true if the resourceLogs is present.
-func (m *LogsData) HasResourceLogs() bool {
-	return len(m.resourceLogs) > 0
-}
-
 // ResourceLogs returns the value of the resourceLogs.
 func (m *LogsData) ResourceLogs() []*ResourceLogs {
 	if m._flags&flags_LogsData_ResourceLogs_Decoded == 0 {
@@ -332,14 +327,6 @@ type flags_ResourceLogs uint8
 const flags_ResourceLogs_Resource_Decoded flags_ResourceLogs = 0x1
 const flags_ResourceLogs_ScopeLogs_Decoded flags_ResourceLogs = 0x2
 
-// Bitmasks that indicate that the particular field is present.
-const flags_ResourceLogs_SchemaUrl_Present flags_ResourceLogs = 0x4
-
-// HasResource returns true if the resource is present.
-func (m *ResourceLogs) HasResource() bool {
-	return m.resource != nil
-}
-
 // Resource returns the value of the resource.
 func (m *ResourceLogs) Resource() *Resource {
 	if m._flags&flags_ResourceLogs_Resource_Decoded == 0 {
@@ -363,11 +350,6 @@ func (m *ResourceLogs) SetResource(v *Resource) {
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
-}
-
-// HasScopeLogs returns true if the scopeLogs is present.
-func (m *ResourceLogs) HasScopeLogs() bool {
-	return len(m.scopeLogs) > 0
 }
 
 // ScopeLogs returns the value of the scopeLogs.
@@ -420,11 +402,6 @@ func (m *ResourceLogs) ScopeLogsRemoveIf(f func(*ScopeLogs) bool) {
 	}
 }
 
-// HasSchemaUrl returns true if the schemaUrl is present.
-func (m *ResourceLogs) HasSchemaUrl() bool {
-	return m._flags&flags_ResourceLogs_SchemaUrl_Present != 0
-}
-
 // SchemaUrl returns the value of the schemaUrl.
 func (m *ResourceLogs) SchemaUrl() string {
 	return m.schemaUrl
@@ -433,7 +410,6 @@ func (m *ResourceLogs) SchemaUrl() string {
 // SetSchemaUrl sets the value of the schemaUrl.
 func (m *ResourceLogs) SetSchemaUrl(v string) {
 	m.schemaUrl = v
-	m._flags |= flags_ResourceLogs_SchemaUrl_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -497,7 +473,6 @@ func (m *ResourceLogs) decode() error {
 					return false, err
 				}
 				m.schemaUrl = v
-				m._flags |= flags_ResourceLogs_SchemaUrl_Present
 			}
 			return true, nil
 		},
@@ -532,9 +507,7 @@ func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_ResourceLogs_ScopeLogs)
 		}
 		// Marshal "schemaUrl".
-		if m._flags&flags_ResourceLogs_SchemaUrl_Present != 0 {
-			ps.StringPrepared(prepared_ResourceLogs_SchemaUrl, m.schemaUrl)
-		}
+		ps.StringPrepared(prepared_ResourceLogs_SchemaUrl, m.schemaUrl)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
@@ -672,14 +645,6 @@ type flags_Resource uint8
 // Bitmasks that indicate that the particular nested message is decoded.
 const flags_Resource_Attributes_Decoded flags_Resource = 0x1
 
-// Bitmasks that indicate that the particular field is present.
-const flags_Resource_DroppedAttributesCount_Present flags_Resource = 0x2
-
-// HasAttributes returns true if the attributes is present.
-func (m *Resource) HasAttributes() bool {
-	return len(m.attributes) > 0
-}
-
 // Attributes returns the value of the attributes.
 func (m *Resource) Attributes() []*KeyValue {
 	if m._flags&flags_Resource_Attributes_Decoded == 0 {
@@ -730,11 +695,6 @@ func (m *Resource) AttributesRemoveIf(f func(*KeyValue) bool) {
 	}
 }
 
-// HasDroppedAttributesCount returns true if the droppedAttributesCount is present.
-func (m *Resource) HasDroppedAttributesCount() bool {
-	return m._flags&flags_Resource_DroppedAttributesCount_Present != 0
-}
-
 // DroppedAttributesCount returns the value of the droppedAttributesCount.
 func (m *Resource) DroppedAttributesCount() uint32 {
 	return m.droppedAttributesCount
@@ -743,7 +703,6 @@ func (m *Resource) DroppedAttributesCount() uint32 {
 // SetDroppedAttributesCount sets the value of the droppedAttributesCount.
 func (m *Resource) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
-	m._flags |= flags_Resource_DroppedAttributesCount_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -798,7 +757,6 @@ func (m *Resource) decode() error {
 					return false, err
 				}
 				m.droppedAttributesCount = v
-				m._flags |= flags_Resource_DroppedAttributesCount_Present
 			}
 			return true, nil
 		},
@@ -823,9 +781,7 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_Resource_Attributes)
 		}
 		// Marshal "droppedAttributesCount".
-		if m._flags&flags_Resource_DroppedAttributesCount_Present != 0 {
-			ps.Uint32Prepared(prepared_Resource_DroppedAttributesCount, m.droppedAttributesCount)
-		}
+		ps.Uint32Prepared(prepared_Resource_DroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
@@ -962,14 +918,6 @@ type flags_ScopeLogs uint8
 const flags_ScopeLogs_Scope_Decoded flags_ScopeLogs = 0x1
 const flags_ScopeLogs_LogRecords_Decoded flags_ScopeLogs = 0x2
 
-// Bitmasks that indicate that the particular field is present.
-const flags_ScopeLogs_SchemaUrl_Present flags_ScopeLogs = 0x4
-
-// HasScope returns true if the scope is present.
-func (m *ScopeLogs) HasScope() bool {
-	return m.scope != nil
-}
-
 // Scope returns the value of the scope.
 func (m *ScopeLogs) Scope() *InstrumentationScope {
 	if m._flags&flags_ScopeLogs_Scope_Decoded == 0 {
@@ -993,11 +941,6 @@ func (m *ScopeLogs) SetScope(v *InstrumentationScope) {
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
-}
-
-// HasLogRecords returns true if the logRecords is present.
-func (m *ScopeLogs) HasLogRecords() bool {
-	return len(m.logRecords) > 0
 }
 
 // LogRecords returns the value of the logRecords.
@@ -1050,11 +993,6 @@ func (m *ScopeLogs) LogRecordsRemoveIf(f func(*LogRecord) bool) {
 	}
 }
 
-// HasSchemaUrl returns true if the schemaUrl is present.
-func (m *ScopeLogs) HasSchemaUrl() bool {
-	return m._flags&flags_ScopeLogs_SchemaUrl_Present != 0
-}
-
 // SchemaUrl returns the value of the schemaUrl.
 func (m *ScopeLogs) SchemaUrl() string {
 	return m.schemaUrl
@@ -1063,7 +1001,6 @@ func (m *ScopeLogs) SchemaUrl() string {
 // SetSchemaUrl sets the value of the schemaUrl.
 func (m *ScopeLogs) SetSchemaUrl(v string) {
 	m.schemaUrl = v
-	m._flags |= flags_ScopeLogs_SchemaUrl_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1127,7 +1064,6 @@ func (m *ScopeLogs) decode() error {
 					return false, err
 				}
 				m.schemaUrl = v
-				m._flags |= flags_ScopeLogs_SchemaUrl_Present
 			}
 			return true, nil
 		},
@@ -1162,9 +1098,7 @@ func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_ScopeLogs_LogRecords)
 		}
 		// Marshal "schemaUrl".
-		if m._flags&flags_ScopeLogs_SchemaUrl_Present != 0 {
-			ps.StringPrepared(prepared_ScopeLogs_SchemaUrl, m.schemaUrl)
-		}
+		ps.StringPrepared(prepared_ScopeLogs_SchemaUrl, m.schemaUrl)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
@@ -1304,16 +1238,6 @@ type flags_InstrumentationScope uint8
 // Bitmasks that indicate that the particular nested message is decoded.
 const flags_InstrumentationScope_Attributes_Decoded flags_InstrumentationScope = 0x1
 
-// Bitmasks that indicate that the particular field is present.
-const flags_InstrumentationScope_Name_Present flags_InstrumentationScope = 0x2
-const flags_InstrumentationScope_Version_Present flags_InstrumentationScope = 0x4
-const flags_InstrumentationScope_DroppedAttributesCount_Present flags_InstrumentationScope = 0x8
-
-// HasName returns true if the name is present.
-func (m *InstrumentationScope) HasName() bool {
-	return m._flags&flags_InstrumentationScope_Name_Present != 0
-}
-
 // Name returns the value of the name.
 func (m *InstrumentationScope) Name() string {
 	return m.name
@@ -1322,15 +1246,9 @@ func (m *InstrumentationScope) Name() string {
 // SetName sets the value of the name.
 func (m *InstrumentationScope) SetName(v string) {
 	m.name = v
-	m._flags |= flags_InstrumentationScope_Name_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
-}
-
-// HasVersion returns true if the version is present.
-func (m *InstrumentationScope) HasVersion() bool {
-	return m._flags&flags_InstrumentationScope_Version_Present != 0
 }
 
 // Version returns the value of the version.
@@ -1341,15 +1259,9 @@ func (m *InstrumentationScope) Version() string {
 // SetVersion sets the value of the version.
 func (m *InstrumentationScope) SetVersion(v string) {
 	m.version = v
-	m._flags |= flags_InstrumentationScope_Version_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
-}
-
-// HasAttributes returns true if the attributes is present.
-func (m *InstrumentationScope) HasAttributes() bool {
-	return len(m.attributes) > 0
 }
 
 // Attributes returns the value of the attributes.
@@ -1402,11 +1314,6 @@ func (m *InstrumentationScope) AttributesRemoveIf(f func(*KeyValue) bool) {
 	}
 }
 
-// HasDroppedAttributesCount returns true if the droppedAttributesCount is present.
-func (m *InstrumentationScope) HasDroppedAttributesCount() bool {
-	return m._flags&flags_InstrumentationScope_DroppedAttributesCount_Present != 0
-}
-
 // DroppedAttributesCount returns the value of the droppedAttributesCount.
 func (m *InstrumentationScope) DroppedAttributesCount() uint32 {
 	return m.droppedAttributesCount
@@ -1415,7 +1322,6 @@ func (m *InstrumentationScope) DroppedAttributesCount() uint32 {
 // SetDroppedAttributesCount sets the value of the droppedAttributesCount.
 func (m *InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
-	m._flags |= flags_InstrumentationScope_DroppedAttributesCount_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1459,7 +1365,6 @@ func (m *InstrumentationScope) decode() error {
 					return false, err
 				}
 				m.name = v
-				m._flags |= flags_InstrumentationScope_Name_Present
 			case 2:
 				// Decode "version".
 				v, err := value.AsStringUnsafe()
@@ -1467,7 +1372,6 @@ func (m *InstrumentationScope) decode() error {
 					return false, err
 				}
 				m.version = v
-				m._flags |= flags_InstrumentationScope_Version_Present
 			case 3:
 				// Decode "attributes".
 				v, err := value.AsBytesUnsafe()
@@ -1486,7 +1390,6 @@ func (m *InstrumentationScope) decode() error {
 					return false, err
 				}
 				m.droppedAttributesCount = v
-				m._flags |= flags_InstrumentationScope_DroppedAttributesCount_Present
 			}
 			return true, nil
 		},
@@ -1505,13 +1408,9 @@ var prepared_InstrumentationScope_DroppedAttributesCount = molecule.PrepareUint3
 func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
 		// Marshal "name".
-		if m._flags&flags_InstrumentationScope_Name_Present != 0 {
-			ps.StringPrepared(prepared_InstrumentationScope_Name, m.name)
-		}
+		ps.StringPrepared(prepared_InstrumentationScope_Name, m.name)
 		// Marshal "version".
-		if m._flags&flags_InstrumentationScope_Version_Present != 0 {
-			ps.StringPrepared(prepared_InstrumentationScope_Version, m.version)
-		}
+		ps.StringPrepared(prepared_InstrumentationScope_Version, m.version)
 		// Marshal "attributes".
 		for _, elem := range m.attributes {
 			token := ps.BeginEmbedded()
@@ -1521,9 +1420,7 @@ func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_InstrumentationScope_Attributes)
 		}
 		// Marshal "droppedAttributesCount".
-		if m._flags&flags_InstrumentationScope_DroppedAttributesCount_Present != 0 {
-			ps.Uint32Prepared(prepared_InstrumentationScope_DroppedAttributesCount, m.droppedAttributesCount)
-		}
+		ps.Uint32Prepared(prepared_InstrumentationScope_DroppedAttributesCount, m.droppedAttributesCount)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
@@ -1655,25 +1552,10 @@ func (m *LogRecord) Free() {
 }
 
 // flags_LogRecord is the type of the bit flags.
-type flags_LogRecord uint16
+type flags_LogRecord uint8
 
 // Bitmasks that indicate that the particular nested message is decoded.
 const flags_LogRecord_Attributes_Decoded flags_LogRecord = 0x1
-
-// Bitmasks that indicate that the particular field is present.
-const flags_LogRecord_TimeUnixNano_Present flags_LogRecord = 0x2
-const flags_LogRecord_ObservedTimeUnixNano_Present flags_LogRecord = 0x4
-const flags_LogRecord_SeverityNumber_Present flags_LogRecord = 0x8
-const flags_LogRecord_SeverityText_Present flags_LogRecord = 0x10
-const flags_LogRecord_DroppedAttributesCount_Present flags_LogRecord = 0x20
-const flags_LogRecord_Flags_Present flags_LogRecord = 0x40
-const flags_LogRecord_TraceId_Present flags_LogRecord = 0x80
-const flags_LogRecord_SpanId_Present flags_LogRecord = 0x100
-
-// HasTimeUnixNano returns true if the timeUnixNano is present.
-func (m *LogRecord) HasTimeUnixNano() bool {
-	return m._flags&flags_LogRecord_TimeUnixNano_Present != 0
-}
 
 // TimeUnixNano returns the value of the timeUnixNano.
 func (m *LogRecord) TimeUnixNano() uint64 {
@@ -1683,15 +1565,9 @@ func (m *LogRecord) TimeUnixNano() uint64 {
 // SetTimeUnixNano sets the value of the timeUnixNano.
 func (m *LogRecord) SetTimeUnixNano(v uint64) {
 	m.timeUnixNano = v
-	m._flags |= flags_LogRecord_TimeUnixNano_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
-}
-
-// HasObservedTimeUnixNano returns true if the observedTimeUnixNano is present.
-func (m *LogRecord) HasObservedTimeUnixNano() bool {
-	return m._flags&flags_LogRecord_ObservedTimeUnixNano_Present != 0
 }
 
 // ObservedTimeUnixNano returns the value of the observedTimeUnixNano.
@@ -1702,15 +1578,9 @@ func (m *LogRecord) ObservedTimeUnixNano() uint64 {
 // SetObservedTimeUnixNano sets the value of the observedTimeUnixNano.
 func (m *LogRecord) SetObservedTimeUnixNano(v uint64) {
 	m.observedTimeUnixNano = v
-	m._flags |= flags_LogRecord_ObservedTimeUnixNano_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
-}
-
-// HasSeverityNumber returns true if the severityNumber is present.
-func (m *LogRecord) HasSeverityNumber() bool {
-	return m._flags&flags_LogRecord_SeverityNumber_Present != 0
 }
 
 // SeverityNumber returns the value of the severityNumber.
@@ -1721,15 +1591,9 @@ func (m *LogRecord) SeverityNumber() SeverityNumber {
 // SetSeverityNumber sets the value of the severityNumber.
 func (m *LogRecord) SetSeverityNumber(v SeverityNumber) {
 	m.severityNumber = v
-	m._flags |= flags_LogRecord_SeverityNumber_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
-}
-
-// HasSeverityText returns true if the severityText is present.
-func (m *LogRecord) HasSeverityText() bool {
-	return m._flags&flags_LogRecord_SeverityText_Present != 0
 }
 
 // SeverityText returns the value of the severityText.
@@ -1740,15 +1604,9 @@ func (m *LogRecord) SeverityText() string {
 // SetSeverityText sets the value of the severityText.
 func (m *LogRecord) SetSeverityText(v string) {
 	m.severityText = v
-	m._flags |= flags_LogRecord_SeverityText_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
-}
-
-// HasAttributes returns true if the attributes is present.
-func (m *LogRecord) HasAttributes() bool {
-	return len(m.attributes) > 0
 }
 
 // Attributes returns the value of the attributes.
@@ -1801,11 +1659,6 @@ func (m *LogRecord) AttributesRemoveIf(f func(*KeyValue) bool) {
 	}
 }
 
-// HasDroppedAttributesCount returns true if the droppedAttributesCount is present.
-func (m *LogRecord) HasDroppedAttributesCount() bool {
-	return m._flags&flags_LogRecord_DroppedAttributesCount_Present != 0
-}
-
 // DroppedAttributesCount returns the value of the droppedAttributesCount.
 func (m *LogRecord) DroppedAttributesCount() uint32 {
 	return m.droppedAttributesCount
@@ -1814,15 +1667,9 @@ func (m *LogRecord) DroppedAttributesCount() uint32 {
 // SetDroppedAttributesCount sets the value of the droppedAttributesCount.
 func (m *LogRecord) SetDroppedAttributesCount(v uint32) {
 	m.droppedAttributesCount = v
-	m._flags |= flags_LogRecord_DroppedAttributesCount_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
-}
-
-// HasFlags returns true if the flags is present.
-func (m *LogRecord) HasFlags() bool {
-	return m._flags&flags_LogRecord_Flags_Present != 0
 }
 
 // Flags returns the value of the flags.
@@ -1833,15 +1680,9 @@ func (m *LogRecord) Flags() uint32 {
 // SetFlags sets the value of the flags.
 func (m *LogRecord) SetFlags(v uint32) {
 	m.flags = v
-	m._flags |= flags_LogRecord_Flags_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
-}
-
-// HasTraceId returns true if the traceId is present.
-func (m *LogRecord) HasTraceId() bool {
-	return m._flags&flags_LogRecord_TraceId_Present != 0
 }
 
 // TraceId returns the value of the traceId.
@@ -1852,15 +1693,9 @@ func (m *LogRecord) TraceId() []byte {
 // SetTraceId sets the value of the traceId.
 func (m *LogRecord) SetTraceId(v []byte) {
 	m.traceId = v
-	m._flags |= flags_LogRecord_TraceId_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
-}
-
-// HasSpanId returns true if the spanId is present.
-func (m *LogRecord) HasSpanId() bool {
-	return m._flags&flags_LogRecord_SpanId_Present != 0
 }
 
 // SpanId returns the value of the spanId.
@@ -1871,7 +1706,6 @@ func (m *LogRecord) SpanId() []byte {
 // SetSpanId sets the value of the spanId.
 func (m *LogRecord) SetSpanId(v []byte) {
 	m.spanId = v
-	m._flags |= flags_LogRecord_SpanId_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -1915,7 +1749,6 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.timeUnixNano = v
-				m._flags |= flags_LogRecord_TimeUnixNano_Present
 			case 11:
 				// Decode "observedTimeUnixNano".
 				v, err := value.AsFixed64()
@@ -1923,7 +1756,6 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.observedTimeUnixNano = v
-				m._flags |= flags_LogRecord_ObservedTimeUnixNano_Present
 			case 2:
 				// Decode "severityNumber".
 				v, err := value.AsUint32()
@@ -1931,7 +1763,6 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.severityNumber = SeverityNumber(v)
-				m._flags |= flags_LogRecord_SeverityNumber_Present
 			case 3:
 				// Decode "severityText".
 				v, err := value.AsStringUnsafe()
@@ -1939,7 +1770,6 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.severityText = v
-				m._flags |= flags_LogRecord_SeverityText_Present
 			case 6:
 				// Decode "attributes".
 				v, err := value.AsBytesUnsafe()
@@ -1958,7 +1788,6 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.droppedAttributesCount = v
-				m._flags |= flags_LogRecord_DroppedAttributesCount_Present
 			case 8:
 				// Decode "flags".
 				v, err := value.AsFixed32()
@@ -1966,7 +1795,6 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.flags = v
-				m._flags |= flags_LogRecord_Flags_Present
 			case 9:
 				// Decode "traceId".
 				v, err := value.AsBytesUnsafe()
@@ -1974,7 +1802,6 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.traceId = v
-				m._flags |= flags_LogRecord_TraceId_Present
 			case 10:
 				// Decode "spanId".
 				v, err := value.AsBytesUnsafe()
@@ -1982,7 +1809,6 @@ func (m *LogRecord) decode() error {
 					return false, err
 				}
 				m.spanId = v
-				m._flags |= flags_LogRecord_SpanId_Present
 			}
 			return true, nil
 		},
@@ -2006,17 +1832,11 @@ var prepared_LogRecord_SpanId = molecule.PrepareBytesField(10)
 func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
 		// Marshal "timeUnixNano".
-		if m._flags&flags_LogRecord_TimeUnixNano_Present != 0 {
-			ps.Fixed64Prepared(prepared_LogRecord_TimeUnixNano, m.timeUnixNano)
-		}
+		ps.Fixed64Prepared(prepared_LogRecord_TimeUnixNano, m.timeUnixNano)
 		// Marshal "severityNumber".
-		if m._flags&flags_LogRecord_SeverityNumber_Present != 0 {
-			ps.Uint32Prepared(prepared_LogRecord_SeverityNumber, uint32(m.severityNumber))
-		}
+		ps.Uint32Prepared(prepared_LogRecord_SeverityNumber, uint32(m.severityNumber))
 		// Marshal "severityText".
-		if m._flags&flags_LogRecord_SeverityText_Present != 0 {
-			ps.StringPrepared(prepared_LogRecord_SeverityText, m.severityText)
-		}
+		ps.StringPrepared(prepared_LogRecord_SeverityText, m.severityText)
 		// Marshal "attributes".
 		for _, elem := range m.attributes {
 			token := ps.BeginEmbedded()
@@ -2026,25 +1846,15 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_LogRecord_Attributes)
 		}
 		// Marshal "droppedAttributesCount".
-		if m._flags&flags_LogRecord_DroppedAttributesCount_Present != 0 {
-			ps.Uint32Prepared(prepared_LogRecord_DroppedAttributesCount, m.droppedAttributesCount)
-		}
+		ps.Uint32Prepared(prepared_LogRecord_DroppedAttributesCount, m.droppedAttributesCount)
 		// Marshal "flags".
-		if m._flags&flags_LogRecord_Flags_Present != 0 {
-			ps.Fixed32Prepared(prepared_LogRecord_Flags, m.flags)
-		}
+		ps.Fixed32Prepared(prepared_LogRecord_Flags, m.flags)
 		// Marshal "traceId".
-		if m._flags&flags_LogRecord_TraceId_Present != 0 {
-			ps.BytesPrepared(prepared_LogRecord_TraceId, m.traceId)
-		}
+		ps.BytesPrepared(prepared_LogRecord_TraceId, m.traceId)
 		// Marshal "spanId".
-		if m._flags&flags_LogRecord_SpanId_Present != 0 {
-			ps.BytesPrepared(prepared_LogRecord_SpanId, m.spanId)
-		}
+		ps.BytesPrepared(prepared_LogRecord_SpanId, m.spanId)
 		// Marshal "observedTimeUnixNano".
-		if m._flags&flags_LogRecord_ObservedTimeUnixNano_Present != 0 {
-			ps.Fixed64Prepared(prepared_LogRecord_ObservedTimeUnixNano, m.observedTimeUnixNano)
-		}
+		ps.Fixed64Prepared(prepared_LogRecord_ObservedTimeUnixNano, m.observedTimeUnixNano)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
@@ -2174,14 +1984,6 @@ type flags_KeyValue uint8
 // Bitmasks that indicate that the particular nested message is decoded.
 const flags_KeyValue_Value_Decoded flags_KeyValue = 0x1
 
-// Bitmasks that indicate that the particular field is present.
-const flags_KeyValue_Key_Present flags_KeyValue = 0x2
-
-// HasKey returns true if the key is present.
-func (m *KeyValue) HasKey() bool {
-	return m._flags&flags_KeyValue_Key_Present != 0
-}
-
 // Key returns the value of the key.
 func (m *KeyValue) Key() string {
 	return m.key
@@ -2190,15 +1992,9 @@ func (m *KeyValue) Key() string {
 // SetKey sets the value of the key.
 func (m *KeyValue) SetKey(v string) {
 	m.key = v
-	m._flags |= flags_KeyValue_Key_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
-}
-
-// HasValue returns true if the value is present.
-func (m *KeyValue) HasValue() bool {
-	return m.value != nil
 }
 
 // Value returns the value of the value.
@@ -2243,7 +2039,6 @@ func (m *KeyValue) decode() error {
 					return false, err
 				}
 				m.key = v
-				m._flags |= flags_KeyValue_Key_Present
 			case 2:
 				// Decode "value".
 				v, err := value.AsBytesUnsafe()
@@ -2269,9 +2064,7 @@ var prepared_KeyValue_Value = molecule.PrepareEmbeddedField(2)
 func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
 		// Marshal "key".
-		if m._flags&flags_KeyValue_Key_Present != 0 {
-			ps.StringPrepared(prepared_KeyValue_Key, m.key)
-		}
+		ps.StringPrepared(prepared_KeyValue_Key, m.key)
 		// Marshal "value".
 		value := m.value
 		if value != nil {
@@ -2853,11 +2646,6 @@ type flags_ArrayValue uint8
 // Bitmasks that indicate that the particular nested message is decoded.
 const flags_ArrayValue_Values_Decoded flags_ArrayValue = 0x1
 
-// HasValues returns true if the values is present.
-func (m *ArrayValue) HasValues() bool {
-	return len(m.values) > 0
-}
-
 // Values returns the value of the values.
 func (m *ArrayValue) Values() []*AnyValue {
 	if m._flags&flags_ArrayValue_Values_Decoded == 0 {
@@ -3100,11 +2888,6 @@ type flags_KeyValueList uint8
 // Bitmasks that indicate that the particular nested message is decoded.
 const flags_KeyValueList_Values_Decoded flags_KeyValueList = 0x1
 
-// HasValues returns true if the values is present.
-func (m *KeyValueList) HasValues() bool {
-	return len(m.values) > 0
-}
-
 // Values returns the value of the values.
 func (m *KeyValueList) Values() []*KeyValue {
 	if m._flags&flags_KeyValueList_Values_Decoded == 0 {
@@ -3323,7 +3106,6 @@ func (p *keyValueListPoolType) Release(elem *KeyValueList) {
 
 type PlainMessage struct {
 	_protoMessage protomessage.ProtoMessage
-	_flags        flags_PlainMessage
 
 	key   string
 	value string
@@ -3342,18 +3124,6 @@ func (m *PlainMessage) Free() {
 	plainMessagePool.Release(m)
 }
 
-// flags_PlainMessage is the type of the bit flags.
-type flags_PlainMessage uint8
-
-// Bitmasks that indicate that the particular field is present.
-const flags_PlainMessage_Key_Present flags_PlainMessage = 0x1
-const flags_PlainMessage_Value_Present flags_PlainMessage = 0x2
-
-// HasKey returns true if the key is present.
-func (m *PlainMessage) HasKey() bool {
-	return m._flags&flags_PlainMessage_Key_Present != 0
-}
-
 // Key returns the value of the key.
 func (m *PlainMessage) Key() string {
 	return m.key
@@ -3362,15 +3132,9 @@ func (m *PlainMessage) Key() string {
 // SetKey sets the value of the key.
 func (m *PlainMessage) SetKey(v string) {
 	m.key = v
-	m._flags |= flags_PlainMessage_Key_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
-}
-
-// HasValue returns true if the value is present.
-func (m *PlainMessage) HasValue() bool {
-	return m._flags&flags_PlainMessage_Value_Present != 0
 }
 
 // Value returns the value of the value.
@@ -3381,7 +3145,6 @@ func (m *PlainMessage) Value() string {
 // SetValue sets the value of the value.
 func (m *PlainMessage) SetValue(v string) {
 	m.value = v
-	m._flags |= flags_PlainMessage_Value_Present
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -3389,9 +3152,6 @@ func (m *PlainMessage) SetValue(v string) {
 
 func (m *PlainMessage) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
-
-	// Reset all "decoded" and "presence" flags.
-	m._flags = 0
 
 	// Iterate and decode the fields.
 	err2 := molecule.MessageEach(
@@ -3404,7 +3164,6 @@ func (m *PlainMessage) decode() error {
 					return false, err
 				}
 				m.key = v
-				m._flags |= flags_PlainMessage_Key_Present
 			case 2:
 				// Decode "value".
 				v, err := value.AsStringUnsafe()
@@ -3412,7 +3171,6 @@ func (m *PlainMessage) decode() error {
 					return false, err
 				}
 				m.value = v
-				m._flags |= flags_PlainMessage_Value_Present
 			}
 			return true, nil
 		},
@@ -3429,13 +3187,9 @@ var prepared_PlainMessage_Value = molecule.PrepareStringField(2)
 func (m *PlainMessage) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
 		// Marshal "key".
-		if m._flags&flags_PlainMessage_Key_Present != 0 {
-			ps.StringPrepared(prepared_PlainMessage_Key, m.key)
-		}
+		ps.StringPrepared(prepared_PlainMessage_Key, m.key)
 		// Marshal "value".
-		if m._flags&flags_PlainMessage_Value_Present != 0 {
-			ps.StringPrepared(prepared_PlainMessage_Value, m.value)
-		}
+		ps.StringPrepared(prepared_PlainMessage_Value, m.value)
 	} else {
 		// Message is unchanged. Used original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
