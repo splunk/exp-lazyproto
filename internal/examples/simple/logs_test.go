@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	gogolib "github.com/gogo/protobuf/proto"
-	gogomsg "github.com/tigrannajaryan/lazyproto/internal/examples/simple/gogo/gen/logs"
-	googlemsg "github.com/tigrannajaryan/lazyproto/internal/examples/simple/google/gen/logs"
-	lazymsg "github.com/tigrannajaryan/lazyproto/internal/examples/simple/lazy"
+	gogomsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/gogo/gen/logs"
+	googlemsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/google/gen/logs"
+	lazymsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/lazy"
 	googlelib "google.golang.org/protobuf/proto"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tigrannajaryan/molecule"
+	"github.com/tigrannajaryan/exp-lazyproto/internal/molecule"
 )
 
 const scaleCount = 10

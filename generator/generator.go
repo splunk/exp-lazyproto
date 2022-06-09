@@ -228,11 +228,11 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/tigrannajaryan/lazyproto/internal/protomessage"
-	"github.com/tigrannajaryan/lazyproto/internal/oneof"
+	"github.com/tigrannajaryan/exp-lazyproto/internal/protomessage"
+	"github.com/tigrannajaryan/exp-lazyproto/internal/oneof"
 
-	"github.com/tigrannajaryan/molecule"
-	"github.com/tigrannajaryan/molecule/src/codec"
+	"github.com/tigrannajaryan/exp-lazyproto/internal/molecule"
+	"github.com/tigrannajaryan/exp-lazyproto/internal/molecule/src/codec"
 )
 
 var _ = oneof.OneOf{} // To avoid unused import warning.
@@ -242,7 +242,7 @@ var _ = unsafe.Pointer(nil) // To avoid unused import warning.
 	)
 
 	if g.useSizedMarshaler {
-		g.o(`import "github.com/tigrannajaryan/lazyproto/internal/streams/sizedstream"`)
+		g.o(`import "github.com/tigrannajaryan/exp-lazyproto/internal/streams/sizedstream"`)
 	}
 
 	return g.lastErr
