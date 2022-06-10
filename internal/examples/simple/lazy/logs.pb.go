@@ -915,11 +915,9 @@ func ValidateResource(b []byte) error {
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 2 (Resource.droppedAttributesCount)", wireType)
 			}
-			v, err := buf.AsUint32()
-			if err != nil {
+			if err := buf.SkipVarint(); err != nil {
 				return err
 			}
-			_ = v
 		}
 	}
 	return nil
@@ -1732,11 +1730,9 @@ func ValidateInstrumentationScope(b []byte) error {
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 4 (InstrumentationScope.droppedAttributesCount)", wireType)
 			}
-			v, err := buf.AsUint32()
-			if err != nil {
+			if err := buf.SkipVarint(); err != nil {
 				return err
 			}
-			_ = v
 		}
 	}
 	return nil
@@ -2191,21 +2187,19 @@ func ValidateLogRecord(b []byte) error {
 			if wireType != codec.WireFixed64 {
 				return fmt.Errorf("invalid wire type %d for field number 1 (LogRecord.timeUnixNano)", wireType)
 			}
-			v, err := buf.AsFixed64()
+			_, err := buf.AsFixed64()
 			if err != nil {
 				return err
 			}
-			_ = v
 		case 11:
 			// Validate "observedTimeUnixNano".
 			if wireType != codec.WireFixed64 {
 				return fmt.Errorf("invalid wire type %d for field number 11 (LogRecord.observedTimeUnixNano)", wireType)
 			}
-			v, err := buf.AsFixed64()
+			_, err := buf.AsFixed64()
 			if err != nil {
 				return err
 			}
-			_ = v
 		case 2:
 			// Validate "severityNumber".
 			if wireType != codec.WireVarint {
@@ -2243,21 +2237,18 @@ func ValidateLogRecord(b []byte) error {
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 7 (LogRecord.droppedAttributesCount)", wireType)
 			}
-			v, err := buf.AsUint32()
-			if err != nil {
+			if err := buf.SkipVarint(); err != nil {
 				return err
 			}
-			_ = v
 		case 8:
 			// Validate "flags".
 			if wireType != codec.WireFixed32 {
 				return fmt.Errorf("invalid wire type %d for field number 8 (LogRecord.flags)", wireType)
 			}
-			v, err := buf.AsFixed32()
+			_, err := buf.AsFixed32()
 			if err != nil {
 				return err
 			}
-			_ = v
 		case 9:
 			// Validate "traceId".
 			if wireType != codec.WireBytes {
@@ -3088,31 +3079,26 @@ func ValidateAnyValue(b []byte) error {
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 2 (AnyValue.boolValue)", wireType)
 			}
-			v, err := buf.AsBool()
-			if err != nil {
+			if err := buf.SkipVarint(); err != nil {
 				return err
 			}
-			_ = v
 		case 3:
 			// Validate "intValue".
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 3 (AnyValue.intValue)", wireType)
 			}
-			v, err := buf.AsInt64()
-			if err != nil {
+			if err := buf.SkipVarint(); err != nil {
 				return err
 			}
-			_ = v
 		case 4:
 			// Validate "doubleValue".
 			if wireType != codec.WireFixed64 {
 				return fmt.Errorf("invalid wire type %d for field number 4 (AnyValue.doubleValue)", wireType)
 			}
-			v, err := buf.AsDouble()
+			_, err := buf.AsDouble()
 			if err != nil {
 				return err
 			}
-			_ = v
 		case 5:
 			// Validate "arrayValue".
 			if wireType != codec.WireBytes {

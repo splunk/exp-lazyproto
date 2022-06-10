@@ -288,6 +288,199 @@ func (cb *Buffer) decodeVarintUniform() (uint64, error) {
 	return 0, io.ErrUnexpectedEOF
 }
 
+func (cb *Buffer) SkipVarint() error {
+	const (
+		step = 7
+		bit  = 1 << 7
+		mask = bit - 1
+	)
+	if cb.Len() >= 10 {
+		// i == 0
+		b := cb.buf[cb.index]
+		if b < bit {
+			cb.index++
+			return nil
+		}
+
+		// i == 1
+		b = cb.buf[cb.index+1]
+		if b < bit {
+			cb.index += 2
+			return nil
+		}
+
+		// i == 2
+		b = cb.buf[cb.index+2]
+		if b < bit {
+			cb.index += 3
+			return nil
+		}
+
+		// i == 3
+		b = cb.buf[cb.index+3]
+		if b < bit {
+			cb.index += 4
+			return nil
+		}
+
+		// i == 4
+		b = cb.buf[cb.index+4]
+		if b < bit {
+			cb.index += 5
+			return nil
+		}
+
+		// i == 5
+		b = cb.buf[cb.index+5]
+		if b < bit {
+			cb.index += 6
+			return nil
+		}
+
+		// i == 6
+		b = cb.buf[cb.index+6]
+		if b < bit {
+			cb.index += 7
+			return nil
+		}
+
+		// i == 7
+		b = cb.buf[cb.index+7]
+		if b < bit {
+			cb.index += 8
+			return nil
+		}
+
+		// i == 8
+		b = cb.buf[cb.index+8]
+		if b < bit {
+			cb.index += 9
+			return nil
+		}
+
+		// i == 9
+		b = cb.buf[cb.index+9]
+		if b < bit {
+			if b > 1 {
+				return ErrOverflow
+			}
+			cb.index += 10
+			return nil
+		} else if cb.Len() == 10 {
+			return io.ErrUnexpectedEOF
+		}
+		for _, b := range cb.buf[cb.index+10:] {
+			if b < bit {
+				return ErrOverflow
+			}
+		}
+		return io.ErrUnexpectedEOF
+	}
+
+	if cb.Len() == 0 {
+		return io.ErrUnexpectedEOF
+	}
+
+	// i == 0
+	b := cb.buf[cb.index]
+	if b < bit {
+		cb.index++
+		return nil
+	} else if cb.Len() == 1 {
+		return io.ErrUnexpectedEOF
+	}
+
+	// i == 1
+	b = cb.buf[cb.index+1]
+	if b < bit {
+		cb.index += 2
+		return nil
+	} else if cb.Len() == 2 {
+		return io.ErrUnexpectedEOF
+	}
+
+	// i == 2
+	b = cb.buf[cb.index+2]
+	if b < bit {
+		cb.index += 3
+		return nil
+	} else if cb.Len() == 3 {
+		return io.ErrUnexpectedEOF
+	}
+
+	// i == 3
+	b = cb.buf[cb.index+3]
+	if b < bit {
+		cb.index += 4
+		return nil
+	} else if cb.Len() == 4 {
+		return io.ErrUnexpectedEOF
+	}
+
+	// i == 4
+	b = cb.buf[cb.index+4]
+	if b < bit {
+		cb.index += 5
+		return nil
+	} else if cb.Len() == 5 {
+		return io.ErrUnexpectedEOF
+	}
+
+	// i == 5
+	b = cb.buf[cb.index+5]
+	if b < bit {
+		cb.index += 6
+		return nil
+	} else if cb.Len() == 6 {
+		return io.ErrUnexpectedEOF
+	}
+
+	// i == 6
+	b = cb.buf[cb.index+6]
+	if b < bit {
+		cb.index += 7
+		return nil
+	} else if cb.Len() == 7 {
+		return io.ErrUnexpectedEOF
+	}
+
+	// i == 7
+	b = cb.buf[cb.index+7]
+	if b < bit {
+		cb.index += 8
+		return nil
+	} else if cb.Len() == 8 {
+		return io.ErrUnexpectedEOF
+	}
+
+	// i == 8
+	b = cb.buf[cb.index+8]
+	if b < bit {
+		cb.index += 9
+		return nil
+	} else if cb.Len() == 9 {
+		return io.ErrUnexpectedEOF
+	}
+
+	// i == 9
+	b = cb.buf[cb.index+9]
+	if b < bit {
+		if b > 1 {
+			return ErrOverflow
+		}
+		cb.index += 10
+		return nil
+	} else if cb.Len() == 10 {
+		return io.ErrUnexpectedEOF
+	}
+	for _, b := range cb.buf[cb.index+10:] {
+		if b < bit {
+			return ErrOverflow
+		}
+	}
+	return io.ErrUnexpectedEOF
+}
+
 // DecodeFixed64 reads a 64-bit integer from the Buffer.
 // This is the format for the
 // fixed64, sfixed64, and double protocol buffer types.

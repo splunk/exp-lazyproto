@@ -727,28 +727,40 @@ if wireType != %s {
 }`, wireTypeToString[task.expectedWireType], g.field.GetNumber(),
 	)
 
-	if task.expectedWireType == codec.WireBytes && task.mode == decodeValidate {
-		g.o(
-			`
+	if task.mode == decodeValidate {
+		if task.expectedWireType == codec.WireVarint {
+			g.o(
+				`
+if err := buf.SkipVarint(); err != nil {
+	return err
+}`,
+			)
+		} else if task.expectedWireType == codec.WireBytes {
+			g.o(
+				`
 err := buf.SkipRawBytes()
 if err != nil {
 	return err
 }`,
-		)
+			)
+		} else {
+			g.o(
+				`
+_, err := buf.As%s()
+if err != nil {
+	return err
+}`, task.asProtoType,
+			)
+		}
 		return
-	}
-
-	g.o(
-		`
+	} else {
+		g.o(
+			`
 v, err := buf.As%s()
 if err != nil {
 	return err
 }`, task.asProtoType,
-	)
-
-	if task.mode == decodeValidate {
-		g.o(`_ = v`)
-		return
+		)
 	}
 
 	if g.field.GetOneOf() != nil {
