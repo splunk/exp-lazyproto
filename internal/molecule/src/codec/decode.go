@@ -50,6 +50,16 @@ func init() {
 //
 // This implementation is inlined from https://github.com/dennwc/varint to avoid the call-site overhead
 func (cb *Buffer) DecodeVarint() (uint64, error) {
+	if cb.Len() > 0 && cb.buf[cb.index] < 1<<7 {
+		// i == 0
+		b := cb.buf[cb.index]
+		cb.index++
+		return uint64(b), nil
+	}
+	return cb.decodeVarintUniform()
+}
+
+func (cb *Buffer) decodeVarintUniform() (uint64, error) {
 	const (
 		step = 7
 		bit  = 1 << 7
@@ -336,9 +346,16 @@ func DecodeZigZag64(v uint64) int64 {
 // This is the format used for the bytes protocol buffer
 // type and for embedded messages.
 func (cb *Buffer) DecodeRawBytes() (buf []byte, err error) {
-	n, err := cb.DecodeVarint()
-	if err != nil {
-		return nil, err
+	var n uint64
+	if cb.Len() > 0 && cb.buf[cb.index] < 1<<7 {
+		// Inline the DecodeVarint for the case when it is one byte (hot path).
+		n = uint64(cb.buf[cb.index])
+		cb.index++
+	} else {
+		n, err = cb.decodeVarintUniform()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	nb := int(n)
@@ -360,10 +377,17 @@ func (cb *Buffer) DecodeRawBytes() (buf []byte, err error) {
 // SkipRawBytes skips a count-delimited byte buffer from the Buffer.
 // This is the format used for the bytes protocol buffer
 // type and for embedded messages.
-func (cb *Buffer) SkipRawBytes() error {
-	n, err := cb.DecodeVarint()
-	if err != nil {
-		return err
+func (cb *Buffer) SkipRawBytes() (err error) {
+	var n uint64
+	if cb.Len() > 0 && cb.buf[cb.index] < 1<<7 {
+		// Inline the DecodeVarint for the case when it is one byte (hot path).
+		n = uint64(cb.buf[cb.index])
+		cb.index++
+	} else {
+		n, err = cb.decodeVarintUniform()
+		if err != nil {
+			return err
+		}
 	}
 
 	nb := int(n)
