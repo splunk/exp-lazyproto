@@ -14,7 +14,7 @@ import (
 // value based on the field's actual type.
 type Value struct {
 	// WireType is the protobuf wire type that was used to encode the field.
-	WireType codec.WireType
+	// WireType codec.WireType
 	// Number will contain the value for any fields encoded with the
 	// following wire types:
 	//
@@ -33,8 +33,8 @@ type Value struct {
 }
 
 // AsDouble interprets the value as a double.
-func (v *Value) AsDouble() (float64, error) {
-	return math.Float64frombits(v.Number), nil
+func (v *Value) AsDouble() float64 {
+	return math.Float64frombits(v.Number)
 }
 
 // AsFloat interprets the value as a float.
@@ -58,8 +58,8 @@ func (v *Value) AsInt32() (int32, error) {
 }
 
 // AsInt64 interprets the value as an int64.
-func (v *Value) AsInt64() (int64, error) {
-	return int64(v.Number), nil
+func (v *Value) AsInt64() int64 {
+	return int64(v.Number)
 }
 
 // AsUint32 interprets the value as a uint32.
@@ -71,8 +71,8 @@ func (v *Value) AsUint32() (uint32, error) {
 }
 
 // AsUint64 interprets the value as a uint64.
-func (v *Value) AsUint64() (uint64, error) {
-	return v.Number, nil
+func (v *Value) AsUint64() uint64 {
+	return v.Number
 }
 
 // AsSint32 interprets the value as a sint32.
@@ -84,8 +84,8 @@ func (v *Value) AsSint32() (int32, error) {
 }
 
 // AsSint64 interprets the value as a sint64.
-func (v *Value) AsSint64() (int64, error) {
-	return codec.DecodeZigZag64(v.Number), nil
+func (v *Value) AsSint64() int64 {
+	return codec.DecodeZigZag64(v.Number)
 }
 
 // AsFixed32 interprets the value as a fixed32.
@@ -97,8 +97,8 @@ func (v *Value) AsFixed32() (uint32, error) {
 }
 
 // AsFixed64 interprets the value as a fixed64.
-func (v *Value) AsFixed64() (uint64, error) {
-	return uint64(v.Number), nil
+func (v *Value) AsFixed64() uint64 {
+	return uint64(v.Number)
 }
 
 // AsSFixed32 interprets the value as a SFixed32.
@@ -110,37 +110,37 @@ func (v *Value) AsSFixed32() (int32, error) {
 }
 
 // AsSFixed64 interprets the value as a SFixed64.
-func (v *Value) AsSFixed64() (int64, error) {
-	return int64(v.Number), nil
+func (v *Value) AsSFixed64() int64 {
+	return int64(v.Number)
 }
 
 // AsBool interprets the value as a bool.
-func (v *Value) AsBool() (bool, error) {
-	return v.Number == 1, nil
+func (v *Value) AsBool() bool {
+	return v.Number == 1
 }
 
 // AsStringUnsafe interprets the value as a string. The returned string is an unsafe view over
 // the underlying bytes. Use AsStringSafe() to obtain a "safe" string that is a copy of the
 // underlying data.
-func (v *Value) AsStringUnsafe() (string, error) {
-	return unsafeBytesToString(v.Bytes), nil
+func (v *Value) AsStringUnsafe() string {
+	return unsafeBytesToString(v.Bytes)
 }
 
 // AsStringSafe interprets the value as a string by allocating a safe copy of the underlying data.
-func (v *Value) AsStringSafe() (string, error) {
-	return string(v.Bytes), nil
+func (v *Value) AsStringSafe() string {
+	return string(v.Bytes)
 }
 
 // AsBytesUnsafe interprets the value as a byte slice. The returned []byte is an unsafe view over
 // the underlying bytes. Use AsBytesSafe() to obtain a "safe" [] that is a copy of the
 // underlying data.
-func (v *Value) AsBytesUnsafe() ([]byte, error) {
-	return v.Bytes, nil
+func (v *Value) AsBytesUnsafe() []byte {
+	return v.Bytes
 }
 
 // AsBytesSafe interprets the value as a byte slice by allocating a safe copy of the underlying data.
-func (v *Value) AsBytesSafe() ([]byte, error) {
-	return append([]byte(nil), v.Bytes...), nil
+func (v *Value) AsBytesSafe() []byte {
+	return append([]byte(nil), v.Bytes...)
 }
 
 func unsafeBytesToString(b []byte) string {

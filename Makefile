@@ -2,7 +2,7 @@ all: gen-proto test
 
 test: gen-proto
 	go test ./...
-	$(MAKE) benchmark OPTS=-benchtime=1ms
+	$(MAKE) benchmark BENCHARGS=-benchtime=1ms
 
 benchmark:
 	cd internal/examples/simple && FORREPORT=1 go test -run=nosuchname -bench BenchmarkGogo --benchmem  $(BENCHARGS) | tee ../../benchmark/benchmark-temp.log
