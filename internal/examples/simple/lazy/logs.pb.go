@@ -8,6 +8,7 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/tigrannajaryan/exp-lazyproto"
 	"github.com/tigrannajaryan/exp-lazyproto/internal/oneof"
 	"github.com/tigrannajaryan/exp-lazyproto/internal/protomessage"
 
@@ -61,9 +62,11 @@ type LogsData struct {
 	resourceLogs []*ResourceLogs
 }
 
-func UnmarshalLogsData(bytes []byte) (*LogsData, error) {
-	if err := ValidateLogsData(bytes); err != nil {
-		return nil, err
+func UnmarshalLogsData(bytes []byte, opts lazyproto.UnmarshalOpts) (*LogsData, error) {
+	if opts.WithValidate {
+		if err := ValidateLogsData(bytes); err != nil {
+			return nil, err
+		}
 	}
 
 	m := logsDataPool.Get()
@@ -375,9 +378,11 @@ type ResourceLogs struct {
 	schemaUrl string
 }
 
-func UnmarshalResourceLogs(bytes []byte) (*ResourceLogs, error) {
-	if err := ValidateResourceLogs(bytes); err != nil {
-		return nil, err
+func UnmarshalResourceLogs(bytes []byte, opts lazyproto.UnmarshalOpts) (*ResourceLogs, error) {
+	if opts.WithValidate {
+		if err := ValidateResourceLogs(bytes); err != nil {
+			return nil, err
+		}
 	}
 
 	m := resourceLogsPool.Get()
@@ -791,9 +796,11 @@ type Resource struct {
 	droppedAttributesCount uint32
 }
 
-func UnmarshalResource(bytes []byte) (*Resource, error) {
-	if err := ValidateResource(bytes); err != nil {
-		return nil, err
+func UnmarshalResource(bytes []byte, opts lazyproto.UnmarshalOpts) (*Resource, error) {
+	if opts.WithValidate {
+		if err := ValidateResource(bytes); err != nil {
+			return nil, err
+		}
 	}
 
 	m := resourcePool.Get()
@@ -1143,9 +1150,11 @@ type ScopeLogs struct {
 	schemaUrl string
 }
 
-func UnmarshalScopeLogs(bytes []byte) (*ScopeLogs, error) {
-	if err := ValidateScopeLogs(bytes); err != nil {
-		return nil, err
+func UnmarshalScopeLogs(bytes []byte, opts lazyproto.UnmarshalOpts) (*ScopeLogs, error) {
+	if opts.WithValidate {
+		if err := ValidateScopeLogs(bytes); err != nil {
+			return nil, err
+		}
 	}
 
 	m := scopeLogsPool.Get()
@@ -1561,9 +1570,11 @@ type InstrumentationScope struct {
 	droppedAttributesCount uint32
 }
 
-func UnmarshalInstrumentationScope(bytes []byte) (*InstrumentationScope, error) {
-	if err := ValidateInstrumentationScope(bytes); err != nil {
-		return nil, err
+func UnmarshalInstrumentationScope(bytes []byte, opts lazyproto.UnmarshalOpts) (*InstrumentationScope, error) {
+	if opts.WithValidate {
+		if err := ValidateInstrumentationScope(bytes); err != nil {
+			return nil, err
+		}
 	}
 
 	m := instrumentationScopePool.Get()
@@ -1986,9 +1997,11 @@ type LogRecord struct {
 	spanId                 []byte
 }
 
-func UnmarshalLogRecord(bytes []byte) (*LogRecord, error) {
-	if err := ValidateLogRecord(bytes); err != nil {
-		return nil, err
+func UnmarshalLogRecord(bytes []byte, opts lazyproto.UnmarshalOpts) (*LogRecord, error) {
+	if opts.WithValidate {
+		if err := ValidateLogRecord(bytes); err != nil {
+			return nil, err
+		}
 	}
 
 	m := logRecordPool.Get()
@@ -2584,9 +2597,11 @@ type KeyValue struct {
 	value *AnyValue
 }
 
-func UnmarshalKeyValue(bytes []byte) (*KeyValue, error) {
-	if err := ValidateKeyValue(bytes); err != nil {
-		return nil, err
+func UnmarshalKeyValue(bytes []byte, opts lazyproto.UnmarshalOpts) (*KeyValue, error) {
+	if opts.WithValidate {
+		if err := ValidateKeyValue(bytes); err != nil {
+			return nil, err
+		}
 	}
 
 	m := keyValuePool.Get()
@@ -2861,9 +2876,11 @@ type AnyValue struct {
 	value oneof.OneOf
 }
 
-func UnmarshalAnyValue(bytes []byte) (*AnyValue, error) {
-	if err := ValidateAnyValue(bytes); err != nil {
-		return nil, err
+func UnmarshalAnyValue(bytes []byte, opts lazyproto.UnmarshalOpts) (*AnyValue, error) {
+	if opts.WithValidate {
+		if err := ValidateAnyValue(bytes); err != nil {
+			return nil, err
+		}
 	}
 
 	m := anyValuePool.Get()
@@ -3425,9 +3442,11 @@ type ArrayValue struct {
 	values []*AnyValue
 }
 
-func UnmarshalArrayValue(bytes []byte) (*ArrayValue, error) {
-	if err := ValidateArrayValue(bytes); err != nil {
-		return nil, err
+func UnmarshalArrayValue(bytes []byte, opts lazyproto.UnmarshalOpts) (*ArrayValue, error) {
+	if opts.WithValidate {
+		if err := ValidateArrayValue(bytes); err != nil {
+			return nil, err
+		}
 	}
 
 	m := arrayValuePool.Get()
@@ -3734,9 +3753,11 @@ type KeyValueList struct {
 	values []*KeyValue
 }
 
-func UnmarshalKeyValueList(bytes []byte) (*KeyValueList, error) {
-	if err := ValidateKeyValueList(bytes); err != nil {
-		return nil, err
+func UnmarshalKeyValueList(bytes []byte, opts lazyproto.UnmarshalOpts) (*KeyValueList, error) {
+	if opts.WithValidate {
+		if err := ValidateKeyValueList(bytes); err != nil {
+			return nil, err
+		}
 	}
 
 	m := keyValueListPool.Get()
@@ -4043,9 +4064,11 @@ type PlainMessage struct {
 	value string
 }
 
-func UnmarshalPlainMessage(bytes []byte) (*PlainMessage, error) {
-	if err := ValidatePlainMessage(bytes); err != nil {
-		return nil, err
+func UnmarshalPlainMessage(bytes []byte, opts lazyproto.UnmarshalOpts) (*PlainMessage, error) {
+	if opts.WithValidate {
+		if err := ValidatePlainMessage(bytes); err != nil {
+			return nil, err
+		}
 	}
 
 	m := plainMessagePool.Get()

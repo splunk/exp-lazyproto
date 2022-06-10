@@ -5,10 +5,12 @@ test: gen-proto
 	$(MAKE) benchmark BENCHARGS=-benchtime=1ms
 
 benchmark:
-	cd internal/examples/simple && FORREPORT=1 go test -run=nosuchname -bench BenchmarkGogo --benchmem  $(BENCHARGS) | tee ../../benchmark/benchmark-temp.log
 	-rm internal/benchmark/benchmark.log
+	cd internal/examples/simple && FORREPORT=1 go test -run=nosuchname -bench BenchmarkGogo --benchmem $(BENCHARGS) | tee ../../benchmark/benchmark-temp.log
 	cd internal/benchmark && sed -f patch_results.sed benchmark-temp.log >> benchmark.log
-	cd internal/examples/simple && FORREPORT=1 go test -run=nosuchname -bench BenchmarkLazy --benchmem  $(BENCHARGS) | tee ../../benchmark/benchmark-temp.log
+	cd internal/examples/simple && FORREPORT=1 VALIDATE=1 go test -run=nosuchname -bench BenchmarkLazy --benchmem $(BENCHARGS) | tee ../../benchmark/benchmark-temp.log
+	cd internal/benchmark && sed -f patch_results.sed benchmark-temp.log >> benchmark.log
+	cd internal/examples/simple && FORREPORT=1 go test -run=nosuchname -bench BenchmarkLazy --benchmem $(BENCHARGS) | tee ../../benchmark/benchmark-temp.log
 	cd internal/benchmark && sed -f patch_results.sed benchmark-temp.log >> benchmark.log
 
 .PHONY: gen-proto

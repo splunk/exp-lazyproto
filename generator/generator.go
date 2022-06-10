@@ -229,6 +229,7 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/tigrannajaryan/exp-lazyproto"
 	"github.com/tigrannajaryan/exp-lazyproto/internal/protomessage"
 	"github.com/tigrannajaryan/exp-lazyproto/internal/oneof"
 
@@ -598,9 +599,11 @@ func (g *generator) oOneOfTypeFunc(oneof *desc.OneOfDescriptor) {
 func (g *generator) oUnmarshalFree() error {
 	g.o(
 		`
-func Unmarshal$MessageName(bytes []byte) (*$MessageName, error) {
-	if err := Validate$MessageName(bytes); err != nil {
-		return nil, err		
+func Unmarshal$MessageName(bytes []byte, opts lazyproto.UnmarshalOpts) (*$MessageName, error) {
+	if opts.WithValidate {
+		if err := Validate$MessageName(bytes); err != nil {
+			return nil, err		
+		}
 	}
 
 	m := $messagePool.Get()

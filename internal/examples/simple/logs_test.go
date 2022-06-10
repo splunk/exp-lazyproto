@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	gogolib "github.com/gogo/protobuf/proto"
+	lazyproto "github.com/tigrannajaryan/exp-lazyproto"
 	gogomsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/gogo/gen/logs"
 	googlemsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/google/gen/logs"
 	lazymsg "github.com/tigrannajaryan/exp-lazyproto/internal/examples/simple/lazy"
@@ -184,7 +185,7 @@ func TestDecode(t *testing.T) {
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(t, err)
 
-	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 	require.NoError(t, err)
 
 	rl := lazy.ResourceLogs()
@@ -259,7 +260,7 @@ func TestLazy_Pass(t *testing.T) {
 	require.NotNil(t, goldenWireBytes)
 
 	ps := molecule.NewProtoStream()
-	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 	require.NoError(t, err)
 
 	ps.Reset()
@@ -347,6 +348,10 @@ func BenchmarkGogo_Unmarshal_AndReadAll(b *testing.B) {
 	}
 }
 
+func unmarshalOpts() lazyproto.UnmarshalOpts {
+	return lazyproto.UnmarshalOpts{WithValidate: os.Getenv("VALIDATE") != ""}
+}
+
 func BenchmarkLazy_Unmarshal(b *testing.B) {
 	src := createLogsData(scaleCount, 1)
 
@@ -357,7 +362,7 @@ func BenchmarkLazy_Unmarshal(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 		require.NoError(b, err)
 
 		lazy.Free()
@@ -374,7 +379,7 @@ func BenchmarkLazy_Unmarshal_AndReadAll(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 		require.NoError(b, err)
 
 		//err = lazymsg.ValidateLogsData(goldenWireBytes)
@@ -399,7 +404,7 @@ func BenchmarkLazy_Unmarshal_AndReadAllNoPool(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 		require.NoError(b, err)
 
 		// Traverse all data to get it loaded. This is the worst case.
@@ -418,7 +423,7 @@ func TestLazy_UnmarshalAndReadAll(t *testing.T) {
 	require.NotNil(t, goldenWireBytes)
 
 	for i := 0; i < 2; i++ {
-		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 		require.NoError(t, err)
 
 		// Traverse all data to get it loaded. This is the worst case.
@@ -610,7 +615,7 @@ func BenchmarkLazy_Marshal_Unchanged(b *testing.B) {
 	require.NoError(b, err)
 	require.NotNil(b, goldenWireBytes)
 
-	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 	require.NoError(b, err)
 
 	countAttrsLazy(lazy)
@@ -636,7 +641,7 @@ func BenchmarkLazy_Marshal_ModifyAll(b *testing.B) {
 	require.NoError(b, err)
 	require.NotNil(b, goldenWireBytes)
 
-	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 	require.NoError(b, err)
 
 	countAttrsLazy(lazy)
@@ -748,7 +753,7 @@ func BenchmarkLazy_Pass_NoReadNoModify(b *testing.B) {
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 		require.NoError(b, err)
 
 		ps.Reset()
@@ -775,7 +780,7 @@ func BenchmarkLazy_Pass_ReadAllNoModify(b *testing.B) {
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 		require.NoError(b, err)
 
 		ps.Reset()
@@ -805,7 +810,7 @@ func BenchmarkLazy_Pass_ModifyAll(b *testing.B) {
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 		require.NoError(b, err)
 
 		// Touch all attrs
@@ -852,7 +857,7 @@ func BenchmarkLazy_Pass_ModifyAllConc(b *testing.B) {
 
 			ps := molecule.NewProtoStream()
 			for i := 0; i < b.N; i++ {
-				lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+				lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 				require.NoError(b, err)
 
 				touchAll(lazy)
@@ -920,7 +925,7 @@ func BenchmarkLazy_Inspect_ScopeAttr(b *testing.B) {
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		inputMsg, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		inputMsg, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 		require.NoError(b, err)
 
 		foundCount := 0
@@ -998,7 +1003,7 @@ func BenchmarkLazy_Inspect_LogAttr(b *testing.B) {
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		inputMsg, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		inputMsg, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 		require.NoError(b, err)
 
 		foundCount := 0
@@ -1084,7 +1089,7 @@ func BenchmarkLazy_Filter_ScopeAttr(b *testing.B) {
 
 	ps := molecule.NewProtoStream()
 	for i := 0; i < b.N; i++ {
-		inputMsg, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		inputMsg, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 		require.NoError(b, err)
 
 		foundCount := 0
@@ -1173,7 +1178,7 @@ func BenchmarkLazy_Batch(b *testing.B) {
 		var resourceLogs []*lazymsg.ResourceLogs
 
 		for j := 0; j < 10; j++ {
-			inputMsg[j], err = lazymsg.UnmarshalLogsData(inputWireBytes)
+			inputMsg[j], err = lazymsg.UnmarshalLogsData(inputWireBytes, unmarshalOpts())
 			require.NoError(b, err)
 
 			resourceLogs = append(
@@ -1213,7 +1218,7 @@ func BenchmarkLazy_TouchAll(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
 		require.NoError(b, err)
 
 		countAttrsLazy(lazy)
