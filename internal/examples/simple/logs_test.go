@@ -313,6 +313,22 @@ func BenchmarkGoogle_Unmarshal_AndReadAll(b *testing.B) {
 	}
 }
 
+func BenchmarkGogo_Unmarshal(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
+
+	bytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, bytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var ld gogomsg.LogsData
+		err := gogolib.Unmarshal(bytes, &ld)
+		require.NoError(b, err)
+	}
+}
+
 func BenchmarkGogo_Unmarshal_AndReadAll(b *testing.B) {
 	src := createLogsData(scaleCount, 1)
 
@@ -327,19 +343,24 @@ func BenchmarkGogo_Unmarshal_AndReadAll(b *testing.B) {
 		err := gogolib.Unmarshal(bytes, &ld)
 		require.NoError(b, err)
 
-		//attrCount := 0
-		//for _, rl := range ld.ResourceLogs {
-		//	attrCount += len(rl.Resource.Attributes)
-		//	for _, sl := range rl.ScopeLogs {
-		//		for _, lr := range sl.LogRecords {
-		//			attrCount += len(lr.Attributes)
-		//		}
-		//	}
-		//}
-
 		countAttrsGogo(&ld)
+	}
+}
 
-		//require.EqualValues(b, 2010, attrCount)
+func BenchmarkLazy_Unmarshal(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(b, err)
+
+		lazy.Free()
 	}
 }
 
