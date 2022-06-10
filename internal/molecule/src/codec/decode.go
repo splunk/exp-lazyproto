@@ -50,9 +50,6 @@ func init() {
 //
 // This implementation is inlined from https://github.com/dennwc/varint to avoid the call-site overhead
 func (cb *Buffer) DecodeVarint() (uint64, error) {
-	if cb.Len() == 0 {
-		return 0, io.ErrUnexpectedEOF
-	}
 	const (
 		step = 7
 		bit  = 1 << 7
@@ -156,6 +153,10 @@ func (cb *Buffer) DecodeVarint() (uint64, error) {
 				return 0, ErrOverflow
 			}
 		}
+		return 0, io.ErrUnexpectedEOF
+	}
+
+	if cb.Len() == 0 {
 		return 0, io.ErrUnexpectedEOF
 	}
 
@@ -334,7 +335,7 @@ func DecodeZigZag64(v uint64) int64 {
 // DecodeRawBytes reads a count-delimited byte buffer from the Buffer.
 // This is the format used for the bytes protocol buffer
 // type and for embedded messages.
-func (cb *Buffer) DecodeRawBytes(alloc bool) (buf []byte, err error) {
+func (cb *Buffer) DecodeRawBytes() (buf []byte, err error) {
 	n, err := cb.DecodeVarint()
 	if err != nil {
 		return nil, err
@@ -349,18 +350,34 @@ func (cb *Buffer) DecodeRawBytes(alloc bool) (buf []byte, err error) {
 		return nil, io.ErrUnexpectedEOF
 	}
 
-	if !alloc {
-		// We set a cap on the returned slice equal to the length of the buffer so that it is not possible
-		// to read past the end of this slice
-		buf = cb.buf[cb.index:end:end]
-		cb.index = end
-		return
-	}
-
-	buf = make([]byte, nb)
-	copy(buf, cb.buf[cb.index:])
+	// We set a cap on the returned slice equal to the length of the buffer so that it is not possible
+	// to read past the end of this slice
+	buf = cb.buf[cb.index:end:end]
 	cb.index = end
 	return
+}
+
+// SkipRawBytes skips a count-delimited byte buffer from the Buffer.
+// This is the format used for the bytes protocol buffer
+// type and for embedded messages.
+func (cb *Buffer) SkipRawBytes() error {
+	n, err := cb.DecodeVarint()
+	if err != nil {
+		return err
+	}
+
+	nb := int(n)
+	if nb < 0 {
+		return fmt.Errorf("proto: bad byte length %d", nb)
+	}
+	end := cb.index + nb
+	if end < cb.index || end > cb.len {
+		return io.ErrUnexpectedEOF
+	}
+
+	cb.index = end
+
+	return nil
 }
 
 // ReadGroup reads the input until a "group end" tag is found
@@ -619,17 +636,35 @@ func (cb *Buffer) AsBool() (bool, error) {
 // AsStringUnsafe interprets the value as a string. The returned string is an unsafe view over
 // the underlying bytes. Use AsStringSafe() to obtain a "safe" string that is a copy of the
 // underlying data.
-func (cb *Buffer) AsStringUnsafe() (string, error) {
-	v, err := cb.DecodeRawBytes(false)
+func (cb *Buffer) AsStringUnsafe() (s string, err error) {
+	n, err := cb.DecodeVarint()
 	if err != nil {
 		return "", err
 	}
-	return unsafeBytesToString(v), nil
+
+	nb := int(n)
+	if nb < 0 {
+		return "", fmt.Errorf("proto: bad byte length %d", nb)
+	}
+	end := cb.index + nb
+	if end < cb.index || end > cb.len {
+		return "", io.ErrUnexpectedEOF
+	}
+
+	vh := (*reflect.SliceHeader)(unsafe.Pointer(&cb.buf))
+
+	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	sh.Data = vh.Data + uintptr(cb.index)
+	sh.Len = end - cb.index
+
+	cb.index = end
+
+	return
 }
 
 // AsStringSafe interprets the value as a string by allocating a safe copy of the underlying data.
 func (cb *Buffer) AsStringSafe() (string, error) {
-	v, err := cb.DecodeRawBytes(false)
+	v, err := cb.DecodeRawBytes()
 	if err != nil {
 		return "", err
 	}
@@ -640,24 +675,14 @@ func (cb *Buffer) AsStringSafe() (string, error) {
 // the underlying bytes. Use AsBytesSafe() to obtain a "safe" [] that is a copy of the
 // underlying data.
 func (cb *Buffer) AsBytesUnsafe() ([]byte, error) {
-	return cb.DecodeRawBytes(false)
+	return cb.DecodeRawBytes()
 }
 
 // AsBytesSafe interprets the value as a byte slice by allocating a safe copy of the underlying data.
 func (cb *Buffer) AsBytesSafe() ([]byte, error) {
-	v, err := cb.DecodeRawBytes(false)
+	v, err := cb.DecodeRawBytes()
 	if err != nil {
 		return nil, err
 	}
 	return append([]byte(nil), v...), nil
-}
-
-func unsafeBytesToString(b []byte) string {
-	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
-
-	var s string
-	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	sh.Data = bh.Data
-	sh.Len = bh.Len
-	return s
 }

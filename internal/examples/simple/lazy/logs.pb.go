@@ -156,7 +156,7 @@ func ValidateLogsData(b []byte) error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (LogsData.resourceLogs)", wireType)
 			}
-			v, err := buf.DecodeRawBytes(false)
+			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
@@ -196,7 +196,7 @@ func (m *LogsData) decode() error {
 		case codec.WireFixed64:
 			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			_, err = buf.DecodeRawBytes(false)
+			err = buf.SkipRawBytes()
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -511,7 +511,7 @@ func ValidateResourceLogs(b []byte) error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (ResourceLogs.resource)", wireType)
 			}
-			v, err := buf.DecodeRawBytes(false)
+			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
@@ -524,7 +524,7 @@ func ValidateResourceLogs(b []byte) error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 2 (ResourceLogs.scopeLogs)", wireType)
 			}
-			v, err := buf.DecodeRawBytes(false)
+			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
@@ -574,7 +574,7 @@ func (m *ResourceLogs) decode() error {
 		case codec.WireFixed64:
 			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			_, err = buf.DecodeRawBytes(false)
+			err = buf.SkipRawBytes()
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -903,7 +903,7 @@ func ValidateResource(b []byte) error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (Resource.attributes)", wireType)
 			}
-			v, err := buf.DecodeRawBytes(false)
+			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
@@ -953,7 +953,7 @@ func (m *Resource) decode() error {
 		case codec.WireFixed64:
 			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			_, err = buf.DecodeRawBytes(false)
+			err = buf.SkipRawBytes()
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -1283,7 +1283,7 @@ func ValidateScopeLogs(b []byte) error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (ScopeLogs.scope)", wireType)
 			}
-			v, err := buf.DecodeRawBytes(false)
+			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
@@ -1296,7 +1296,7 @@ func ValidateScopeLogs(b []byte) error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 2 (ScopeLogs.logRecords)", wireType)
 			}
-			v, err := buf.DecodeRawBytes(false)
+			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
@@ -1346,7 +1346,7 @@ func (m *ScopeLogs) decode() error {
 		case codec.WireFixed64:
 			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			_, err = buf.DecodeRawBytes(false)
+			err = buf.SkipRawBytes()
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -1723,7 +1723,7 @@ func ValidateInstrumentationScope(b []byte) error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 3 (InstrumentationScope.attributes)", wireType)
 			}
-			v, err := buf.DecodeRawBytes(false)
+			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
@@ -1773,7 +1773,7 @@ func (m *InstrumentationScope) decode() error {
 		case codec.WireFixed64:
 			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			_, err = buf.DecodeRawBytes(false)
+			err = buf.SkipRawBytes()
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -2235,7 +2235,7 @@ func ValidateLogRecord(b []byte) error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 6 (LogRecord.attributes)", wireType)
 			}
-			v, err := buf.DecodeRawBytes(false)
+			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
@@ -2315,7 +2315,7 @@ func (m *LogRecord) decode() error {
 		case codec.WireFixed64:
 			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			_, err = buf.DecodeRawBytes(false)
+			err = buf.SkipRawBytes()
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -2689,7 +2689,7 @@ func ValidateKeyValue(b []byte) error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 2 (KeyValue.value)", wireType)
 			}
-			v, err := buf.DecodeRawBytes(false)
+			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
@@ -3127,7 +3127,7 @@ func ValidateAnyValue(b []byte) error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 5 (AnyValue.arrayValue)", wireType)
 			}
-			v, err := buf.DecodeRawBytes(false)
+			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
@@ -3140,7 +3140,7 @@ func ValidateAnyValue(b []byte) error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 6 (AnyValue.kvlistValue)", wireType)
 			}
-			v, err := buf.DecodeRawBytes(false)
+			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
@@ -3536,7 +3536,7 @@ func ValidateArrayValue(b []byte) error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (ArrayValue.values)", wireType)
 			}
-			v, err := buf.DecodeRawBytes(false)
+			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
@@ -3576,7 +3576,7 @@ func (m *ArrayValue) decode() error {
 		case codec.WireFixed64:
 			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			_, err = buf.DecodeRawBytes(false)
+			err = buf.SkipRawBytes()
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -3847,7 +3847,7 @@ func ValidateKeyValueList(b []byte) error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (KeyValueList.values)", wireType)
 			}
-			v, err := buf.DecodeRawBytes(false)
+			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
@@ -3887,7 +3887,7 @@ func (m *KeyValueList) decode() error {
 		case codec.WireFixed64:
 			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			_, err = buf.DecodeRawBytes(false)
+			err = buf.SkipRawBytes()
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",

@@ -893,7 +893,7 @@ if wireType != codec.WireBytes {
 	if mode == decodeValidate {
 		g.o(
 			`
-v, err := buf.DecodeRawBytes(false)
+v, err := buf.DecodeRawBytes()
 if err != nil {
 	return err
 }
@@ -974,7 +974,7 @@ case codec.WireFixed32:
 case codec.WireFixed64:
 	_, err = buf.DecodeFixed64()
 case codec.WireBytes:
-	_, err = buf.DecodeRawBytes(false)
+	err = buf.SkipRawBytes()
 case codec.WireStartGroup, codec.WireEndGroup:
 	err = fmt.Errorf(
 		"encountered group wire type: %%d. Groups not supported",
