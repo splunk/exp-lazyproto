@@ -62,6 +62,10 @@ type LogsData struct {
 }
 
 func UnmarshalLogsData(bytes []byte) (*LogsData, error) {
+	if err := ValidateLogsData(bytes); err != nil {
+		return nil, err
+	}
+
 	m := logsDataPool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
@@ -128,6 +132,38 @@ func (m *LogsData) ResourceLogsRemoveIf(f func(*ResourceLogs) bool) {
 		// Mark this message modified, if not already.
 		m._protoMessage.MarkModified()
 	}
+}
+
+func ValidateLogsData(b []byte) error {
+	buf := codec.NewBuffer(b)
+
+	for !buf.EOF() {
+		v, err := buf.DecodeVarint()
+		if err != nil {
+			return err
+		}
+		fieldNum, wireType, err := codec.AsTagAndWireType(v)
+		if err != nil {
+			return err
+		}
+
+		switch fieldNum {
+		case 1:
+			// Decode "resourceLogs".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 1 (LogsData.resourceLogs)", wireType)
+			}
+			v, err := buf.DecodeRawBytes(false)
+			if err != nil {
+				return err
+			}
+			err = ValidateResourceLogs(v)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (m *LogsData) decode() error {
@@ -340,6 +376,10 @@ type ResourceLogs struct {
 }
 
 func UnmarshalResourceLogs(bytes []byte) (*ResourceLogs, error) {
+	if err := ValidateResourceLogs(bytes); err != nil {
+		return nil, err
+	}
+
 	m := resourceLogsPool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
@@ -445,6 +485,61 @@ func (m *ResourceLogs) SetSchemaUrl(v string) {
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
+}
+
+func ValidateResourceLogs(b []byte) error {
+	buf := codec.NewBuffer(b)
+
+	for !buf.EOF() {
+		v, err := buf.DecodeVarint()
+		if err != nil {
+			return err
+		}
+		fieldNum, wireType, err := codec.AsTagAndWireType(v)
+		if err != nil {
+			return err
+		}
+
+		switch fieldNum {
+		case 1:
+			// Decode "resource".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 1 (ResourceLogs.resource)", wireType)
+			}
+			v, err := buf.DecodeRawBytes(false)
+			if err != nil {
+				return err
+			}
+			err = ValidateResource(v)
+			if err != nil {
+				return err
+			}
+		case 2:
+			// Decode "scopeLogs".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 2 (ResourceLogs.scopeLogs)", wireType)
+			}
+			v, err := buf.DecodeRawBytes(false)
+			if err != nil {
+				return err
+			}
+			err = ValidateScopeLogs(v)
+			if err != nil {
+				return err
+			}
+		case 3:
+			// Decode "schemaUrl".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 3 (ResourceLogs.schemaUrl)", wireType)
+			}
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
+			_ = v
+		}
+	}
+	return nil
 }
 
 func (m *ResourceLogs) decode() error {
@@ -697,6 +792,10 @@ type Resource struct {
 }
 
 func UnmarshalResource(bytes []byte) (*Resource, error) {
+	if err := ValidateResource(bytes); err != nil {
+		return nil, err
+	}
+
 	m := resourcePool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
@@ -776,6 +875,48 @@ func (m *Resource) SetDroppedAttributesCount(v uint32) {
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
+}
+
+func ValidateResource(b []byte) error {
+	buf := codec.NewBuffer(b)
+
+	for !buf.EOF() {
+		v, err := buf.DecodeVarint()
+		if err != nil {
+			return err
+		}
+		fieldNum, wireType, err := codec.AsTagAndWireType(v)
+		if err != nil {
+			return err
+		}
+
+		switch fieldNum {
+		case 1:
+			// Decode "attributes".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 1 (Resource.attributes)", wireType)
+			}
+			v, err := buf.DecodeRawBytes(false)
+			if err != nil {
+				return err
+			}
+			err = ValidateKeyValue(v)
+			if err != nil {
+				return err
+			}
+		case 2:
+			// Decode "droppedAttributesCount".
+			if wireType != codec.WireVarint {
+				return fmt.Errorf("invalid wire type %d for field number 2 (Resource.droppedAttributesCount)", wireType)
+			}
+			v, err := buf.AsUint32()
+			if err != nil {
+				return err
+			}
+			_ = v
+		}
+	}
+	return nil
 }
 
 func (m *Resource) decode() error {
@@ -1003,6 +1144,10 @@ type ScopeLogs struct {
 }
 
 func UnmarshalScopeLogs(bytes []byte) (*ScopeLogs, error) {
+	if err := ValidateScopeLogs(bytes); err != nil {
+		return nil, err
+	}
+
 	m := scopeLogsPool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
@@ -1108,6 +1253,61 @@ func (m *ScopeLogs) SetSchemaUrl(v string) {
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
+}
+
+func ValidateScopeLogs(b []byte) error {
+	buf := codec.NewBuffer(b)
+
+	for !buf.EOF() {
+		v, err := buf.DecodeVarint()
+		if err != nil {
+			return err
+		}
+		fieldNum, wireType, err := codec.AsTagAndWireType(v)
+		if err != nil {
+			return err
+		}
+
+		switch fieldNum {
+		case 1:
+			// Decode "scope".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 1 (ScopeLogs.scope)", wireType)
+			}
+			v, err := buf.DecodeRawBytes(false)
+			if err != nil {
+				return err
+			}
+			err = ValidateInstrumentationScope(v)
+			if err != nil {
+				return err
+			}
+		case 2:
+			// Decode "logRecords".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 2 (ScopeLogs.logRecords)", wireType)
+			}
+			v, err := buf.DecodeRawBytes(false)
+			if err != nil {
+				return err
+			}
+			err = ValidateLogRecord(v)
+			if err != nil {
+				return err
+			}
+		case 3:
+			// Decode "schemaUrl".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 3 (ScopeLogs.schemaUrl)", wireType)
+			}
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
+			_ = v
+		}
+	}
+	return nil
 }
 
 func (m *ScopeLogs) decode() error {
@@ -1362,6 +1562,10 @@ type InstrumentationScope struct {
 }
 
 func UnmarshalInstrumentationScope(bytes []byte) (*InstrumentationScope, error) {
+	if err := ValidateInstrumentationScope(bytes); err != nil {
+		return nil, err
+	}
+
 	m := instrumentationScopePool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
@@ -1467,6 +1671,68 @@ func (m *InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
+}
+
+func ValidateInstrumentationScope(b []byte) error {
+	buf := codec.NewBuffer(b)
+
+	for !buf.EOF() {
+		v, err := buf.DecodeVarint()
+		if err != nil {
+			return err
+		}
+		fieldNum, wireType, err := codec.AsTagAndWireType(v)
+		if err != nil {
+			return err
+		}
+
+		switch fieldNum {
+		case 1:
+			// Decode "name".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 1 (InstrumentationScope.name)", wireType)
+			}
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 2:
+			// Decode "version".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 2 (InstrumentationScope.version)", wireType)
+			}
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 3:
+			// Decode "attributes".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 3 (InstrumentationScope.attributes)", wireType)
+			}
+			v, err := buf.DecodeRawBytes(false)
+			if err != nil {
+				return err
+			}
+			err = ValidateKeyValue(v)
+			if err != nil {
+				return err
+			}
+		case 4:
+			// Decode "droppedAttributesCount".
+			if wireType != codec.WireVarint {
+				return fmt.Errorf("invalid wire type %d for field number 4 (InstrumentationScope.droppedAttributesCount)", wireType)
+			}
+			v, err := buf.AsUint32()
+			if err != nil {
+				return err
+			}
+			_ = v
+		}
+	}
+	return nil
 }
 
 func (m *InstrumentationScope) decode() error {
@@ -1721,6 +1987,10 @@ type LogRecord struct {
 }
 
 func UnmarshalLogRecord(bytes []byte) (*LogRecord, error) {
+	if err := ValidateLogRecord(bytes); err != nil {
+		return nil, err
+	}
+
 	m := logRecordPool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
@@ -1891,6 +2161,118 @@ func (m *LogRecord) SetSpanId(v []byte) {
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
+}
+
+func ValidateLogRecord(b []byte) error {
+	buf := codec.NewBuffer(b)
+
+	for !buf.EOF() {
+		v, err := buf.DecodeVarint()
+		if err != nil {
+			return err
+		}
+		fieldNum, wireType, err := codec.AsTagAndWireType(v)
+		if err != nil {
+			return err
+		}
+
+		switch fieldNum {
+		case 1:
+			// Decode "timeUnixNano".
+			if wireType != codec.WireFixed64 {
+				return fmt.Errorf("invalid wire type %d for field number 1 (LogRecord.timeUnixNano)", wireType)
+			}
+			v, err := buf.AsFixed64()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 11:
+			// Decode "observedTimeUnixNano".
+			if wireType != codec.WireFixed64 {
+				return fmt.Errorf("invalid wire type %d for field number 11 (LogRecord.observedTimeUnixNano)", wireType)
+			}
+			v, err := buf.AsFixed64()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 2:
+			// Decode "severityNumber".
+			if wireType != codec.WireVarint {
+				return fmt.Errorf("invalid wire type %d for field number 2 (LogRecord.severityNumber)", wireType)
+			}
+			v, err := buf.AsUint32()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 3:
+			// Decode "severityText".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 3 (LogRecord.severityText)", wireType)
+			}
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 6:
+			// Decode "attributes".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 6 (LogRecord.attributes)", wireType)
+			}
+			v, err := buf.DecodeRawBytes(false)
+			if err != nil {
+				return err
+			}
+			err = ValidateKeyValue(v)
+			if err != nil {
+				return err
+			}
+		case 7:
+			// Decode "droppedAttributesCount".
+			if wireType != codec.WireVarint {
+				return fmt.Errorf("invalid wire type %d for field number 7 (LogRecord.droppedAttributesCount)", wireType)
+			}
+			v, err := buf.AsUint32()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 8:
+			// Decode "flags".
+			if wireType != codec.WireFixed32 {
+				return fmt.Errorf("invalid wire type %d for field number 8 (LogRecord.flags)", wireType)
+			}
+			v, err := buf.AsFixed32()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 9:
+			// Decode "traceId".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 9 (LogRecord.traceId)", wireType)
+			}
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 10:
+			// Decode "spanId".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 10 (LogRecord.spanId)", wireType)
+			}
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+			_ = v
+		}
+	}
+	return nil
 }
 
 func (m *LogRecord) decode() error {
@@ -2203,6 +2585,10 @@ type KeyValue struct {
 }
 
 func UnmarshalKeyValue(bytes []byte) (*KeyValue, error) {
+	if err := ValidateKeyValue(bytes); err != nil {
+		return nil, err
+	}
+
 	m := keyValuePool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
@@ -2257,6 +2643,48 @@ func (m *KeyValue) SetValue(v *AnyValue) {
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
+}
+
+func ValidateKeyValue(b []byte) error {
+	buf := codec.NewBuffer(b)
+
+	for !buf.EOF() {
+		v, err := buf.DecodeVarint()
+		if err != nil {
+			return err
+		}
+		fieldNum, wireType, err := codec.AsTagAndWireType(v)
+		if err != nil {
+			return err
+		}
+
+		switch fieldNum {
+		case 1:
+			// Decode "key".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 1 (KeyValue.key)", wireType)
+			}
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 2:
+			// Decode "value".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 2 (KeyValue.value)", wireType)
+			}
+			v, err := buf.DecodeRawBytes(false)
+			if err != nil {
+				return err
+			}
+			err = ValidateAnyValue(v)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (m *KeyValue) decode() error {
@@ -2434,6 +2862,10 @@ type AnyValue struct {
 }
 
 func UnmarshalAnyValue(bytes []byte) (*AnyValue, error) {
+	if err := ValidateAnyValue(bytes); err != nil {
+		return nil, err
+	}
+
 	m := anyValuePool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
@@ -2617,6 +3049,101 @@ func (m *AnyValue) SetBytesValue(v []byte) {
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
+}
+
+func ValidateAnyValue(b []byte) error {
+	buf := codec.NewBuffer(b)
+
+	for !buf.EOF() {
+		v, err := buf.DecodeVarint()
+		if err != nil {
+			return err
+		}
+		fieldNum, wireType, err := codec.AsTagAndWireType(v)
+		if err != nil {
+			return err
+		}
+
+		switch fieldNum {
+		case 1:
+			// Decode "stringValue".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 1 (AnyValue.stringValue)", wireType)
+			}
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 2:
+			// Decode "boolValue".
+			if wireType != codec.WireVarint {
+				return fmt.Errorf("invalid wire type %d for field number 2 (AnyValue.boolValue)", wireType)
+			}
+			v, err := buf.AsBool()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 3:
+			// Decode "intValue".
+			if wireType != codec.WireVarint {
+				return fmt.Errorf("invalid wire type %d for field number 3 (AnyValue.intValue)", wireType)
+			}
+			v, err := buf.AsInt64()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 4:
+			// Decode "doubleValue".
+			if wireType != codec.WireFixed64 {
+				return fmt.Errorf("invalid wire type %d for field number 4 (AnyValue.doubleValue)", wireType)
+			}
+			v, err := buf.AsDouble()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 5:
+			// Decode "arrayValue".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 5 (AnyValue.arrayValue)", wireType)
+			}
+			v, err := buf.DecodeRawBytes(false)
+			if err != nil {
+				return err
+			}
+			err = ValidateArrayValue(v)
+			if err != nil {
+				return err
+			}
+		case 6:
+			// Decode "kvlistValue".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 6 (AnyValue.kvlistValue)", wireType)
+			}
+			v, err := buf.DecodeRawBytes(false)
+			if err != nil {
+				return err
+			}
+			err = ValidateKeyValueList(v)
+			if err != nil {
+				return err
+			}
+		case 7:
+			// Decode "bytesValue".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 7 (AnyValue.bytesValue)", wireType)
+			}
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+			_ = v
+		}
+	}
+	return nil
 }
 
 func (m *AnyValue) decode() error {
@@ -2899,6 +3426,10 @@ type ArrayValue struct {
 }
 
 func UnmarshalArrayValue(bytes []byte) (*ArrayValue, error) {
+	if err := ValidateArrayValue(bytes); err != nil {
+		return nil, err
+	}
+
 	m := arrayValuePool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
@@ -2965,6 +3496,38 @@ func (m *ArrayValue) ValuesRemoveIf(f func(*AnyValue) bool) {
 		// Mark this message modified, if not already.
 		m._protoMessage.MarkModified()
 	}
+}
+
+func ValidateArrayValue(b []byte) error {
+	buf := codec.NewBuffer(b)
+
+	for !buf.EOF() {
+		v, err := buf.DecodeVarint()
+		if err != nil {
+			return err
+		}
+		fieldNum, wireType, err := codec.AsTagAndWireType(v)
+		if err != nil {
+			return err
+		}
+
+		switch fieldNum {
+		case 1:
+			// Decode "values".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 1 (ArrayValue.values)", wireType)
+			}
+			v, err := buf.DecodeRawBytes(false)
+			if err != nil {
+				return err
+			}
+			err = ValidateAnyValue(v)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (m *ArrayValue) decode() error {
@@ -3172,6 +3735,10 @@ type KeyValueList struct {
 }
 
 func UnmarshalKeyValueList(bytes []byte) (*KeyValueList, error) {
+	if err := ValidateKeyValueList(bytes); err != nil {
+		return nil, err
+	}
+
 	m := keyValueListPool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
@@ -3238,6 +3805,38 @@ func (m *KeyValueList) ValuesRemoveIf(f func(*KeyValue) bool) {
 		// Mark this message modified, if not already.
 		m._protoMessage.MarkModified()
 	}
+}
+
+func ValidateKeyValueList(b []byte) error {
+	buf := codec.NewBuffer(b)
+
+	for !buf.EOF() {
+		v, err := buf.DecodeVarint()
+		if err != nil {
+			return err
+		}
+		fieldNum, wireType, err := codec.AsTagAndWireType(v)
+		if err != nil {
+			return err
+		}
+
+		switch fieldNum {
+		case 1:
+			// Decode "values".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 1 (KeyValueList.values)", wireType)
+			}
+			v, err := buf.DecodeRawBytes(false)
+			if err != nil {
+				return err
+			}
+			err = ValidateKeyValue(v)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (m *KeyValueList) decode() error {
@@ -3445,6 +4044,10 @@ type PlainMessage struct {
 }
 
 func UnmarshalPlainMessage(bytes []byte) (*PlainMessage, error) {
+	if err := ValidatePlainMessage(bytes); err != nil {
+		return nil, err
+	}
+
 	m := plainMessagePool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
 	if err := m.decode(); err != nil {
@@ -3481,6 +4084,45 @@ func (m *PlainMessage) SetValue(v string) {
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
+}
+
+func ValidatePlainMessage(b []byte) error {
+	buf := codec.NewBuffer(b)
+
+	for !buf.EOF() {
+		v, err := buf.DecodeVarint()
+		if err != nil {
+			return err
+		}
+		fieldNum, wireType, err := codec.AsTagAndWireType(v)
+		if err != nil {
+			return err
+		}
+
+		switch fieldNum {
+		case 1:
+			// Decode "key".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 1 (PlainMessage.key)", wireType)
+			}
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
+			_ = v
+		case 2:
+			// Decode "value".
+			if wireType != codec.WireBytes {
+				return fmt.Errorf("invalid wire type %d for field number 2 (PlainMessage.value)", wireType)
+			}
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
+			_ = v
+		}
+	}
+	return nil
 }
 
 func (m *PlainMessage) decode() error {

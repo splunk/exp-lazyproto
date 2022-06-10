@@ -356,6 +356,9 @@ func BenchmarkLazy_Unmarshal_AndReadAll(b *testing.B) {
 		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
 		require.NoError(b, err)
 
+		//err = lazymsg.ValidateLogsData(goldenWireBytes)
+		//require.NoError(b, err)
+
 		// Traverse all data to get it loaded. This is the worst case.
 		countAttrsLazy(lazy)
 
