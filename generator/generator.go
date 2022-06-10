@@ -14,6 +14,7 @@ import (
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	_ "github.com/jhump/protoreflect/desc/protoparse"
+	"github.com/tigrannajaryan/exp-lazyproto/internal/molecule/src/codec"
 )
 
 type Options struct {
@@ -705,8 +706,17 @@ for !buf.EOF() {
 type decodePrimitive struct {
 	asProtoType      string
 	oneOfType        string
-	expectedWireType string
+	expectedWireType codec.WireType
 	mode             decodeMode
+}
+
+var wireTypeToString = map[codec.WireType]string{
+	codec.WireVarint:     "codec.WireVarint",
+	codec.WireFixed64:    "codec.WireFixed64",
+	codec.WireBytes:      "codec.WireBytes",
+	codec.WireStartGroup: "codec.WireStartGroup",
+	codec.WireEndGroup:   "codec.WireEndGroup",
+	codec.WireFixed32:    "codec.WireFixed32",
 }
 
 func (g *generator) oFieldDecodePrimitive(task decodePrimitive) {
@@ -714,8 +724,19 @@ func (g *generator) oFieldDecodePrimitive(task decodePrimitive) {
 		`
 if wireType != %s {	
 	return fmt.Errorf("invalid wire type %%d for field number %d ($MessageName.$fieldName)", wireType)
-}`, task.expectedWireType, g.field.GetNumber(),
+}`, wireTypeToString[task.expectedWireType], g.field.GetNumber(),
 	)
+
+	if task.expectedWireType == codec.WireBytes && task.mode == decodeValidate {
+		g.o(
+			`
+err := buf.SkipRawBytes()
+if err != nil {
+	return err
+}`,
+		)
+		return
+	}
 
 	g.o(
 		`
@@ -786,67 +807,67 @@ var primiteTypeDecode = map[descriptor.FieldDescriptorProto_Type]decodePrimitive
 	descriptor.FieldDescriptorProto_TYPE_BOOL: {
 		asProtoType:      "Bool",
 		oneOfType:        "Bool",
-		expectedWireType: "codec.WireVarint",
+		expectedWireType: codec.WireVarint,
 	},
 
 	descriptor.FieldDescriptorProto_TYPE_FIXED64: {
 		asProtoType:      "Fixed64",
 		oneOfType:        "Int64",
-		expectedWireType: "codec.WireFixed64",
+		expectedWireType: codec.WireFixed64,
 	},
 
 	descriptor.FieldDescriptorProto_TYPE_UINT64: {
 		asProtoType:      "Uint64",
 		oneOfType:        "Uint32",
-		expectedWireType: "codec.WireVarint",
+		expectedWireType: codec.WireVarint,
 	},
 
 	descriptor.FieldDescriptorProto_TYPE_SFIXED64: {
 		asProtoType:      "SFixed64",
 		oneOfType:        "Int64",
-		expectedWireType: "codec.WireFixed64",
+		expectedWireType: codec.WireFixed64,
 	},
 
 	descriptor.FieldDescriptorProto_TYPE_INT64: {
 		asProtoType:      "Int64",
 		oneOfType:        "Int64",
-		expectedWireType: "codec.WireVarint",
+		expectedWireType: codec.WireVarint,
 	},
 
 	descriptor.FieldDescriptorProto_TYPE_FIXED32: {
 		asProtoType:      "Fixed32",
 		oneOfType:        "Int32",
-		expectedWireType: "codec.WireFixed32",
+		expectedWireType: codec.WireFixed32,
 	},
 
 	descriptor.FieldDescriptorProto_TYPE_SINT32: {
 		asProtoType:      "Sint32",
 		oneOfType:        "Sint32",
-		expectedWireType: "codec.WireVarint",
+		expectedWireType: codec.WireVarint,
 	},
 
 	descriptor.FieldDescriptorProto_TYPE_UINT32: {
 		asProtoType:      "Uint32",
 		oneOfType:        "Uint32",
-		expectedWireType: "codec.WireVarint",
+		expectedWireType: codec.WireVarint,
 	},
 
 	descriptor.FieldDescriptorProto_TYPE_DOUBLE: {
 		asProtoType:      "Double",
 		oneOfType:        "Double",
-		expectedWireType: "codec.WireFixed64",
+		expectedWireType: codec.WireFixed64,
 	},
 
 	descriptor.FieldDescriptorProto_TYPE_STRING: {
 		asProtoType:      "StringUnsafe",
 		oneOfType:        "String",
-		expectedWireType: "codec.WireBytes",
+		expectedWireType: codec.WireBytes,
 	},
 
 	descriptor.FieldDescriptorProto_TYPE_BYTES: {
 		asProtoType:      "BytesUnsafe",
 		oneOfType:        "Bytes",
-		expectedWireType: "codec.WireBytes",
+		expectedWireType: codec.WireBytes,
 	},
 }
 
@@ -858,7 +879,12 @@ func (g *generator) oDecodeFields(mode decodeMode) {
 				g.setField(field)
 				g.o("case %d:", field.GetNumber())
 				g.i(1)
-				g.o(`// Decode "$fieldName".`)
+
+				if mode == decodeFull {
+					g.o(`// Decode "$fieldName".`)
+				} else {
+					g.o(`// Validate "$fieldName".`)
+				}
 
 				decode, ok := primiteTypeDecode[field.GetType()]
 				if ok {

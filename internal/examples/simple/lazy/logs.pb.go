@@ -152,7 +152,7 @@ func ValidateLogsData(b []byte) error {
 
 		switch fieldNum {
 		case 1:
-			// Decode "resourceLogs".
+			// Validate "resourceLogs".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (LogsData.resourceLogs)", wireType)
 			}
@@ -507,7 +507,7 @@ func ValidateResourceLogs(b []byte) error {
 
 		switch fieldNum {
 		case 1:
-			// Decode "resource".
+			// Validate "resource".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (ResourceLogs.resource)", wireType)
 			}
@@ -520,7 +520,7 @@ func ValidateResourceLogs(b []byte) error {
 				return err
 			}
 		case 2:
-			// Decode "scopeLogs".
+			// Validate "scopeLogs".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 2 (ResourceLogs.scopeLogs)", wireType)
 			}
@@ -533,15 +533,14 @@ func ValidateResourceLogs(b []byte) error {
 				return err
 			}
 		case 3:
-			// Decode "schemaUrl".
+			// Validate "schemaUrl".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 3 (ResourceLogs.schemaUrl)", wireType)
 			}
-			v, err := buf.AsStringUnsafe()
+			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-			_ = v
 		}
 	}
 	return nil
@@ -899,7 +898,7 @@ func ValidateResource(b []byte) error {
 
 		switch fieldNum {
 		case 1:
-			// Decode "attributes".
+			// Validate "attributes".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (Resource.attributes)", wireType)
 			}
@@ -912,7 +911,7 @@ func ValidateResource(b []byte) error {
 				return err
 			}
 		case 2:
-			// Decode "droppedAttributesCount".
+			// Validate "droppedAttributesCount".
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 2 (Resource.droppedAttributesCount)", wireType)
 			}
@@ -1279,7 +1278,7 @@ func ValidateScopeLogs(b []byte) error {
 
 		switch fieldNum {
 		case 1:
-			// Decode "scope".
+			// Validate "scope".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (ScopeLogs.scope)", wireType)
 			}
@@ -1292,7 +1291,7 @@ func ValidateScopeLogs(b []byte) error {
 				return err
 			}
 		case 2:
-			// Decode "logRecords".
+			// Validate "logRecords".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 2 (ScopeLogs.logRecords)", wireType)
 			}
@@ -1305,15 +1304,14 @@ func ValidateScopeLogs(b []byte) error {
 				return err
 			}
 		case 3:
-			// Decode "schemaUrl".
+			// Validate "schemaUrl".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 3 (ScopeLogs.schemaUrl)", wireType)
 			}
-			v, err := buf.AsStringUnsafe()
+			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-			_ = v
 		}
 	}
 	return nil
@@ -1699,27 +1697,25 @@ func ValidateInstrumentationScope(b []byte) error {
 
 		switch fieldNum {
 		case 1:
-			// Decode "name".
+			// Validate "name".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (InstrumentationScope.name)", wireType)
 			}
-			v, err := buf.AsStringUnsafe()
+			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-			_ = v
 		case 2:
-			// Decode "version".
+			// Validate "version".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 2 (InstrumentationScope.version)", wireType)
 			}
-			v, err := buf.AsStringUnsafe()
+			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-			_ = v
 		case 3:
-			// Decode "attributes".
+			// Validate "attributes".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 3 (InstrumentationScope.attributes)", wireType)
 			}
@@ -1732,7 +1728,7 @@ func ValidateInstrumentationScope(b []byte) error {
 				return err
 			}
 		case 4:
-			// Decode "droppedAttributesCount".
+			// Validate "droppedAttributesCount".
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 4 (InstrumentationScope.droppedAttributesCount)", wireType)
 			}
@@ -2191,7 +2187,7 @@ func ValidateLogRecord(b []byte) error {
 
 		switch fieldNum {
 		case 1:
-			// Decode "timeUnixNano".
+			// Validate "timeUnixNano".
 			if wireType != codec.WireFixed64 {
 				return fmt.Errorf("invalid wire type %d for field number 1 (LogRecord.timeUnixNano)", wireType)
 			}
@@ -2201,7 +2197,7 @@ func ValidateLogRecord(b []byte) error {
 			}
 			_ = v
 		case 11:
-			// Decode "observedTimeUnixNano".
+			// Validate "observedTimeUnixNano".
 			if wireType != codec.WireFixed64 {
 				return fmt.Errorf("invalid wire type %d for field number 11 (LogRecord.observedTimeUnixNano)", wireType)
 			}
@@ -2211,7 +2207,7 @@ func ValidateLogRecord(b []byte) error {
 			}
 			_ = v
 		case 2:
-			// Decode "severityNumber".
+			// Validate "severityNumber".
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 2 (LogRecord.severityNumber)", wireType)
 			}
@@ -2221,17 +2217,16 @@ func ValidateLogRecord(b []byte) error {
 			}
 			_ = v
 		case 3:
-			// Decode "severityText".
+			// Validate "severityText".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 3 (LogRecord.severityText)", wireType)
 			}
-			v, err := buf.AsStringUnsafe()
+			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-			_ = v
 		case 6:
-			// Decode "attributes".
+			// Validate "attributes".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 6 (LogRecord.attributes)", wireType)
 			}
@@ -2244,7 +2239,7 @@ func ValidateLogRecord(b []byte) error {
 				return err
 			}
 		case 7:
-			// Decode "droppedAttributesCount".
+			// Validate "droppedAttributesCount".
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 7 (LogRecord.droppedAttributesCount)", wireType)
 			}
@@ -2254,7 +2249,7 @@ func ValidateLogRecord(b []byte) error {
 			}
 			_ = v
 		case 8:
-			// Decode "flags".
+			// Validate "flags".
 			if wireType != codec.WireFixed32 {
 				return fmt.Errorf("invalid wire type %d for field number 8 (LogRecord.flags)", wireType)
 			}
@@ -2264,25 +2259,23 @@ func ValidateLogRecord(b []byte) error {
 			}
 			_ = v
 		case 9:
-			// Decode "traceId".
+			// Validate "traceId".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 9 (LogRecord.traceId)", wireType)
 			}
-			v, err := buf.AsBytesUnsafe()
+			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-			_ = v
 		case 10:
-			// Decode "spanId".
+			// Validate "spanId".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 10 (LogRecord.spanId)", wireType)
 			}
-			v, err := buf.AsBytesUnsafe()
+			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-			_ = v
 		}
 	}
 	return nil
@@ -2675,17 +2668,16 @@ func ValidateKeyValue(b []byte) error {
 
 		switch fieldNum {
 		case 1:
-			// Decode "key".
+			// Validate "key".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (KeyValue.key)", wireType)
 			}
-			v, err := buf.AsStringUnsafe()
+			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-			_ = v
 		case 2:
-			// Decode "value".
+			// Validate "value".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 2 (KeyValue.value)", wireType)
 			}
@@ -3083,17 +3075,16 @@ func ValidateAnyValue(b []byte) error {
 
 		switch fieldNum {
 		case 1:
-			// Decode "stringValue".
+			// Validate "stringValue".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (AnyValue.stringValue)", wireType)
 			}
-			v, err := buf.AsStringUnsafe()
+			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-			_ = v
 		case 2:
-			// Decode "boolValue".
+			// Validate "boolValue".
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 2 (AnyValue.boolValue)", wireType)
 			}
@@ -3103,7 +3094,7 @@ func ValidateAnyValue(b []byte) error {
 			}
 			_ = v
 		case 3:
-			// Decode "intValue".
+			// Validate "intValue".
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 3 (AnyValue.intValue)", wireType)
 			}
@@ -3113,7 +3104,7 @@ func ValidateAnyValue(b []byte) error {
 			}
 			_ = v
 		case 4:
-			// Decode "doubleValue".
+			// Validate "doubleValue".
 			if wireType != codec.WireFixed64 {
 				return fmt.Errorf("invalid wire type %d for field number 4 (AnyValue.doubleValue)", wireType)
 			}
@@ -3123,7 +3114,7 @@ func ValidateAnyValue(b []byte) error {
 			}
 			_ = v
 		case 5:
-			// Decode "arrayValue".
+			// Validate "arrayValue".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 5 (AnyValue.arrayValue)", wireType)
 			}
@@ -3136,7 +3127,7 @@ func ValidateAnyValue(b []byte) error {
 				return err
 			}
 		case 6:
-			// Decode "kvlistValue".
+			// Validate "kvlistValue".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 6 (AnyValue.kvlistValue)", wireType)
 			}
@@ -3149,15 +3140,14 @@ func ValidateAnyValue(b []byte) error {
 				return err
 			}
 		case 7:
-			// Decode "bytesValue".
+			// Validate "bytesValue".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 7 (AnyValue.bytesValue)", wireType)
 			}
-			v, err := buf.AsBytesUnsafe()
+			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-			_ = v
 		}
 	}
 	return nil
@@ -3532,7 +3522,7 @@ func ValidateArrayValue(b []byte) error {
 
 		switch fieldNum {
 		case 1:
-			// Decode "values".
+			// Validate "values".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (ArrayValue.values)", wireType)
 			}
@@ -3843,7 +3833,7 @@ func ValidateKeyValueList(b []byte) error {
 
 		switch fieldNum {
 		case 1:
-			// Decode "values".
+			// Validate "values".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (KeyValueList.values)", wireType)
 			}
@@ -4124,25 +4114,23 @@ func ValidatePlainMessage(b []byte) error {
 
 		switch fieldNum {
 		case 1:
-			// Decode "key".
+			// Validate "key".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (PlainMessage.key)", wireType)
 			}
-			v, err := buf.AsStringUnsafe()
+			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-			_ = v
 		case 2:
-			// Decode "value".
+			// Validate "value".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 2 (PlainMessage.value)", wireType)
 			}
-			v, err := buf.AsStringUnsafe()
+			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-			_ = v
 		}
 	}
 	return nil

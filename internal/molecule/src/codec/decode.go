@@ -284,7 +284,7 @@ func (cb *Buffer) DecodeVarint() (uint64, error) {
 func (cb *Buffer) DecodeFixed64() (x uint64, err error) {
 	// x, err already 0
 	i := cb.index + 8
-	if i < 0 || i > cb.len {
+	if i < 0 || i > len(cb.buf) {
 		err = io.ErrUnexpectedEOF
 		return
 	}
@@ -307,7 +307,7 @@ func (cb *Buffer) DecodeFixed64() (x uint64, err error) {
 func (cb *Buffer) DecodeFixed32() (x uint32, err error) {
 	// x, err already 0
 	i := cb.index + 4
-	if i < 0 || i > cb.len {
+	if i < 0 || i > len(cb.buf) {
 		err = io.ErrUnexpectedEOF
 		return
 	}
@@ -346,7 +346,7 @@ func (cb *Buffer) DecodeRawBytes() (buf []byte, err error) {
 		return nil, fmt.Errorf("proto: bad byte length %d", nb)
 	}
 	end := cb.index + nb
-	if end < cb.index || end > cb.len {
+	if end < cb.index || end > len(cb.buf) {
 		return nil, io.ErrUnexpectedEOF
 	}
 
@@ -371,7 +371,7 @@ func (cb *Buffer) SkipRawBytes() error {
 		return fmt.Errorf("proto: bad byte length %d", nb)
 	}
 	end := cb.index + nb
-	if end < cb.index || end > cb.len {
+	if end < cb.index || end > len(cb.buf) {
 		return io.ErrUnexpectedEOF
 	}
 
@@ -647,7 +647,7 @@ func (cb *Buffer) AsStringUnsafe() (s string, err error) {
 		return "", fmt.Errorf("proto: bad byte length %d", nb)
 	}
 	end := cb.index + nb
-	if end < cb.index || end > cb.len {
+	if end < cb.index || end > len(cb.buf) {
 		return "", io.ErrUnexpectedEOF
 	}
 
