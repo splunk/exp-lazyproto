@@ -1,6 +1,7 @@
 package simple
 
 import (
+	"os"
 	"sync"
 	"testing"
 
@@ -109,10 +110,10 @@ func createScopedLogs(id int, n int) *gogomsg.ScopeLogs {
 	return sl
 }
 
-func createLogsData(id int) *gogomsg.LogsData {
+func createLogsData(count int, id int) *gogomsg.LogsData {
 	src := &gogomsg.LogsData{}
 
-	for i := 0; i < scaleCount; i++ {
+	for i := 0; i < count; i++ {
 		rl := &gogomsg.ResourceLogs{
 			Resource: gogomsg.Resource{
 				Attributes: []gogomsg.KeyValue{
@@ -250,8 +251,8 @@ func TestDecode(t *testing.T) {
 	lazy.Free()
 }
 
-func TestLazyPassthrough(t *testing.T) {
-	src := createLogsData(1)
+func TestLazy_Pass(t *testing.T) {
+	src := createLogsData(scaleCount, 1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(t, err)
@@ -272,8 +273,139 @@ func TestLazyPassthrough(t *testing.T) {
 	lazy.Free()
 }
 
-func BenchmarkGoogleMarshal(b *testing.B) {
-	src := createLogsData(1)
+func forReport(b *testing.B) {
+	if os.Getenv("FORREPORT") == "" {
+		b.Skip()
+	}
+}
+
+func notForReport(b *testing.B) {
+	if os.Getenv("FORREPORT") != "" {
+		b.Skip()
+	}
+}
+
+func BenchmarkGoogle_Unmarshal_AndReadAll(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
+
+	bytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, bytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var ld googlemsg.LogsData
+		err := googlelib.Unmarshal(bytes, &ld)
+		require.NoError(b, err)
+
+		attrCount := 0
+		for _, rl := range ld.ResourceLogs {
+			attrCount += len(rl.Resource.Attributes)
+			for _, sl := range rl.ScopeLogs {
+				for _, lr := range sl.LogRecords {
+					attrCount += len(lr.Attributes)
+				}
+			}
+		}
+
+		//require.EqualValues(b, 2010, attrCount)
+	}
+}
+
+func BenchmarkGogo_Unmarshal_AndReadAll(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
+
+	bytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, bytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var ld gogomsg.LogsData
+		err := gogolib.Unmarshal(bytes, &ld)
+		require.NoError(b, err)
+
+		//attrCount := 0
+		//for _, rl := range ld.ResourceLogs {
+		//	attrCount += len(rl.Resource.Attributes)
+		//	for _, sl := range rl.ScopeLogs {
+		//		for _, lr := range sl.LogRecords {
+		//			attrCount += len(lr.Attributes)
+		//		}
+		//	}
+		//}
+
+		countAttrsGogo(&ld)
+
+		//require.EqualValues(b, 2010, attrCount)
+	}
+}
+
+func BenchmarkLazy_Unmarshal_AndReadAll(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(b, err)
+
+		// Traverse all data to get it loaded. This is the worst case.
+		countAttrsLazy(lazy)
+
+		lazy.Free()
+	}
+}
+
+func BenchmarkLazy_Unmarshal_AndReadAllNoPool(b *testing.B) {
+	notForReport(b)
+
+	src := createLogsData(scaleCount, 1)
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(b, err)
+
+		// Traverse all data to get it loaded. This is the worst case.
+		countAttrsLazy(lazy)
+
+		// Don't free here. This mean the pools will be disabled and regular allocations
+		// will happen.
+	}
+}
+
+func TestLazy_UnmarshalAndReadAll(t *testing.T) {
+	src := createLogsData(scaleCount, 1)
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(t, err)
+	require.NotNil(t, goldenWireBytes)
+
+	for i := 0; i < 2; i++ {
+		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
+		require.NoError(t, err)
+
+		// Traverse all data to get it loaded. This is the worst case.
+		countAttrsLazy(lazy)
+
+		lazy.Free()
+	}
+}
+
+func BenchmarkGoogle_Marshal_Unchanged(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
 	bytes, err := gogolib.Marshal(src)
 	var ld googlemsg.LogsData
 	err = googlelib.Unmarshal(bytes, &ld)
@@ -288,8 +420,13 @@ func BenchmarkGoogleMarshal(b *testing.B) {
 	}
 }
 
-func BenchmarkGogoMarshal(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkGoogle_Marshal_ModifyAll(b *testing.B) {
+	forReport(b)
+	BenchmarkGoogle_Marshal_Unchanged(b)
+}
+
+func BenchmarkGogo_Marshal_Unchanged(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
 
 	b.ResetTimer()
 
@@ -300,21 +437,44 @@ func BenchmarkGogoMarshal(b *testing.B) {
 	}
 }
 
-func readAnyValue(v *lazymsg.AnyValue) {
+func BenchmarkGogo_Marshal_ModifyAll(b *testing.B) {
+	forReport(b)
+	BenchmarkGogo_Marshal_Unchanged(b)
+}
+
+func readAnyValueLazy(v *lazymsg.AnyValue) {
 	switch v.ValueType() {
 	case lazymsg.AnyValueArrayValue:
 		for _, e := range v.ArrayValue().Values() {
-			readAnyValue(e)
+			readAnyValueLazy(e)
 		}
 	case lazymsg.AnyValueKvlistValue:
-		readAttrs(v.KvlistValue().Values())
+		readAttrsLazy(v.KvlistValue().Values())
 	}
 }
 
-func readAttrs(v []*lazymsg.KeyValue) {
+func readAnyValueGogo(v gogomsg.AnyValue) {
+	switch v := v.Value.(type) {
+	case *gogomsg.AnyValue_ArrayValue:
+		for _, e := range v.ArrayValue.Values {
+			readAnyValueGogo(*e)
+		}
+	case *gogomsg.AnyValue_KvlistValue:
+		readAttrsGogo(v.KvlistValue.Values)
+	}
+}
+
+func readAttrsLazy(v []*lazymsg.KeyValue) {
 	for _, e := range v {
 		e.Key()
-		readAnyValue(e.Value())
+		readAnyValueLazy(e.Value())
+	}
+}
+
+func readAttrsGogo(v []gogomsg.KeyValue) {
+	for _, e := range v {
+		_ = e.Key
+		readAnyValueGogo(e.Value)
 	}
 }
 
@@ -326,18 +486,44 @@ func countAttrsLazy(lazy *lazymsg.LogsData) int {
 
 		attrs := resource.Attributes()
 		attrCount += len(attrs)
-		readAttrs(attrs)
+		readAttrsLazy(attrs)
 
 		sls := rl.ScopeLogs()
 		for _, sl := range sls {
-			readAttrs(sl.Scope().Attributes())
+			readAttrsLazy(sl.Scope().Attributes())
 
 			logRecords := sl.LogRecords()
 
 			for _, logRecord := range logRecords {
 				attrs2 := logRecord.Attributes()
 				attrCount += len(attrs2)
-				readAttrs(attrs2)
+				readAttrsLazy(attrs2)
+			}
+		}
+	}
+	return attrCount
+}
+
+func countAttrsGogo(msg *gogomsg.LogsData) int {
+	attrCount := 0
+	rls := msg.ResourceLogs
+	for _, rl := range rls {
+		resource := rl.Resource
+
+		attrs := resource.Attributes
+		attrCount += len(attrs)
+		readAttrsGogo(attrs)
+
+		sls := rl.ScopeLogs
+		for _, sl := range sls {
+			readAttrsGogo(sl.Scope.Attributes)
+
+			logRecords := sl.LogRecords
+
+			for _, logRecord := range logRecords {
+				attrs2 := logRecord.Attributes
+				attrCount += len(attrs2)
+				readAttrsGogo(attrs2)
 			}
 		}
 	}
@@ -393,8 +579,8 @@ func touchAll(lazy *lazymsg.LogsData) {
 	}
 }
 
-func BenchmarkLazyMarshalUnchanged(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkLazy_Marshal_Unchanged(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -419,8 +605,8 @@ func BenchmarkLazyMarshalUnchanged(b *testing.B) {
 	}
 }
 
-func BenchmarkLazyMarshalFullModified(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkLazy_Marshal_ModifyAll(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -446,123 +632,18 @@ func BenchmarkLazyMarshalFullModified(b *testing.B) {
 	}
 }
 
-func BenchmarkGoogleUnmarshal(b *testing.B) {
-	src := createLogsData(1)
-
-	bytes, err := gogolib.Marshal(src)
-	require.NoError(b, err)
-	require.NotNil(b, bytes)
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		var ld googlemsg.LogsData
-		err := googlelib.Unmarshal(bytes, &ld)
-		require.NoError(b, err)
-
-		attrCount := 0
-		for _, rl := range ld.ResourceLogs {
-			attrCount += len(rl.Resource.Attributes)
-			for _, sl := range rl.ScopeLogs {
-				for _, lr := range sl.LogRecords {
-					attrCount += len(lr.Attributes)
-				}
-			}
-		}
-
-		//require.EqualValues(b, 2010, attrCount)
-	}
+func BenchmarkGoogle_Pass_NoReadNoModify(b *testing.B) {
+	forReport(b)
+	BenchmarkGoogle_Pass_ModifyAll(b)
 }
 
-func BenchmarkGogoUnmarshal(b *testing.B) {
-	src := createLogsData(1)
-
-	bytes, err := gogolib.Marshal(src)
-	require.NoError(b, err)
-	require.NotNil(b, bytes)
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		var ld gogomsg.LogsData
-		err := gogolib.Unmarshal(bytes, &ld)
-		require.NoError(b, err)
-
-		attrCount := 0
-		for _, rl := range ld.ResourceLogs {
-			attrCount += len(rl.Resource.Attributes)
-			for _, sl := range rl.ScopeLogs {
-				for _, lr := range sl.LogRecords {
-					attrCount += len(lr.Attributes)
-				}
-			}
-		}
-
-		//require.EqualValues(b, 2010, attrCount)
-	}
+func BenchmarkGoogle_Pass_ReadAllNoModify(b *testing.B) {
+	forReport(b)
+	BenchmarkGoogle_Pass_ModifyAll(b)
 }
 
-func BenchmarkLazyUnmarshalAndReadAll(b *testing.B) {
-	src := createLogsData(1)
-
-	goldenWireBytes, err := gogolib.Marshal(src)
-	require.NoError(b, err)
-	require.NotNil(b, goldenWireBytes)
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
-		require.NoError(b, err)
-
-		// Traverse all data to get it loaded. This is the worst case.
-		countAttrsLazy(lazy)
-
-		lazy.Free()
-	}
-}
-
-func BenchmarkLazyUnmarshalAndReadAllNoPool(b *testing.B) {
-	src := createLogsData(1)
-
-	goldenWireBytes, err := gogolib.Marshal(src)
-	require.NoError(b, err)
-	require.NotNil(b, goldenWireBytes)
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
-		require.NoError(b, err)
-
-		// Traverse all data to get it loaded. This is the worst case.
-		countAttrsLazy(lazy)
-
-		// Don't free here. This mean the pools will be disabled and regular allocations
-		// will happen.
-	}
-}
-
-func TestLazyUnmarshalAndReadAll(t *testing.T) {
-	src := createLogsData(1)
-
-	goldenWireBytes, err := gogolib.Marshal(src)
-	require.NoError(t, err)
-	require.NotNil(t, goldenWireBytes)
-
-	for i := 0; i < 2; i++ {
-		lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes)
-		require.NoError(t, err)
-
-		// Traverse all data to get it loaded. This is the worst case.
-		countAttrsLazy(lazy)
-
-		lazy.Free()
-	}
-}
-
-func BenchmarkGooglePasssthrough(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkGoogle_Pass_ModifyAll(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
 
 	bytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -581,8 +662,9 @@ func BenchmarkGooglePasssthrough(b *testing.B) {
 	}
 }
 
-func BenchmarkGogoPasssthrough(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkGogo_Pass_NoReadNoModify(b *testing.B) {
+	forReport(b)
+	src := createLogsData(scaleCount, 1)
 
 	bytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -601,11 +683,38 @@ func BenchmarkGogoPasssthrough(b *testing.B) {
 	}
 }
 
-func BenchmarkLazyPassthroughNoReadOrModify(b *testing.B) {
-	// This is the best case scenario for passthrough. We don't read or modify any
+func BenchmarkGogo_Pass_ReadAllNoModify(b *testing.B) {
+	forReport(b)
+	BenchmarkGogo_Pass_ModifyAll(b)
+}
+
+func BenchmarkGogo_Pass_ModifyAll(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
+
+	bytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, bytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var ld gogomsg.LogsData
+		err := gogolib.Unmarshal(bytes, &ld)
+		require.NoError(b, err)
+
+		countAttrsGogo(&ld)
+
+		destBytes, err := gogolib.Marshal(src)
+		require.NoError(b, err)
+		require.NotNil(b, destBytes)
+	}
+}
+
+func BenchmarkLazy_Pass_NoReadNoModify(b *testing.B) {
+	// This is the best case scenario for Pass. We don't read or modify any
 	// data, just unmarshal and marshal it exactly as it is.
 
-	src := createLogsData(1)
+	src := createLogsData(scaleCount, 1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -628,11 +737,11 @@ func BenchmarkLazyPassthroughNoReadOrModify(b *testing.B) {
 	}
 }
 
-func BenchmarkLazyPassthroughFullReadNoModify(b *testing.B) {
-	// This is the best case scenario for passthrough. We don't read or modify any
+func BenchmarkLazy_Pass_ReadAllNoModify(b *testing.B) {
+	// This is the best case scenario for Pass. We don't read or modify any
 	// data, just unmarshal and marshal it exactly as it is.
 
-	src := createLogsData(1)
+	src := createLogsData(scaleCount, 1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -658,11 +767,11 @@ func BenchmarkLazyPassthroughFullReadNoModify(b *testing.B) {
 	}
 }
 
-func BenchmarkLazyPassthroughFullModified(b *testing.B) {
+func BenchmarkLazy_Pass_ModifyAll(b *testing.B) {
 	// This is the worst case scenario. We read of data, so lazy loading has no
 	// performance benefit. We also modify all data, so we have to do full marshaling.
 
-	src := createLogsData(1)
+	src := createLogsData(scaleCount, 1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -690,12 +799,14 @@ func BenchmarkLazyPassthroughFullModified(b *testing.B) {
 	}
 }
 
-func BenchmarkLazyPassthroughFullModifiedConc(b *testing.B) {
+func BenchmarkLazy_Pass_ModifyAllConc(b *testing.B) {
+	notForReport(b)
+
 	const concurrentCount = 10
 
 	var goldenWireBytesSlice [][]byte
 	for j := 0; j < concurrentCount; j++ {
-		src := createLogsData(j)
+		src := createLogsData(scaleCount, j)
 		bts, err := gogolib.Marshal(src)
 		require.NoError(b, err)
 		require.NotNil(b, bts)
@@ -738,8 +849,8 @@ func BenchmarkLazyPassthroughFullModifiedConc(b *testing.B) {
 	wg.Wait()
 }
 
-func BenchmarkGogoInspectScopeAttr(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkGogo_Inspect_ScopeAttr(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -774,8 +885,8 @@ func BenchmarkGogoInspectScopeAttr(b *testing.B) {
 	}
 }
 
-func BenchmarkLazyInspectScopeAttr(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkLazy_Inspect_ScopeAttr(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -817,8 +928,8 @@ func BenchmarkLazyInspectScopeAttr(b *testing.B) {
 	}
 }
 
-func BenchmarkGogoInspectAttr(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkGogo_Inspect_LogAttr(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -852,8 +963,8 @@ func BenchmarkGogoInspectAttr(b *testing.B) {
 	}
 }
 
-func BenchmarkLazyInspectAttr(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkLazy_Inspect_LogAttr(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -897,8 +1008,8 @@ func BenchmarkLazyInspectAttr(b *testing.B) {
 	}
 }
 
-func BenchmarkGogoFilterScopeAttr(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkGogo_Filter_ScopeAttr(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -938,8 +1049,8 @@ func BenchmarkGogoFilterScopeAttr(b *testing.B) {
 	}
 }
 
-func BenchmarkLazyFilterScopeAttr(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkLazy_Filter_ScopeAttr(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -1005,8 +1116,8 @@ func gogoBatch(b *testing.B, inputWireBytes []byte) (batchedWireBytes []byte) {
 	return batchedWireBytes
 }
 
-func BenchmarkGogoBatch(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkGogo_Batch(b *testing.B) {
+	src := createLogsData(scaleCount/10, 1)
 
 	inputWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -1019,8 +1130,8 @@ func BenchmarkGogoBatch(b *testing.B) {
 	}
 }
 
-func BenchmarkLazyBatch(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkLazy_Batch(b *testing.B) {
+	src := createLogsData(scaleCount/10, 1)
 
 	inputWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
@@ -1059,11 +1170,17 @@ func BenchmarkLazyBatch(b *testing.B) {
 		if i == 0 {
 			assert.EqualValues(b, goldenBatchedBytes, destBytes)
 		}
+
+		for j := 0; j < 10; j++ {
+			inputMsg[j].Free()
+		}
 	}
 }
 
-func BenchmarkLazyTouchAll(b *testing.B) {
-	src := createLogsData(1)
+func BenchmarkLazy_TouchAll(b *testing.B) {
+	notForReport(b)
+
+	src := createLogsData(scaleCount, 1)
 
 	goldenWireBytes, err := gogolib.Marshal(src)
 	require.NoError(b, err)
