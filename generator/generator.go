@@ -652,30 +652,6 @@ for !buf.EOF() {
 	if err != nil {
 		return err
 	}
-
-	value := molecule.Value{}
-
-	switch wireType {
-	case codec.WireVarint:
-		value.Number, err = buf.DecodeVarint()
-	case codec.WireFixed32:
-		value.Number, err = buf.DecodeFixed32()
-	case codec.WireFixed64:
-		value.Number, err = buf.DecodeFixed64()
-	case codec.WireBytes:
-		value.Bytes, err = buf.DecodeRawBytes(false)
-	case codec.WireStartGroup, codec.WireEndGroup:
-		err = fmt.Errorf(
-			"encountered group wire type: %%d. Groups not supported",
-			wireType,
-		)
-	default:
-		err = fmt.Errorf("unknown wireType: %%d", wireType)
-	}
-
-	if err != nil {
-		return fmt.Errorf("error reading value from buffer: %%v", err)
-	}
 `,
 	)
 
@@ -700,26 +676,26 @@ if wireType != %s {
 }`, expectedWireType, g.field.GetNumber(),
 	)
 
-	canReturnError := map[string]bool{
-		"Float":    true,
-		"Int32":    true,
-		"Uint32":   true,
-		"Sint32":   true,
-		"Fixed32":  true,
-		"SFixed32": true,
-	}
+	//canReturnError := map[string]bool{
+	//	"Float":    true,
+	//	"Int32":    true,
+	//	"Uint32":   true,
+	//	"Sint32":   true,
+	//	"Fixed32":  true,
+	//	"SFixed32": true,
+	//}
 
-	if canReturnError[asProtoType] {
-		g.o(
-			`
-v, err := value.As%s()
+	//if canReturnError[asProtoType] {
+	g.o(
+		`
+v, err := buf.As%s()
 if err != nil {
 	return err
 }`, asProtoType,
-		)
-	} else {
-		g.o(`v := value.As%s()`, asProtoType)
-	}
+	)
+	//} else {
+	//	g.o(`v := value.As%s()`, asProtoType)
+	//}
 
 	if g.field.GetOneOf() != nil {
 		choiceName := composeOneOfChoiceName(g.msg, g.field)
@@ -749,7 +725,7 @@ func (g *generator) oFieldDecodeEnum(enumTypeName string) {
 if wireType != codec.WireVarint {	
 	return fmt.Errorf("invalid wire type %%d for field number %d ($MessageName.$fieldName)", wireType)
 }
-v, err := value.AsUint32()
+v, err := buf.AsUint32()
 if err != nil {
 	return err
 }
@@ -812,7 +788,11 @@ func (g *generator) oDecodeFields() {
 if wireType != codec.WireBytes {
 	return fmt.Errorf("invalid wire type %%d for field number %d ($MessageName.$fieldName)", wireType)
 }
-v := value.AsBytesUnsafe()`, g.field.GetNumber(),
+v, err := buf.AsBytesUnsafe()
+if err != nil {
+	return err
+}
+`, g.field.GetNumber(),
 					)
 
 					if field.IsRepeated() {
@@ -873,6 +853,32 @@ func (g *generator) oRepeatedFieldCounts() {
 	g.oMsgDecodeLoop(
 		func() error {
 			for _, field := range fields {
+
+				g.o(
+					`
+// Skip the field content
+switch wireType {
+case codec.WireVarint:
+	_, err = buf.DecodeVarint()
+case codec.WireFixed32:
+	_, err = buf.DecodeFixed32()
+case codec.WireFixed64:
+	_, err = buf.DecodeFixed64()
+case codec.WireBytes:
+	_, err = buf.DecodeRawBytes(false)
+case codec.WireStartGroup, codec.WireEndGroup:
+	err = fmt.Errorf(
+		"encountered group wire type: %%d. Groups not supported",
+		wireType,
+	)
+default:
+	err = fmt.Errorf("unknown wireType: %%d", wireType)
+}
+if err != nil {
+	return fmt.Errorf("error reading value from buffer: %%v", err)
+}`,
+				)
+
 				g.setField(field)
 				counterName := field.GetName() + "Count"
 				g.i(2)

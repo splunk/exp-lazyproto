@@ -6,6 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
+	"reflect"
+	"unsafe"
+
+	"github.com/jhump/protoreflect/codec"
 )
 
 // ErrOverflow is returned when an integer is too large to be represented.
@@ -298,7 +303,7 @@ func (cb *Buffer) DecodeFixed64() (x uint64, err error) {
 // DecodeFixed32 reads a 32-bit integer from the Buffer.
 // This is the format for the
 // fixed32, sfixed32, and float protocol buffer types.
-func (cb *Buffer) DecodeFixed32() (x uint64, err error) {
+func (cb *Buffer) DecodeFixed32() (x uint32, err error) {
 	// x, err already 0
 	i := cb.index + 4
 	if i < 0 || i > cb.len {
@@ -307,10 +312,10 @@ func (cb *Buffer) DecodeFixed32() (x uint64, err error) {
 	}
 	cb.index = i
 
-	x = uint64(cb.buf[i-4])
-	x |= uint64(cb.buf[i-3]) << 8
-	x |= uint64(cb.buf[i-2]) << 16
-	x |= uint64(cb.buf[i-1]) << 24
+	x = uint32(cb.buf[i-4])
+	x |= uint32(cb.buf[i-3]) << 8
+	x |= uint32(cb.buf[i-2]) << 16
+	x |= uint32(cb.buf[i-1]) << 24
 	return
 }
 
@@ -479,4 +484,180 @@ func AsTagAndWireType(v uint64) (tag int32, wireType WireType, err error) {
 	}
 
 	return
+}
+
+// AsDouble interprets the value as a double.
+func (cb *Buffer) AsDouble() (float64, error) {
+	v, err := cb.DecodeFixed64()
+	if err != nil {
+		return 0, err
+	}
+	return math.Float64frombits(v), nil
+}
+
+// AsFloat interprets the value as a float.
+func (cb *Buffer) AsFloat() (float32, error) {
+	v, err := cb.DecodeFixed32()
+	if err != nil {
+		return 0, err
+	}
+	return math.Float32frombits(v), nil
+}
+
+// AsInt32 interprets the value as an int32.
+func (cb *Buffer) AsInt32() (int32, error) {
+	v, err := cb.DecodeVarint()
+	if err != nil {
+		return 0, err
+	}
+	s := int64(v)
+	if s > math.MaxInt32 {
+		return 0, fmt.Errorf("AsInt32: %d overflows int32", s)
+	}
+	if s < math.MinInt32 {
+		return 0, fmt.Errorf("AsInt32: %d underflows int32", s)
+	}
+	return int32(v), nil
+}
+
+// AsInt64 interprets the value as an int64.
+func (cb *Buffer) AsInt64() (int64, error) {
+	v, err := cb.DecodeVarint()
+	if err != nil {
+		return 0, err
+	}
+	return int64(v), nil
+}
+
+// AsUint32 interprets the value as a uint32.
+func (cb *Buffer) AsUint32() (uint32, error) {
+	v, err := cb.DecodeVarint()
+	if err != nil {
+		return 0, err
+	}
+	if v > math.MaxUint32 {
+		return 0, fmt.Errorf("AsUInt32: %d overflows uint32", v)
+	}
+	return uint32(v), nil
+}
+
+// AsUint64 interprets the value as a uint64.
+func (cb *Buffer) AsUint64() (uint64, error) {
+	v, err := cb.DecodeVarint()
+	if err != nil {
+		return 0, err
+	}
+	return v, nil
+}
+
+// AsSint32 interprets the value as a sint32.
+func (cb *Buffer) AsSint32() (int32, error) {
+	v, err := cb.DecodeVarint()
+	if err != nil {
+		return 0, err
+	}
+	if v > math.MaxUint32 {
+		return 0, fmt.Errorf("AsSint32: %d overflows int32", v)
+	}
+	return codec.DecodeZigZag32(v), nil
+}
+
+// AsSint64 interprets the value as a sint64.
+func (cb *Buffer) AsSint64() (int64, error) {
+	v, err := cb.DecodeVarint()
+	if err != nil {
+		return 0, err
+	}
+	return codec.DecodeZigZag64(v), nil
+}
+
+// AsFixed32 interprets the value as a fixed32.
+func (cb *Buffer) AsFixed32() (uint32, error) {
+	v, err := cb.DecodeFixed32()
+	if err != nil {
+		return 0, err
+	}
+	return v, nil
+}
+
+// AsFixed64 interprets the value as a fixed64.
+func (cb *Buffer) AsFixed64() (uint64, error) {
+	v, err := cb.DecodeFixed64()
+	if err != nil {
+		return 0, err
+	}
+	return v, nil
+}
+
+// AsSFixed32 interprets the value as a SFixed32.
+func (cb *Buffer) AsSFixed32() (int32, error) {
+	v, err := cb.DecodeFixed32()
+	if err != nil {
+		return 0, err
+	}
+	return int32(v), nil
+}
+
+// AsSFixed64 interprets the value as a SFixed64.
+func (cb *Buffer) AsSFixed64() (int64, error) {
+	v, err := cb.DecodeFixed64()
+	if err != nil {
+		return 0, err
+	}
+	return int64(v), nil
+}
+
+// AsBool interprets the value as a bool.
+func (cb *Buffer) AsBool() (bool, error) {
+	v, err := cb.DecodeVarint()
+	if err != nil {
+		return false, err
+	}
+	return v == 1, nil
+}
+
+// AsStringUnsafe interprets the value as a string. The returned string is an unsafe view over
+// the underlying bytes. Use AsStringSafe() to obtain a "safe" string that is a copy of the
+// underlying data.
+func (cb *Buffer) AsStringUnsafe() (string, error) {
+	v, err := cb.DecodeRawBytes(false)
+	if err != nil {
+		return "", err
+	}
+	return unsafeBytesToString(v), nil
+}
+
+// AsStringSafe interprets the value as a string by allocating a safe copy of the underlying data.
+func (cb *Buffer) AsStringSafe() (string, error) {
+	v, err := cb.DecodeRawBytes(false)
+	if err != nil {
+		return "", err
+	}
+	return string(v), nil
+}
+
+// AsBytesUnsafe interprets the value as a byte slice. The returned []byte is an unsafe view over
+// the underlying bytes. Use AsBytesSafe() to obtain a "safe" [] that is a copy of the
+// underlying data.
+func (cb *Buffer) AsBytesUnsafe() ([]byte, error) {
+	return cb.DecodeRawBytes(false)
+}
+
+// AsBytesSafe interprets the value as a byte slice by allocating a safe copy of the underlying data.
+func (cb *Buffer) AsBytesSafe() ([]byte, error) {
+	v, err := cb.DecodeRawBytes(false)
+	if err != nil {
+		return nil, err
+	}
+	return append([]byte(nil), v...), nil
+}
+
+func unsafeBytesToString(b []byte) string {
+	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+
+	var s string
+	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	sh.Data = bh.Data
+	sh.Len = bh.Len
+	return s
 }

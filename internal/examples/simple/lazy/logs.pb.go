@@ -148,17 +148,16 @@ func (m *LogsData) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
+		// Skip the field content
 		switch wireType {
 		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
+			_, err = buf.DecodeVarint()
 		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
+			_, err = buf.DecodeFixed32()
 		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
+			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
+			_, err = buf.DecodeRawBytes(false)
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -167,11 +166,9 @@ func (m *LogsData) decode() error {
 		default:
 			err = fmt.Errorf("unknown wireType: %d", wireType)
 		}
-
 		if err != nil {
 			return fmt.Errorf("error reading value from buffer: %v", err)
 		}
-
 		if fieldNum == 1 {
 			resourceLogsCount++
 		}
@@ -195,37 +192,17 @@ func (m *LogsData) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
-		switch wireType {
-		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-
 		switch fieldNum {
 		case 1:
 			// Decode "resourceLogs".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (LogsData.resourceLogs)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+
 			// The slice is pre-allocated, assign to the appropriate index.
 			elem := m.resourceLogs[resourceLogsCount]
 			resourceLogsCount++
@@ -488,17 +465,16 @@ func (m *ResourceLogs) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
+		// Skip the field content
 		switch wireType {
 		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
+			_, err = buf.DecodeVarint()
 		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
+			_, err = buf.DecodeFixed32()
 		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
+			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
+			_, err = buf.DecodeRawBytes(false)
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -507,11 +483,9 @@ func (m *ResourceLogs) decode() error {
 		default:
 			err = fmt.Errorf("unknown wireType: %d", wireType)
 		}
-
 		if err != nil {
 			return fmt.Errorf("error reading value from buffer: %v", err)
 		}
-
 		if fieldNum == 2 {
 			scopeLogsCount++
 		}
@@ -535,37 +509,17 @@ func (m *ResourceLogs) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
-		switch wireType {
-		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-
 		switch fieldNum {
 		case 1:
 			// Decode "resource".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (ResourceLogs.resource)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+
 			m.resource = resourcePool.Get()
 			m.resource._protoMessage.Parent = &m._protoMessage
 			m.resource._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
@@ -574,7 +528,11 @@ func (m *ResourceLogs) decode() error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 2 (ResourceLogs.scopeLogs)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+
 			// The slice is pre-allocated, assign to the appropriate index.
 			elem := m.scopeLogs[scopeLogsCount]
 			scopeLogsCount++
@@ -585,7 +543,10 @@ func (m *ResourceLogs) decode() error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 3 (ResourceLogs.schemaUrl)", wireType)
 			}
-			v := value.AsStringUnsafe()
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
 			m.schemaUrl = v
 		}
 	}
@@ -835,17 +796,16 @@ func (m *Resource) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
+		// Skip the field content
 		switch wireType {
 		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
+			_, err = buf.DecodeVarint()
 		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
+			_, err = buf.DecodeFixed32()
 		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
+			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
+			_, err = buf.DecodeRawBytes(false)
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -854,11 +814,9 @@ func (m *Resource) decode() error {
 		default:
 			err = fmt.Errorf("unknown wireType: %d", wireType)
 		}
-
 		if err != nil {
 			return fmt.Errorf("error reading value from buffer: %v", err)
 		}
-
 		if fieldNum == 1 {
 			attributesCount++
 		}
@@ -882,37 +840,17 @@ func (m *Resource) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
-		switch wireType {
-		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-
 		switch fieldNum {
 		case 1:
 			// Decode "attributes".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (Resource.attributes)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+
 			// The slice is pre-allocated, assign to the appropriate index.
 			elem := m.attributes[attributesCount]
 			attributesCount++
@@ -923,7 +861,7 @@ func (m *Resource) decode() error {
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 2 (Resource.droppedAttributesCount)", wireType)
 			}
-			v, err := value.AsUint32()
+			v, err := buf.AsUint32()
 			if err != nil {
 				return err
 			}
@@ -1190,17 +1128,16 @@ func (m *ScopeLogs) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
+		// Skip the field content
 		switch wireType {
 		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
+			_, err = buf.DecodeVarint()
 		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
+			_, err = buf.DecodeFixed32()
 		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
+			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
+			_, err = buf.DecodeRawBytes(false)
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -1209,11 +1146,9 @@ func (m *ScopeLogs) decode() error {
 		default:
 			err = fmt.Errorf("unknown wireType: %d", wireType)
 		}
-
 		if err != nil {
 			return fmt.Errorf("error reading value from buffer: %v", err)
 		}
-
 		if fieldNum == 2 {
 			logRecordsCount++
 		}
@@ -1237,37 +1172,17 @@ func (m *ScopeLogs) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
-		switch wireType {
-		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-
 		switch fieldNum {
 		case 1:
 			// Decode "scope".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (ScopeLogs.scope)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+
 			m.scope = instrumentationScopePool.Get()
 			m.scope._protoMessage.Parent = &m._protoMessage
 			m.scope._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
@@ -1276,7 +1191,11 @@ func (m *ScopeLogs) decode() error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 2 (ScopeLogs.logRecords)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+
 			// The slice is pre-allocated, assign to the appropriate index.
 			elem := m.logRecords[logRecordsCount]
 			logRecordsCount++
@@ -1287,7 +1206,10 @@ func (m *ScopeLogs) decode() error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 3 (ScopeLogs.schemaUrl)", wireType)
 			}
-			v := value.AsStringUnsafe()
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
 			m.schemaUrl = v
 		}
 	}
@@ -1565,17 +1487,16 @@ func (m *InstrumentationScope) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
+		// Skip the field content
 		switch wireType {
 		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
+			_, err = buf.DecodeVarint()
 		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
+			_, err = buf.DecodeFixed32()
 		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
+			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
+			_, err = buf.DecodeRawBytes(false)
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -1584,11 +1505,9 @@ func (m *InstrumentationScope) decode() error {
 		default:
 			err = fmt.Errorf("unknown wireType: %d", wireType)
 		}
-
 		if err != nil {
 			return fmt.Errorf("error reading value from buffer: %v", err)
 		}
-
 		if fieldNum == 3 {
 			attributesCount++
 		}
@@ -1612,51 +1531,37 @@ func (m *InstrumentationScope) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
-		switch wireType {
-		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-
 		switch fieldNum {
 		case 1:
 			// Decode "name".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (InstrumentationScope.name)", wireType)
 			}
-			v := value.AsStringUnsafe()
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
 			m.name = v
 		case 2:
 			// Decode "version".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 2 (InstrumentationScope.version)", wireType)
 			}
-			v := value.AsStringUnsafe()
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
 			m.version = v
 		case 3:
 			// Decode "attributes".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 3 (InstrumentationScope.attributes)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+
 			// The slice is pre-allocated, assign to the appropriate index.
 			elem := m.attributes[attributesCount]
 			attributesCount++
@@ -1667,7 +1572,7 @@ func (m *InstrumentationScope) decode() error {
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 4 (InstrumentationScope.droppedAttributesCount)", wireType)
 			}
-			v, err := value.AsUint32()
+			v, err := buf.AsUint32()
 			if err != nil {
 				return err
 			}
@@ -2006,17 +1911,16 @@ func (m *LogRecord) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
+		// Skip the field content
 		switch wireType {
 		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
+			_, err = buf.DecodeVarint()
 		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
+			_, err = buf.DecodeFixed32()
 		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
+			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
+			_, err = buf.DecodeRawBytes(false)
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -2025,11 +1929,9 @@ func (m *LogRecord) decode() error {
 		default:
 			err = fmt.Errorf("unknown wireType: %d", wireType)
 		}
-
 		if err != nil {
 			return fmt.Errorf("error reading value from buffer: %v", err)
 		}
-
 		if fieldNum == 6 {
 			attributesCount++
 		}
@@ -2053,51 +1955,33 @@ func (m *LogRecord) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
-		switch wireType {
-		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-
 		switch fieldNum {
 		case 1:
 			// Decode "timeUnixNano".
 			if wireType != codec.WireFixed64 {
 				return fmt.Errorf("invalid wire type %d for field number 1 (LogRecord.timeUnixNano)", wireType)
 			}
-			v := value.AsFixed64()
+			v, err := buf.AsFixed64()
+			if err != nil {
+				return err
+			}
 			m.timeUnixNano = v
 		case 11:
 			// Decode "observedTimeUnixNano".
 			if wireType != codec.WireFixed64 {
 				return fmt.Errorf("invalid wire type %d for field number 11 (LogRecord.observedTimeUnixNano)", wireType)
 			}
-			v := value.AsFixed64()
+			v, err := buf.AsFixed64()
+			if err != nil {
+				return err
+			}
 			m.observedTimeUnixNano = v
 		case 2:
 			// Decode "severityNumber".
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 2 (LogRecord.severityNumber)", wireType)
 			}
-			v, err := value.AsUint32()
+			v, err := buf.AsUint32()
 			if err != nil {
 				return err
 			}
@@ -2107,14 +1991,21 @@ func (m *LogRecord) decode() error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 3 (LogRecord.severityText)", wireType)
 			}
-			v := value.AsStringUnsafe()
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
 			m.severityText = v
 		case 6:
 			// Decode "attributes".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 6 (LogRecord.attributes)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+
 			// The slice is pre-allocated, assign to the appropriate index.
 			elem := m.attributes[attributesCount]
 			attributesCount++
@@ -2125,7 +2016,7 @@ func (m *LogRecord) decode() error {
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 7 (LogRecord.droppedAttributesCount)", wireType)
 			}
-			v, err := value.AsUint32()
+			v, err := buf.AsUint32()
 			if err != nil {
 				return err
 			}
@@ -2135,7 +2026,7 @@ func (m *LogRecord) decode() error {
 			if wireType != codec.WireFixed32 {
 				return fmt.Errorf("invalid wire type %d for field number 8 (LogRecord.flags)", wireType)
 			}
-			v, err := value.AsFixed32()
+			v, err := buf.AsFixed32()
 			if err != nil {
 				return err
 			}
@@ -2145,14 +2036,20 @@ func (m *LogRecord) decode() error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 9 (LogRecord.traceId)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
 			m.traceId = v
 		case 10:
 			// Decode "spanId".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 10 (LogRecord.spanId)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
 			m.spanId = v
 		}
 	}
@@ -2378,44 +2275,27 @@ func (m *KeyValue) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
-		switch wireType {
-		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-
 		switch fieldNum {
 		case 1:
 			// Decode "key".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (KeyValue.key)", wireType)
 			}
-			v := value.AsStringUnsafe()
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
 			m.key = v
 		case 2:
 			// Decode "value".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 2 (KeyValue.value)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+
 			m.value = anyValuePool.Get()
 			m.value._protoMessage.Parent = &m._protoMessage
 			m.value._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
@@ -2755,65 +2635,57 @@ func (m *AnyValue) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
-		switch wireType {
-		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-
 		switch fieldNum {
 		case 1:
 			// Decode "stringValue".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (AnyValue.stringValue)", wireType)
 			}
-			v := value.AsStringUnsafe()
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
 			m.value = oneof.NewOneOfString(v, int(AnyValueStringValue))
 		case 2:
 			// Decode "boolValue".
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 2 (AnyValue.boolValue)", wireType)
 			}
-			v := value.AsBool()
+			v, err := buf.AsBool()
+			if err != nil {
+				return err
+			}
 			m.value = oneof.NewOneOfBool(v, int(AnyValueBoolValue))
 		case 3:
 			// Decode "intValue".
 			if wireType != codec.WireVarint {
 				return fmt.Errorf("invalid wire type %d for field number 3 (AnyValue.intValue)", wireType)
 			}
-			v := value.AsInt64()
+			v, err := buf.AsInt64()
+			if err != nil {
+				return err
+			}
 			m.value = oneof.NewOneOfInt64(v, int(AnyValueIntValue))
 		case 4:
 			// Decode "doubleValue".
 			if wireType != codec.WireFixed64 {
 				return fmt.Errorf("invalid wire type %d for field number 4 (AnyValue.doubleValue)", wireType)
 			}
-			v := value.AsDouble()
+			v, err := buf.AsDouble()
+			if err != nil {
+				return err
+			}
 			m.value = oneof.NewOneOfDouble(v, int(AnyValueDoubleValue))
 		case 5:
 			// Decode "arrayValue".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 5 (AnyValue.arrayValue)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+
 			elem := arrayValuePool.Get()
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
@@ -2823,7 +2695,11 @@ func (m *AnyValue) decode() error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 6 (AnyValue.kvlistValue)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+
 			elem := keyValueListPool.Get()
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
@@ -2833,7 +2709,10 @@ func (m *AnyValue) decode() error {
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 7 (AnyValue.bytesValue)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
 			m.value = oneof.NewOneOfBytes(v, int(AnyValueBytesValue))
 		}
 	}
@@ -3106,17 +2985,16 @@ func (m *ArrayValue) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
+		// Skip the field content
 		switch wireType {
 		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
+			_, err = buf.DecodeVarint()
 		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
+			_, err = buf.DecodeFixed32()
 		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
+			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
+			_, err = buf.DecodeRawBytes(false)
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -3125,11 +3003,9 @@ func (m *ArrayValue) decode() error {
 		default:
 			err = fmt.Errorf("unknown wireType: %d", wireType)
 		}
-
 		if err != nil {
 			return fmt.Errorf("error reading value from buffer: %v", err)
 		}
-
 		if fieldNum == 1 {
 			valuesCount++
 		}
@@ -3153,37 +3029,17 @@ func (m *ArrayValue) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
-		switch wireType {
-		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-
 		switch fieldNum {
 		case 1:
 			// Decode "values".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (ArrayValue.values)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+
 			// The slice is pre-allocated, assign to the appropriate index.
 			elem := m.values[valuesCount]
 			valuesCount++
@@ -3402,17 +3258,16 @@ func (m *KeyValueList) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
+		// Skip the field content
 		switch wireType {
 		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
+			_, err = buf.DecodeVarint()
 		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
+			_, err = buf.DecodeFixed32()
 		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
+			_, err = buf.DecodeFixed64()
 		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
+			_, err = buf.DecodeRawBytes(false)
 		case codec.WireStartGroup, codec.WireEndGroup:
 			err = fmt.Errorf(
 				"encountered group wire type: %d. Groups not supported",
@@ -3421,11 +3276,9 @@ func (m *KeyValueList) decode() error {
 		default:
 			err = fmt.Errorf("unknown wireType: %d", wireType)
 		}
-
 		if err != nil {
 			return fmt.Errorf("error reading value from buffer: %v", err)
 		}
-
 		if fieldNum == 1 {
 			valuesCount++
 		}
@@ -3449,37 +3302,17 @@ func (m *KeyValueList) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
-		switch wireType {
-		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-
 		switch fieldNum {
 		case 1:
 			// Decode "values".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (KeyValueList.values)", wireType)
 			}
-			v := value.AsBytesUnsafe()
+			v, err := buf.AsBytesUnsafe()
+			if err != nil {
+				return err
+			}
+
 			// The slice is pre-allocated, assign to the appropriate index.
 			elem := m.values[valuesCount]
 			valuesCount++
@@ -3663,44 +3496,26 @@ func (m *PlainMessage) decode() error {
 			return err
 		}
 
-		value := molecule.Value{}
-
-		switch wireType {
-		case codec.WireVarint:
-			value.Number, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			value.Number, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			value.Number, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			value.Bytes, err = buf.DecodeRawBytes(false)
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-
 		switch fieldNum {
 		case 1:
 			// Decode "key".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 1 (PlainMessage.key)", wireType)
 			}
-			v := value.AsStringUnsafe()
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
 			m.key = v
 		case 2:
 			// Decode "value".
 			if wireType != codec.WireBytes {
 				return fmt.Errorf("invalid wire type %d for field number 2 (PlainMessage.value)", wireType)
 			}
-			v := value.AsStringUnsafe()
+			v, err := buf.AsStringUnsafe()
+			if err != nil {
+				return err
+			}
 			m.value = v
 		}
 	}
