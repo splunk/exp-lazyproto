@@ -481,6 +481,15 @@ func (cb *Buffer) SkipVarint() error {
 	return io.ErrUnexpectedEOF
 }
 
+func (cb *Buffer) SkipFixed64() error {
+	i := cb.index + 8
+	if i < 0 || i > len(cb.buf) {
+		return io.ErrUnexpectedEOF
+	}
+	cb.index = i
+	return nil
+}
+
 // DecodeFixed64 reads a 64-bit integer from the Buffer.
 // This is the format for the
 // fixed64, sfixed64, and double protocol buffer types.
@@ -502,6 +511,15 @@ func (cb *Buffer) DecodeFixed64() (x uint64, err error) {
 	x |= uint64(cb.buf[i-2]) << 48
 	x |= uint64(cb.buf[i-1]) << 56
 	return
+}
+
+func (cb *Buffer) SkipFixed32() error {
+	i := cb.index + 4
+	if i < 0 || i > len(cb.buf) {
+		return io.ErrUnexpectedEOF
+	}
+	cb.index = i
+	return nil
 }
 
 // DecodeFixed32 reads a 32-bit integer from the Buffer.
@@ -902,4 +920,19 @@ func (cb *Buffer) AsBytesSafe() ([]byte, error) {
 		return nil, err
 	}
 	return append([]byte(nil), v...), nil
+}
+
+func (cb *Buffer) SkipFieldByWireType(wireType WireType) error {
+	switch wireType {
+	case WireVarint:
+		return cb.SkipVarint()
+	case WireFixed64:
+		return cb.SkipFixed64()
+	case WireBytes:
+		return cb.SkipRawBytes()
+	case WireFixed32:
+		return cb.SkipFixed32()
+	default:
+		return ErrBadWireType
+	}
 }

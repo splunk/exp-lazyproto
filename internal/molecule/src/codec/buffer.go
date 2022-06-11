@@ -44,6 +44,14 @@ func (cb *Buffer) EOF() bool {
 	return cb.index >= len(cb.buf)
 }
 
+func (cb *Buffer) PeekByteUnsafe() byte {
+	return cb.buf[cb.index]
+}
+
+func (cb *Buffer) SkipByteUnsafe() {
+	cb.index++
+}
+
 // Skip attempts to skip the given number of bytes in the input. If
 // the input has fewer bytes than the given count, false is returned
 // and the buffer is unchanged. Otherwise, the given number of bytes

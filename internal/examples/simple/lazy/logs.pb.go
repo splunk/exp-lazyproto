@@ -18,6 +18,7 @@ import (
 
 var _ = oneof.OneOf{}       // To avoid unused import warning.
 var _ = unsafe.Pointer(nil) // To avoid unused import warning.
+var _ = fmt.Errorf          // To avoid unused import warning.
 
 // SeverityNumber values
 type SeverityNumber uint32
@@ -64,7 +65,7 @@ type LogsData struct {
 
 func UnmarshalLogsData(bytes []byte, opts lazyproto.UnmarshalOpts) (*LogsData, error) {
 	if opts.WithValidate {
-		if err := ValidateLogsData(bytes); err != nil {
+		if err := validateLogsData(bytes); err != nil {
 			return nil, err
 		}
 	}
@@ -137,32 +138,42 @@ func (m *LogsData) ResourceLogsRemoveIf(f func(*ResourceLogs) bool) {
 	}
 }
 
-func ValidateLogsData(b []byte) error {
+func validateLogsData(b []byte) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Validate "resourceLogs".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (LogsData.resourceLogs)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (resourceLogs), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
-			err = ValidateResourceLogs(v)
+			err = validateResourceLogs(v)
 			if err != nil {
 				return err
+			}
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -178,38 +189,33 @@ func (m *LogsData) decode() error {
 	// Count all repeated fields. We need one counter per field.
 	resourceLogsCount := 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		// Skip the field content
-		switch wireType {
-		case codec.WireVarint:
-			_, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			_, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			_, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			err = buf.SkipRawBytes()
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-		if fieldNum == 1 {
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (resourceLogs), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			resourceLogsCount++
+			buf.SkipRawBytes()
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -222,21 +228,13 @@ func (m *LogsData) decode() error {
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	resourceLogsCount = 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Decode "resourceLogs".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (LogsData.resourceLogs)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (resourceLogs), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -247,6 +245,24 @@ func (m *LogsData) decode() error {
 			resourceLogsCount++
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -380,7 +396,7 @@ type ResourceLogs struct {
 
 func UnmarshalResourceLogs(bytes []byte, opts lazyproto.UnmarshalOpts) (*ResourceLogs, error) {
 	if opts.WithValidate {
-		if err := ValidateResourceLogs(bytes); err != nil {
+		if err := validateResourceLogs(bytes); err != nil {
 			return nil, err
 		}
 	}
@@ -492,54 +508,58 @@ func (m *ResourceLogs) SetSchemaUrl(v string) {
 	m._protoMessage.MarkModified()
 }
 
-func ValidateResourceLogs(b []byte) error {
+func validateResourceLogs(b []byte) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Validate "resource".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (ResourceLogs.resource)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (resource), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
-			err = ValidateResource(v)
+			err = validateResource(v)
 			if err != nil {
 				return err
 			}
-		case 2:
-			// Validate "scopeLogs".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 2 (ResourceLogs.scopeLogs)", wireType)
-			}
+		case 0b0_0010_010: // field number 2 (scopeLogs), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
-			err = ValidateScopeLogs(v)
+			err = validateScopeLogs(v)
 			if err != nil {
 				return err
 			}
-		case 3:
-			// Validate "schemaUrl".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 3 (ResourceLogs.schemaUrl)", wireType)
-			}
+		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
+			}
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -555,38 +575,39 @@ func (m *ResourceLogs) decode() error {
 	// Count all repeated fields. We need one counter per field.
 	scopeLogsCount := 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		// Skip the field content
-		switch wireType {
-		case codec.WireVarint:
-			_, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			_, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			_, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			err = buf.SkipRawBytes()
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-		if fieldNum == 2 {
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (resource), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
+			buf.SkipRawBytes()
+		case 0b0_0010_010: // field number 2 (scopeLogs), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			scopeLogsCount++
+			buf.SkipRawBytes()
+		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
+			buf.SkipRawBytes()
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -599,21 +620,13 @@ func (m *ResourceLogs) decode() error {
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	scopeLogsCount = 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Decode "resource".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (ResourceLogs.resource)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (resource), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -622,11 +635,8 @@ func (m *ResourceLogs) decode() error {
 			m.resource = resourcePool.Get()
 			m.resource._protoMessage.Parent = &m._protoMessage
 			m.resource._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
-		case 2:
-			// Decode "scopeLogs".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 2 (ResourceLogs.scopeLogs)", wireType)
-			}
+		case 0b0_0010_010: // field number 2 (scopeLogs), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -637,16 +647,31 @@ func (m *ResourceLogs) decode() error {
 			scopeLogsCount++
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
-		case 3:
-			// Decode "schemaUrl".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 3 (ResourceLogs.schemaUrl)", wireType)
-			}
+		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
 				return err
 			}
 			m.schemaUrl = v
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -797,7 +822,7 @@ type Resource struct {
 
 func UnmarshalResource(bytes []byte, opts lazyproto.UnmarshalOpts) (*Resource, error) {
 	if opts.WithValidate {
-		if err := ValidateResource(bytes); err != nil {
+		if err := validateResource(bytes); err != nil {
 			return nil, err
 		}
 	}
@@ -883,40 +908,48 @@ func (m *Resource) SetDroppedAttributesCount(v uint32) {
 	m._protoMessage.MarkModified()
 }
 
-func ValidateResource(b []byte) error {
+func validateResource(b []byte) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Validate "attributes".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (Resource.attributes)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (attributes), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
-			err = ValidateKeyValue(v)
+			err = validateKeyValue(v)
 			if err != nil {
 				return err
 			}
-		case 2:
-			// Validate "droppedAttributesCount".
-			if wireType != codec.WireVarint {
-				return fmt.Errorf("invalid wire type %d for field number 2 (Resource.droppedAttributesCount)", wireType)
-			}
-			if err := buf.SkipVarint(); err != nil {
+		case 0b0_0010_000: // field number 2 (droppedAttributesCount), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
+			_, err := buf.AsUint32()
+			if err != nil {
 				return err
+			}
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -932,38 +965,36 @@ func (m *Resource) decode() error {
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		// Skip the field content
-		switch wireType {
-		case codec.WireVarint:
-			_, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			_, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			_, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			err = buf.SkipRawBytes()
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-		if fieldNum == 1 {
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (attributes), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			attributesCount++
+			buf.SkipRawBytes()
+		case 0b0_0010_000: // field number 2 (droppedAttributesCount), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
+			buf.SkipVarint()
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -976,21 +1007,13 @@ func (m *Resource) decode() error {
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	attributesCount = 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Decode "attributes".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (Resource.attributes)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (attributes), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -1001,16 +1024,31 @@ func (m *Resource) decode() error {
 			attributesCount++
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
-		case 2:
-			// Decode "droppedAttributesCount".
-			if wireType != codec.WireVarint {
-				return fmt.Errorf("invalid wire type %d for field number 2 (Resource.droppedAttributesCount)", wireType)
-			}
+		case 0b0_0010_000: // field number 2 (droppedAttributesCount), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsUint32()
 			if err != nil {
 				return err
 			}
 			m.droppedAttributesCount = v
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -1149,7 +1187,7 @@ type ScopeLogs struct {
 
 func UnmarshalScopeLogs(bytes []byte, opts lazyproto.UnmarshalOpts) (*ScopeLogs, error) {
 	if opts.WithValidate {
-		if err := ValidateScopeLogs(bytes); err != nil {
+		if err := validateScopeLogs(bytes); err != nil {
 			return nil, err
 		}
 	}
@@ -1261,54 +1299,58 @@ func (m *ScopeLogs) SetSchemaUrl(v string) {
 	m._protoMessage.MarkModified()
 }
 
-func ValidateScopeLogs(b []byte) error {
+func validateScopeLogs(b []byte) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Validate "scope".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (ScopeLogs.scope)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (scope), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
-			err = ValidateInstrumentationScope(v)
+			err = validateInstrumentationScope(v)
 			if err != nil {
 				return err
 			}
-		case 2:
-			// Validate "logRecords".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 2 (ScopeLogs.logRecords)", wireType)
-			}
+		case 0b0_0010_010: // field number 2 (logRecords), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
-			err = ValidateLogRecord(v)
+			err = validateLogRecord(v)
 			if err != nil {
 				return err
 			}
-		case 3:
-			// Validate "schemaUrl".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 3 (ScopeLogs.schemaUrl)", wireType)
-			}
+		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
+			}
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -1324,38 +1366,39 @@ func (m *ScopeLogs) decode() error {
 	// Count all repeated fields. We need one counter per field.
 	logRecordsCount := 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		// Skip the field content
-		switch wireType {
-		case codec.WireVarint:
-			_, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			_, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			_, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			err = buf.SkipRawBytes()
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-		if fieldNum == 2 {
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (scope), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
+			buf.SkipRawBytes()
+		case 0b0_0010_010: // field number 2 (logRecords), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			logRecordsCount++
+			buf.SkipRawBytes()
+		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
+			buf.SkipRawBytes()
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -1368,21 +1411,13 @@ func (m *ScopeLogs) decode() error {
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	logRecordsCount = 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Decode "scope".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (ScopeLogs.scope)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (scope), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -1391,11 +1426,8 @@ func (m *ScopeLogs) decode() error {
 			m.scope = instrumentationScopePool.Get()
 			m.scope._protoMessage.Parent = &m._protoMessage
 			m.scope._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
-		case 2:
-			// Decode "logRecords".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 2 (ScopeLogs.logRecords)", wireType)
-			}
+		case 0b0_0010_010: // field number 2 (logRecords), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -1406,16 +1438,31 @@ func (m *ScopeLogs) decode() error {
 			logRecordsCount++
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
-		case 3:
-			// Decode "schemaUrl".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 3 (ScopeLogs.schemaUrl)", wireType)
-			}
+		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
 				return err
 			}
 			m.schemaUrl = v
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -1568,7 +1615,7 @@ type InstrumentationScope struct {
 
 func UnmarshalInstrumentationScope(bytes []byte, opts lazyproto.UnmarshalOpts) (*InstrumentationScope, error) {
 	if opts.WithValidate {
-		if err := ValidateInstrumentationScope(bytes); err != nil {
+		if err := validateInstrumentationScope(bytes); err != nil {
 			return nil, err
 		}
 	}
@@ -1680,58 +1727,60 @@ func (m *InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 	m._protoMessage.MarkModified()
 }
 
-func ValidateInstrumentationScope(b []byte) error {
+func validateInstrumentationScope(b []byte) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Validate "name".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (InstrumentationScope.name)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (name), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-		case 2:
-			// Validate "version".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 2 (InstrumentationScope.version)", wireType)
-			}
+		case 0b0_0010_010: // field number 2 (version), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-		case 3:
-			// Validate "attributes".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 3 (InstrumentationScope.attributes)", wireType)
-			}
+		case 0b0_0011_010: // field number 3 (attributes), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
-			err = ValidateKeyValue(v)
+			err = validateKeyValue(v)
 			if err != nil {
 				return err
 			}
-		case 4:
-			// Validate "droppedAttributesCount".
-			if wireType != codec.WireVarint {
-				return fmt.Errorf("invalid wire type %d for field number 4 (InstrumentationScope.droppedAttributesCount)", wireType)
-			}
-			if err := buf.SkipVarint(); err != nil {
+		case 0b0_0100_000: // field number 4 (droppedAttributesCount), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
+			_, err := buf.AsUint32()
+			if err != nil {
 				return err
+			}
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -1747,38 +1796,42 @@ func (m *InstrumentationScope) decode() error {
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		// Skip the field content
-		switch wireType {
-		case codec.WireVarint:
-			_, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			_, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			_, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			err = buf.SkipRawBytes()
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-		if fieldNum == 3 {
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (name), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
+			buf.SkipRawBytes()
+		case 0b0_0010_010: // field number 2 (version), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
+			buf.SkipRawBytes()
+		case 0b0_0011_010: // field number 3 (attributes), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			attributesCount++
+			buf.SkipRawBytes()
+		case 0b0_0100_000: // field number 4 (droppedAttributesCount), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
+			buf.SkipVarint()
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -1791,41 +1844,27 @@ func (m *InstrumentationScope) decode() error {
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	attributesCount = 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Decode "name".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (InstrumentationScope.name)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (name), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
 				return err
 			}
 			m.name = v
-		case 2:
-			// Decode "version".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 2 (InstrumentationScope.version)", wireType)
-			}
+		case 0b0_0010_010: // field number 2 (version), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
 				return err
 			}
 			m.version = v
-		case 3:
-			// Decode "attributes".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 3 (InstrumentationScope.attributes)", wireType)
-			}
+		case 0b0_0011_010: // field number 3 (attributes), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -1836,16 +1875,31 @@ func (m *InstrumentationScope) decode() error {
 			attributesCount++
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
-		case 4:
-			// Decode "droppedAttributesCount".
-			if wireType != codec.WireVarint {
-				return fmt.Errorf("invalid wire type %d for field number 4 (InstrumentationScope.droppedAttributesCount)", wireType)
-			}
+		case 0b0_0100_000: // field number 4 (droppedAttributesCount), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsUint32()
 			if err != nil {
 				return err
 			}
 			m.droppedAttributesCount = v
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -1991,7 +2045,7 @@ type LogRecord struct {
 
 func UnmarshalLogRecord(bytes []byte, opts lazyproto.UnmarshalOpts) (*LogRecord, error) {
 	if opts.WithValidate {
-		if err := ValidateLogRecord(bytes); err != nil {
+		if err := validateLogRecord(bytes); err != nil {
 			return nil, err
 		}
 	}
@@ -2168,104 +2222,91 @@ func (m *LogRecord) SetSpanId(v []byte) {
 	m._protoMessage.MarkModified()
 }
 
-func ValidateLogRecord(b []byte) error {
+func validateLogRecord(b []byte) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Validate "timeUnixNano".
-			if wireType != codec.WireFixed64 {
-				return fmt.Errorf("invalid wire type %d for field number 1 (LogRecord.timeUnixNano)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_001: // field number 1 (timeUnixNano), wire type 1 (Fixed64)
+			buf.SkipByteUnsafe()
 			_, err := buf.AsFixed64()
 			if err != nil {
 				return err
 			}
-		case 11:
-			// Validate "observedTimeUnixNano".
-			if wireType != codec.WireFixed64 {
-				return fmt.Errorf("invalid wire type %d for field number 11 (LogRecord.observedTimeUnixNano)", wireType)
-			}
+		case 0b0_1011_001: // field number 11 (observedTimeUnixNano), wire type 1 (Fixed64)
+			buf.SkipByteUnsafe()
 			_, err := buf.AsFixed64()
 			if err != nil {
 				return err
 			}
-		case 2:
-			// Validate "severityNumber".
-			if wireType != codec.WireVarint {
-				return fmt.Errorf("invalid wire type %d for field number 2 (LogRecord.severityNumber)", wireType)
-			}
+		case 0b0_0010_000: // field number 2 (severityNumber), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsUint32()
 			if err != nil {
 				return err
 			}
 			_ = v
-		case 3:
-			// Validate "severityText".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 3 (LogRecord.severityText)", wireType)
-			}
+		case 0b0_0011_010: // field number 3 (severityText), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-		case 6:
-			// Validate "attributes".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 6 (LogRecord.attributes)", wireType)
-			}
+		case 0b0_0110_010: // field number 6 (attributes), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
-			err = ValidateKeyValue(v)
+			err = validateKeyValue(v)
 			if err != nil {
 				return err
 			}
-		case 7:
-			// Validate "droppedAttributesCount".
-			if wireType != codec.WireVarint {
-				return fmt.Errorf("invalid wire type %d for field number 7 (LogRecord.droppedAttributesCount)", wireType)
-			}
-			if err := buf.SkipVarint(); err != nil {
+		case 0b0_0111_000: // field number 7 (droppedAttributesCount), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
+			_, err := buf.AsUint32()
+			if err != nil {
 				return err
 			}
-		case 8:
-			// Validate "flags".
-			if wireType != codec.WireFixed32 {
-				return fmt.Errorf("invalid wire type %d for field number 8 (LogRecord.flags)", wireType)
-			}
+		case 0b0_1000_101: // field number 8 (flags), wire type 5 (Fixed32)
+			buf.SkipByteUnsafe()
 			_, err := buf.AsFixed32()
 			if err != nil {
 				return err
 			}
-		case 9:
-			// Validate "traceId".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 9 (LogRecord.traceId)", wireType)
-			}
+		case 0b0_1001_010: // field number 9 (traceId), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-		case 10:
-			// Validate "spanId".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 10 (LogRecord.spanId)", wireType)
-			}
+		case 0b0_1010_010: // field number 10 (spanId), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
+			}
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -2281,38 +2322,57 @@ func (m *LogRecord) decode() error {
 	// Count all repeated fields. We need one counter per field.
 	attributesCount := 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		// Skip the field content
-		switch wireType {
-		case codec.WireVarint:
-			_, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			_, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			_, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			err = buf.SkipRawBytes()
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-		if fieldNum == 6 {
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_001: // field number 1 (timeUnixNano), wire type 1 (Fixed64)
+			buf.SkipByteUnsafe()
+			buf.SkipFixed64()
+		case 0b0_1011_001: // field number 11 (observedTimeUnixNano), wire type 1 (Fixed64)
+			buf.SkipByteUnsafe()
+			buf.SkipFixed64()
+		case 0b0_0010_000: // field number 2 (severityNumber), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
+			buf.SkipVarint()
+		case 0b0_0011_010: // field number 3 (severityText), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
+			buf.SkipRawBytes()
+		case 0b0_0110_010: // field number 6 (attributes), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			attributesCount++
+			buf.SkipRawBytes()
+		case 0b0_0111_000: // field number 7 (droppedAttributesCount), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
+			buf.SkipVarint()
+		case 0b0_1000_101: // field number 8 (flags), wire type 5 (Fixed32)
+			buf.SkipByteUnsafe()
+			buf.SkipFixed32()
+		case 0b0_1001_010: // field number 9 (traceId), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
+			buf.SkipRawBytes()
+		case 0b0_1010_010: // field number 10 (spanId), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
+			buf.SkipRawBytes()
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -2325,61 +2385,41 @@ func (m *LogRecord) decode() error {
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	attributesCount = 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Decode "timeUnixNano".
-			if wireType != codec.WireFixed64 {
-				return fmt.Errorf("invalid wire type %d for field number 1 (LogRecord.timeUnixNano)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_001: // field number 1 (timeUnixNano), wire type 1 (Fixed64)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsFixed64()
 			if err != nil {
 				return err
 			}
 			m.timeUnixNano = v
-		case 11:
-			// Decode "observedTimeUnixNano".
-			if wireType != codec.WireFixed64 {
-				return fmt.Errorf("invalid wire type %d for field number 11 (LogRecord.observedTimeUnixNano)", wireType)
-			}
+		case 0b0_1011_001: // field number 11 (observedTimeUnixNano), wire type 1 (Fixed64)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsFixed64()
 			if err != nil {
 				return err
 			}
 			m.observedTimeUnixNano = v
-		case 2:
-			// Decode "severityNumber".
-			if wireType != codec.WireVarint {
-				return fmt.Errorf("invalid wire type %d for field number 2 (LogRecord.severityNumber)", wireType)
-			}
+		case 0b0_0010_000: // field number 2 (severityNumber), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsUint32()
 			if err != nil {
 				return err
 			}
 			m.severityNumber = SeverityNumber(v)
-		case 3:
-			// Decode "severityText".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 3 (LogRecord.severityText)", wireType)
-			}
+		case 0b0_0011_010: // field number 3 (severityText), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
 				return err
 			}
 			m.severityText = v
-		case 6:
-			// Decode "attributes".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 6 (LogRecord.attributes)", wireType)
-			}
+		case 0b0_0110_010: // field number 6 (attributes), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -2390,46 +2430,52 @@ func (m *LogRecord) decode() error {
 			attributesCount++
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
-		case 7:
-			// Decode "droppedAttributesCount".
-			if wireType != codec.WireVarint {
-				return fmt.Errorf("invalid wire type %d for field number 7 (LogRecord.droppedAttributesCount)", wireType)
-			}
+		case 0b0_0111_000: // field number 7 (droppedAttributesCount), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsUint32()
 			if err != nil {
 				return err
 			}
 			m.droppedAttributesCount = v
-		case 8:
-			// Decode "flags".
-			if wireType != codec.WireFixed32 {
-				return fmt.Errorf("invalid wire type %d for field number 8 (LogRecord.flags)", wireType)
-			}
+		case 0b0_1000_101: // field number 8 (flags), wire type 5 (Fixed32)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsFixed32()
 			if err != nil {
 				return err
 			}
 			m.flags = v
-		case 9:
-			// Decode "traceId".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 9 (LogRecord.traceId)", wireType)
-			}
+		case 0b0_1001_010: // field number 9 (traceId), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
 			}
 			m.traceId = v
-		case 10:
-			// Decode "spanId".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 10 (LogRecord.spanId)", wireType)
-			}
+		case 0b0_1010_010: // field number 10 (spanId), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
 			}
 			m.spanId = v
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -2583,7 +2629,7 @@ type KeyValue struct {
 
 func UnmarshalKeyValue(bytes []byte, opts lazyproto.UnmarshalOpts) (*KeyValue, error) {
 	if opts.WithValidate {
-		if err := ValidateKeyValue(bytes); err != nil {
+		if err := validateKeyValue(bytes); err != nil {
 			return nil, err
 		}
 	}
@@ -2644,41 +2690,48 @@ func (m *KeyValue) SetValue(v *AnyValue) {
 	m._protoMessage.MarkModified()
 }
 
-func ValidateKeyValue(b []byte) error {
+func validateKeyValue(b []byte) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Validate "key".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (KeyValue.key)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (key), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-		case 2:
-			// Validate "value".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 2 (KeyValue.value)", wireType)
-			}
+		case 0b0_0010_010: // field number 2 (value), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
-			err = ValidateAnyValue(v)
+			err = validateAnyValue(v)
 			if err != nil {
 				return err
+			}
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -2692,31 +2745,20 @@ func (m *KeyValue) decode() error {
 	m._flags = 0
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Decode "key".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (KeyValue.key)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (key), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
 				return err
 			}
 			m.key = v
-		case 2:
-			// Decode "value".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 2 (KeyValue.value)", wireType)
-			}
+		case 0b0_0010_010: // field number 2 (value), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -2725,6 +2767,24 @@ func (m *KeyValue) decode() error {
 			m.value = anyValuePool.Get()
 			m.value._protoMessage.Parent = &m._protoMessage
 			m.value._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -2861,7 +2921,7 @@ type AnyValue struct {
 
 func UnmarshalAnyValue(bytes []byte, opts lazyproto.UnmarshalOpts) (*AnyValue, error) {
 	if opts.WithValidate {
-		if err := ValidateAnyValue(bytes); err != nil {
+		if err := validateAnyValue(bytes); err != nil {
 			return nil, err
 		}
 	}
@@ -3051,88 +3111,82 @@ func (m *AnyValue) SetBytesValue(v []byte) {
 	m._protoMessage.MarkModified()
 }
 
-func ValidateAnyValue(b []byte) error {
+func validateAnyValue(b []byte) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Validate "stringValue".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (AnyValue.stringValue)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (stringValue), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
-		case 2:
-			// Validate "boolValue".
-			if wireType != codec.WireVarint {
-				return fmt.Errorf("invalid wire type %d for field number 2 (AnyValue.boolValue)", wireType)
-			}
-			if err := buf.SkipVarint(); err != nil {
+		case 0b0_0010_000: // field number 2 (boolValue), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
+			_, err := buf.AsBool()
+			if err != nil {
 				return err
 			}
-		case 3:
-			// Validate "intValue".
-			if wireType != codec.WireVarint {
-				return fmt.Errorf("invalid wire type %d for field number 3 (AnyValue.intValue)", wireType)
-			}
-			if err := buf.SkipVarint(); err != nil {
+		case 0b0_0011_000: // field number 3 (intValue), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
+			_, err := buf.AsInt64()
+			if err != nil {
 				return err
 			}
-		case 4:
-			// Validate "doubleValue".
-			if wireType != codec.WireFixed64 {
-				return fmt.Errorf("invalid wire type %d for field number 4 (AnyValue.doubleValue)", wireType)
-			}
+		case 0b0_0100_001: // field number 4 (doubleValue), wire type 1 (Fixed64)
+			buf.SkipByteUnsafe()
 			_, err := buf.AsDouble()
 			if err != nil {
 				return err
 			}
-		case 5:
-			// Validate "arrayValue".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 5 (AnyValue.arrayValue)", wireType)
-			}
+		case 0b0_0101_010: // field number 5 (arrayValue), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
-			err = ValidateArrayValue(v)
+			err = validateArrayValue(v)
 			if err != nil {
 				return err
 			}
-		case 6:
-			// Validate "kvlistValue".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 6 (AnyValue.kvlistValue)", wireType)
-			}
+		case 0b0_0110_010: // field number 6 (kvlistValue), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
-			err = ValidateKeyValueList(v)
+			err = validateKeyValueList(v)
 			if err != nil {
 				return err
 			}
-		case 7:
-			// Validate "bytesValue".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 7 (AnyValue.bytesValue)", wireType)
-			}
+		case 0b0_0111_010: // field number 7 (bytesValue), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
+			}
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -3146,61 +3200,41 @@ func (m *AnyValue) decode() error {
 	m._flags = 0
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Decode "stringValue".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (AnyValue.stringValue)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (stringValue), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
 				return err
 			}
 			m.value = oneof.NewOneOfString(v, int(AnyValueStringValue))
-		case 2:
-			// Decode "boolValue".
-			if wireType != codec.WireVarint {
-				return fmt.Errorf("invalid wire type %d for field number 2 (AnyValue.boolValue)", wireType)
-			}
+		case 0b0_0010_000: // field number 2 (boolValue), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBool()
 			if err != nil {
 				return err
 			}
 			m.value = oneof.NewOneOfBool(v, int(AnyValueBoolValue))
-		case 3:
-			// Decode "intValue".
-			if wireType != codec.WireVarint {
-				return fmt.Errorf("invalid wire type %d for field number 3 (AnyValue.intValue)", wireType)
-			}
+		case 0b0_0011_000: // field number 3 (intValue), wire type 0 (Varint)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsInt64()
 			if err != nil {
 				return err
 			}
 			m.value = oneof.NewOneOfInt64(v, int(AnyValueIntValue))
-		case 4:
-			// Decode "doubleValue".
-			if wireType != codec.WireFixed64 {
-				return fmt.Errorf("invalid wire type %d for field number 4 (AnyValue.doubleValue)", wireType)
-			}
+		case 0b0_0100_001: // field number 4 (doubleValue), wire type 1 (Fixed64)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsDouble()
 			if err != nil {
 				return err
 			}
 			m.value = oneof.NewOneOfDouble(v, int(AnyValueDoubleValue))
-		case 5:
-			// Decode "arrayValue".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 5 (AnyValue.arrayValue)", wireType)
-			}
+		case 0b0_0101_010: // field number 5 (arrayValue), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -3210,11 +3244,8 @@ func (m *AnyValue) decode() error {
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 			m.value = oneof.NewOneOfPtr(unsafe.Pointer(elem), int(AnyValueArrayValue))
-		case 6:
-			// Decode "kvlistValue".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 6 (AnyValue.kvlistValue)", wireType)
-			}
+		case 0b0_0110_010: // field number 6 (kvlistValue), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -3224,16 +3255,31 @@ func (m *AnyValue) decode() error {
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 			m.value = oneof.NewOneOfPtr(unsafe.Pointer(elem), int(AnyValueKvlistValue))
-		case 7:
-			// Decode "bytesValue".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 7 (AnyValue.bytesValue)", wireType)
-			}
+		case 0b0_0111_010: // field number 7 (bytesValue), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
 			}
 			m.value = oneof.NewOneOfBytes(v, int(AnyValueBytesValue))
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -3420,7 +3466,7 @@ type ArrayValue struct {
 
 func UnmarshalArrayValue(bytes []byte, opts lazyproto.UnmarshalOpts) (*ArrayValue, error) {
 	if opts.WithValidate {
-		if err := ValidateArrayValue(bytes); err != nil {
+		if err := validateArrayValue(bytes); err != nil {
 			return nil, err
 		}
 	}
@@ -3493,32 +3539,42 @@ func (m *ArrayValue) ValuesRemoveIf(f func(*AnyValue) bool) {
 	}
 }
 
-func ValidateArrayValue(b []byte) error {
+func validateArrayValue(b []byte) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Validate "values".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (ArrayValue.values)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
-			err = ValidateAnyValue(v)
+			err = validateAnyValue(v)
 			if err != nil {
 				return err
+			}
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -3534,38 +3590,33 @@ func (m *ArrayValue) decode() error {
 	// Count all repeated fields. We need one counter per field.
 	valuesCount := 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		// Skip the field content
-		switch wireType {
-		case codec.WireVarint:
-			_, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			_, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			_, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			err = buf.SkipRawBytes()
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-		if fieldNum == 1 {
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			valuesCount++
+			buf.SkipRawBytes()
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -3578,21 +3629,13 @@ func (m *ArrayValue) decode() error {
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	valuesCount = 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Decode "values".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (ArrayValue.values)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -3603,6 +3646,24 @@ func (m *ArrayValue) decode() error {
 			valuesCount++
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -3731,7 +3792,7 @@ type KeyValueList struct {
 
 func UnmarshalKeyValueList(bytes []byte, opts lazyproto.UnmarshalOpts) (*KeyValueList, error) {
 	if opts.WithValidate {
-		if err := ValidateKeyValueList(bytes); err != nil {
+		if err := validateKeyValueList(bytes); err != nil {
 			return nil, err
 		}
 	}
@@ -3804,32 +3865,42 @@ func (m *KeyValueList) ValuesRemoveIf(f func(*KeyValue) bool) {
 	}
 }
 
-func ValidateKeyValueList(b []byte) error {
+func validateKeyValueList(b []byte) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Validate "values".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (KeyValueList.values)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
 				return err
 			}
-			err = ValidateKeyValue(v)
+			err = validateKeyValue(v)
 			if err != nil {
 				return err
+			}
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -3845,38 +3916,33 @@ func (m *KeyValueList) decode() error {
 	// Count all repeated fields. We need one counter per field.
 	valuesCount := 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		// Skip the field content
-		switch wireType {
-		case codec.WireVarint:
-			_, err = buf.DecodeVarint()
-		case codec.WireFixed32:
-			_, err = buf.DecodeFixed32()
-		case codec.WireFixed64:
-			_, err = buf.DecodeFixed64()
-		case codec.WireBytes:
-			err = buf.SkipRawBytes()
-		case codec.WireStartGroup, codec.WireEndGroup:
-			err = fmt.Errorf(
-				"encountered group wire type: %d. Groups not supported",
-				wireType,
-			)
-		default:
-			err = fmt.Errorf("unknown wireType: %d", wireType)
-		}
-		if err != nil {
-			return fmt.Errorf("error reading value from buffer: %v", err)
-		}
-		if fieldNum == 1 {
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			valuesCount++
+			buf.SkipRawBytes()
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -3889,21 +3955,13 @@ func (m *KeyValueList) decode() error {
 	// Set slice indexes to 0 to begin iterating over repeated fields.
 	valuesCount = 0
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Decode "values".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (KeyValueList.values)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -3914,6 +3972,24 @@ func (m *KeyValueList) decode() error {
 			valuesCount++
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -4042,7 +4118,7 @@ type PlainMessage struct {
 
 func UnmarshalPlainMessage(bytes []byte, opts lazyproto.UnmarshalOpts) (*PlainMessage, error) {
 	if opts.WithValidate {
-		if err := ValidatePlainMessage(bytes); err != nil {
+		if err := validatePlainMessage(bytes); err != nil {
 			return nil, err
 		}
 	}
@@ -4085,37 +4161,44 @@ func (m *PlainMessage) SetValue(v string) {
 	m._protoMessage.MarkModified()
 }
 
-func ValidatePlainMessage(b []byte) error {
+func validatePlainMessage(b []byte) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (key), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
+			err := buf.SkipRawBytes()
+			if err != nil {
+				return err
+			}
+		case 0b0_0010_010: // field number 2 (value), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
+			err := buf.SkipRawBytes()
+			if err != nil {
+				return err
+			}
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
 
-		switch fieldNum {
-		case 1:
-			// Validate "key".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (PlainMessage.key)", wireType)
-			}
-			err := buf.SkipRawBytes()
-			if err != nil {
-				return err
-			}
-		case 2:
-			// Validate "value".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 2 (PlainMessage.value)", wireType)
-			}
-			err := buf.SkipRawBytes()
-			if err != nil {
-				return err
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -4126,36 +4209,43 @@ func (m *PlainMessage) decode() error {
 	buf := codec.NewBuffer(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 
 	for !buf.EOF() {
-		v, err := buf.DecodeVarint()
-		if err != nil {
-			return err
-		}
-		fieldNum, wireType, err := codec.AsTagAndWireType(v)
-		if err != nil {
-			return err
-		}
-
-		switch fieldNum {
-		case 1:
-			// Decode "key".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 1 (PlainMessage.key)", wireType)
-			}
+		// We need to read a varint that represents the key that encodes the field number
+		// and wire type. Speculate that the varint is one byte length and switch on it.
+		// This is the hot path that is most common when field number is <= 15.
+		b := buf.PeekByteUnsafe()
+		switch b {
+		case 0b0_0001_010: // field number 1 (key), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
 				return err
 			}
 			m.key = v
-		case 2:
-			// Decode "value".
-			if wireType != codec.WireBytes {
-				return fmt.Errorf("invalid wire type %d for field number 2 (PlainMessage.value)", wireType)
-			}
+		case 0b0_0010_010: // field number 2 (value), wire type 2 (Bytes)
+			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
 				return err
 			}
 			m.value = v
+		default:
+			// Our speculation was wrong. Do the full (slow) decoding.
+			v, err := buf.DecodeVarint()
+			if err != nil {
+				return err
+			}
+			fieldNum, wireType, err := codec.AsTagAndWireType(v)
+			if err != nil {
+				return err
+			}
+
+			switch fieldNum {
+			default:
+				// Unknown field number.
+				if err := buf.SkipFieldByWireType(wireType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil

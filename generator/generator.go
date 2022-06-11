@@ -240,6 +240,7 @@ import (
 
 var _ = oneof.OneOf{} // To avoid unused import warning.
 var _ = unsafe.Pointer(nil) // To avoid unused import warning.
+var _ = fmt.Errorf // To avoid unused import warning.
 
 `,
 	)
@@ -602,7 +603,7 @@ func (g *generator) oUnmarshalFree() error {
 		`
 func Unmarshal$MessageName(bytes []byte, opts lazyproto.UnmarshalOpts) (*$MessageName, error) {
 	if opts.WithValidate {
-		if err := Validate$MessageName(bytes); err != nil {
+		if err := validate$MessageName(bytes); err != nil {
 			return nil, err		
 		}
 	}
@@ -639,8 +640,9 @@ func (m *$MessageName) decode() error {
 		g.o("m._flags = 0\n")
 	}
 
-	g.oRepeatedFieldCounts()
-	g.oDecodeFields(decodeFull)
+	g.oCalcRepeatedFieldCounts()
+
+	g.oMsgDecodeLoop(decodeFull)
 
 	g.i(-1)
 
@@ -658,13 +660,13 @@ func (g *generator) oMsgValidateFunc() error {
 
 	g.o(
 		`
-func Validate$MessageName(b []byte) error {
+func validate$MessageName(b []byte) error {
 	buf := codec.NewBuffer(b)
 `,
 	)
 
 	g.i(1)
-	g.oDecodeFields(decodeValidate)
+	g.oMsgDecodeLoop(decodeValidate)
 	g.i(-1)
 
 	g.o(
@@ -677,30 +679,155 @@ func Validate$MessageName(b []byte) error {
 	return g.lastErr
 }
 
-func (g *generator) oMsgDecodeLoop(fieldDecoder func() error) error {
+var protoTypeToWireType = map[descriptor.FieldDescriptorProto_Type]codec.WireType{
+	descriptor.FieldDescriptorProto_TYPE_DOUBLE:   codec.WireFixed64,
+	descriptor.FieldDescriptorProto_TYPE_FLOAT:    codec.WireFixed32,
+	descriptor.FieldDescriptorProto_TYPE_INT64:    codec.WireVarint,
+	descriptor.FieldDescriptorProto_TYPE_UINT64:   codec.WireVarint,
+	descriptor.FieldDescriptorProto_TYPE_INT32:    codec.WireVarint,
+	descriptor.FieldDescriptorProto_TYPE_FIXED64:  codec.WireFixed64,
+	descriptor.FieldDescriptorProto_TYPE_FIXED32:  codec.WireFixed32,
+	descriptor.FieldDescriptorProto_TYPE_BOOL:     codec.WireVarint,
+	descriptor.FieldDescriptorProto_TYPE_STRING:   codec.WireBytes,
+	descriptor.FieldDescriptorProto_TYPE_MESSAGE:  codec.WireBytes,
+	descriptor.FieldDescriptorProto_TYPE_BYTES:    codec.WireBytes,
+	descriptor.FieldDescriptorProto_TYPE_UINT32:   codec.WireVarint,
+	descriptor.FieldDescriptorProto_TYPE_ENUM:     codec.WireVarint,
+	descriptor.FieldDescriptorProto_TYPE_SFIXED32: codec.WireFixed32,
+	descriptor.FieldDescriptorProto_TYPE_SFIXED64: codec.WireFixed64,
+	descriptor.FieldDescriptorProto_TYPE_SINT32:   codec.WireVarint,
+	descriptor.FieldDescriptorProto_TYPE_SINT64:   codec.WireVarint,
+}
+
+func (g *generator) oMsgDecodeLoop(mode decodeMode) error {
 	g.o(
 		`
 for !buf.EOF() {
-	v, err := buf.DecodeVarint()
-	if err != nil {
-		return err
-	}
-	fieldNum, wireType, err := codec.AsTagAndWireType(v)
-	if err != nil {
-		return err
-	}
-`,
+	// We need to read a varint that represents the key that encodes the field number
+	// and wire type. Speculate that the varint is one byte length and switch on it.
+	// This is the hot path that is most common when field number is <= 15. 
+	b := buf.PeekByteUnsafe()
+	switch b {`,
 	)
 
 	g.i(1)
-	if err := fieldDecoder(); err != nil {
-		return err
+	var slowFields []*Field
+	for _, field := range g.msg.Fields {
+		if field.GetNumber() <= 15 {
+			wireType, ok := protoTypeToWireType[field.GetType()]
+			if ok {
+				g.o(
+					"case 0b0_%04b_%03b: // field number %d (%s), wire type %d (%s)",
+					field.GetNumber(), wireType,
+					field.GetNumber(), field.GetName(), wireType,
+					wireTypeToString[wireType],
+				)
+				g.o("	buf.SkipByteUnsafe()")
+				g.setField(field)
+				g.oDecodeField(mode, false)
+				continue
+			}
+		}
+		slowFields = append(slowFields, field)
 	}
+
+	g.o(
+		`
+default:
+	// Our speculation was wrong. Do the full (slow) decoding.`,
+	)
+	g.i(1)
+
+	g.o(
+		`
+v, err := buf.DecodeVarint()
+if err != nil {
+	return err
+}
+fieldNum, wireType, err := codec.AsTagAndWireType(v)
+if err != nil {
+	return err
+}
+`,
+	)
+
+	g.o("switch fieldNum {")
+	for _, field := range slowFields {
+		g.setField(field)
+		g.o("case %d:", field.GetNumber())
+		g.i(1)
+		g.o("// Field %q", field.GetName())
+		g.oDecodeField(mode, true)
+		g.i(-1)
+	}
+	g.o("default:")
+	g.o("	// Unknown field number.")
+	g.o("	if err := buf.SkipFieldByWireType(wireType); err != nil {")
+	g.o("		return err")
+	g.o("	}")
+
+	g.o("}") // switch
+
 	g.i(-1)
 
-	g.o(`}`)
+	g.o("}") // switch
+
+	g.i(-1)
+
+	g.o(`}`) // func
 
 	return g.lastErr
+}
+
+func (g *generator) oDecodeField(mode decodeMode, checkWireType bool) {
+	switch mode {
+	case decodeValidate:
+		fallthrough
+	case decodeFull:
+		g.oDecodeFieldValidateOrFull(mode, checkWireType)
+	case decodeCountRepeat:
+		g.oRepeatFieldCount()
+	}
+}
+
+func (g *generator) oDecodeFieldValidateOrFull(mode decodeMode, checkWireType bool) {
+	decode, ok := primitiveTypeDecode[g.field.GetType()]
+	if ok {
+		decode.mode = mode
+		g.oDecodeFieldPrimitive(decode, checkWireType)
+	} else if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
+		g.oDecodeFieldEnum(
+			g.enumDescrToEnum[g.field.GetEnumType()].GetName(), mode, checkWireType,
+		)
+	} else if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+		g.oDecodeFieldEmbeddedMessage(mode, checkWireType)
+	} else {
+		g.lastErr = fmt.Errorf("unsupported field type %v", g.field.GetType())
+	}
+}
+
+func (g *generator) oRepeatFieldCount() {
+	if g.field.IsRepeated() {
+		counterName := g.field.GetName() + "Count"
+		g.o("	%s++", counterName)
+		g.o("	buf.SkipRawBytes()")
+	} else {
+		g.oSkipFieldByWireType()
+	}
+}
+
+func (g *generator) oSkipFieldByWireType() {
+	wireType := protoTypeToWireType[g.field.GetType()]
+	switch wireType {
+	case codec.WireVarint:
+		g.o("buf.SkipVarint()")
+	case codec.WireFixed64:
+		g.o("buf.SkipFixed64()")
+	case codec.WireBytes:
+		g.o("buf.SkipRawBytes()")
+	case codec.WireFixed32:
+		g.o("buf.SkipFixed32()")
+	}
 }
 
 type decodePrimitive struct {
@@ -711,47 +838,39 @@ type decodePrimitive struct {
 }
 
 var wireTypeToString = map[codec.WireType]string{
-	codec.WireVarint:     "codec.WireVarint",
-	codec.WireFixed64:    "codec.WireFixed64",
-	codec.WireBytes:      "codec.WireBytes",
-	codec.WireStartGroup: "codec.WireStartGroup",
-	codec.WireEndGroup:   "codec.WireEndGroup",
-	codec.WireFixed32:    "codec.WireFixed32",
+	codec.WireVarint:     "Varint",
+	codec.WireFixed64:    "Fixed64",
+	codec.WireBytes:      "Bytes",
+	codec.WireStartGroup: "StartGroup",
+	codec.WireEndGroup:   "EndGroup",
+	codec.WireFixed32:    "Fixed32",
 }
 
-func (g *generator) oFieldDecodePrimitive(task decodePrimitive) {
-	g.o(
-		`
-if wireType != %s {	
+func (g *generator) oDecodeFieldPrimitive(task decodePrimitive, checkWireType bool) {
+	if checkWireType {
+		g.o(
+			`
+if wireType != codec.Wire%s {	
 	return fmt.Errorf("invalid wire type %%d for field number %d ($MessageName.$fieldName)", wireType)
 }`, wireTypeToString[task.expectedWireType], g.field.GetNumber(),
-	)
+		)
+	}
 
 	if task.mode == decodeValidate {
-		if task.expectedWireType == codec.WireVarint {
-			g.o(
-				`
-if err := buf.SkipVarint(); err != nil {
-	return err
-}`,
-			)
-		} else if task.expectedWireType == codec.WireBytes {
-			g.o(
-				`
-err := buf.SkipRawBytes()
-if err != nil {
-	return err
-}`,
-			)
-		} else {
-			g.o(
-				`
-_, err := buf.As%s()
-if err != nil {
-	return err
-}`, task.asProtoType,
-			)
+		switch g.field.GetType() {
+		case descriptor.FieldDescriptorProto_TYPE_STRING:
+			fallthrough
+		case descriptor.FieldDescriptorProto_TYPE_BYTES:
+			g.o(`err := buf.SkipRawBytes()`)
+		default:
+			g.o(`_, err := buf.As%s()`, task.asProtoType)
 		}
+		g.o(
+			`
+if err != nil {
+	return err
+}`,
+		)
 		return
 	} else {
 		g.o(
@@ -785,16 +904,25 @@ m.$fieldName[%[1]s] = v
 	}
 }
 
-func (g *generator) oFieldDecodeEnum(enumTypeName string, mode decodeMode) {
-	g.o(
-		`
+func (g *generator) oDecodeFieldEnum(
+	enumTypeName string, mode decodeMode, checkWireType bool,
+) {
+
+	if checkWireType {
+		g.o(
+			`
 if wireType != codec.WireVarint {	
 	return fmt.Errorf("invalid wire type %%d for field number %d ($MessageName.$fieldName)", wireType)
-}
+}`, g.field.GetNumber(),
+		)
+	}
+
+	g.o(
+		`
 v, err := buf.AsUint32()
 if err != nil {
 	return err
-}`, g.field.GetNumber(),
+}`,
 	)
 
 	if mode == decodeValidate {
@@ -811,11 +939,12 @@ if err != nil {
 type decodeMode int
 
 const (
-	decodeValidate decodeMode = 0
-	decodeFull     decodeMode = 1
+	decodeValidate    decodeMode = 0
+	decodeFull        decodeMode = 1
+	decodeCountRepeat decodeMode = 2
 )
 
-var primiteTypeDecode = map[descriptor.FieldDescriptorProto_Type]decodePrimitive{
+var primitiveTypeDecode = map[descriptor.FieldDescriptorProto_Type]decodePrimitive{
 	descriptor.FieldDescriptorProto_TYPE_BOOL: {
 		asProtoType:      "Bool",
 		oneOfType:        "Bool",
@@ -883,50 +1012,16 @@ var primiteTypeDecode = map[descriptor.FieldDescriptorProto_Type]decodePrimitive
 	},
 }
 
-func (g *generator) oDecodeFields(mode decodeMode) {
-	g.oMsgDecodeLoop(
-		func() error {
-			g.o("switch fieldNum {")
-			for _, field := range g.msg.Fields {
-				g.setField(field)
-				g.o("case %d:", field.GetNumber())
-				g.i(1)
+func (g *generator) oDecodeFieldEmbeddedMessage(mode decodeMode, checkWireType bool) {
 
-				if mode == decodeFull {
-					g.o(`// Decode "$fieldName".`)
-				} else {
-					g.o(`// Validate "$fieldName".`)
-				}
-
-				decode, ok := primiteTypeDecode[field.GetType()]
-				if ok {
-					decode.mode = mode
-					g.oFieldDecodePrimitive(decode)
-				} else if field.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
-					g.oFieldDecodeEnum(
-						g.enumDescrToEnum[field.GetEnumType()].GetName(), mode,
-					)
-				} else if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-					g.oFieldDecodeMessage(mode)
-				} else {
-					g.lastErr = fmt.Errorf("unsupported field type %v", field.GetType())
-				}
-				g.i(-1)
-			}
-			g.o("}")
-			return nil
-		},
-	)
-}
-
-func (g *generator) oFieldDecodeMessage(mode decodeMode) {
-
-	g.o(
-		`
+	if checkWireType {
+		g.o(
+			`
 if wireType != codec.WireBytes {
 	return fmt.Errorf("invalid wire type %%d for field number %d ($MessageName.$fieldName)", wireType)
 }`, g.field.GetNumber(),
-	)
+		)
+	}
 
 	if mode == decodeValidate {
 		g.o(
@@ -935,7 +1030,7 @@ v, err := buf.DecodeRawBytes()
 if err != nil {
 	return err
 }
-err = Validate$FieldMessageTypeName(v)
+err = validate$FieldMessageTypeName(v)
 if err != nil {
 	return err
 }`,
@@ -982,7 +1077,7 @@ m.$fieldName._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)`,
 	}
 }
 
-func (g *generator) oRepeatedFieldCounts() {
+func (g *generator) oCalcRepeatedFieldCounts() {
 	fields := g.getRepeatedFields()
 	if len(fields) == 0 {
 		return
@@ -997,63 +1092,7 @@ func (g *generator) oRepeatedFieldCounts() {
 		g.o("%s := 0", counterName)
 	}
 
-	g.oMsgDecodeLoop(
-		func() error {
-			for _, field := range fields {
-
-				g.o(
-					`
-// Skip the field content
-switch wireType {
-case codec.WireVarint:
-	_, err = buf.DecodeVarint()
-case codec.WireFixed32:
-	_, err = buf.DecodeFixed32()
-case codec.WireFixed64:
-	_, err = buf.DecodeFixed64()
-case codec.WireBytes:
-	err = buf.SkipRawBytes()
-case codec.WireStartGroup, codec.WireEndGroup:
-	err = fmt.Errorf(
-		"encountered group wire type: %%d. Groups not supported",
-		wireType,
-	)
-default:
-	err = fmt.Errorf("unknown wireType: %%d", wireType)
-}
-if err != nil {
-	return fmt.Errorf("error reading value from buffer: %%v", err)
-}`,
-				)
-
-				g.setField(field)
-				counterName := field.GetName() + "Count"
-				g.i(2)
-				g.o("if fieldNum == %d {", field.GetNumber())
-				g.o("	%s++", counterName)
-				g.o("}")
-				g.i(-2)
-			}
-			return g.lastErr
-		},
-	)
-
-	//g.o("err := molecule.MessageFieldNums(")
-	//g.o("	buf, func(fieldNum int32) {")
-	//for _, field := range fields {
-	//	g.setField(field)
-	//	counterName := field.GetName() + "Count"
-	//	g.i(2)
-	//	g.o("if fieldNum == %d {", field.GetNumber())
-	//	g.o("	%s++", counterName)
-	//	g.o("}")
-	//	g.i(-2)
-	//}
-	//g.o("	},")
-	//g.o(")")
-	//g.o("if err != nil {")
-	//g.o("	return err")
-	//g.o("}")
+	g.oMsgDecodeLoop(decodeCountRepeat)
 
 	g.o("")
 	g.o("// Pre-allocate slices for repeated fields.")
