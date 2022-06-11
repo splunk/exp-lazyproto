@@ -1203,6 +1203,7 @@ func BenchmarkLazy_Batch(b *testing.B) {
 		for j := 0; j < 10; j++ {
 			inputMsg[j].Free()
 		}
+		outputMsg.Free()
 	}
 }
 
