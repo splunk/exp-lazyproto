@@ -219,8 +219,8 @@ func (g *generator) oStartFile(fdescr *desc.FileDescriptor) error {
 
 	if len(packagePath) > 0 {
 		packageName := packagePath[len(packagePath)-1]
-		g.o("package %s", packageName)
-		g.o("")
+		g.o(`package %s`, packageName)
+		g.o(``)
 	}
 
 	g.o(
@@ -431,8 +431,8 @@ func getLeadingComment(si *descriptor.SourceCodeInfo_Location) string {
 }
 
 func (g *generator) oMessage() error {
-	g.o("// ====================== $MessageName message implementation ======================")
-	g.o("")
+	g.o(`// ====================== $MessageName message implementation ======================`)
+	g.o(``)
 
 	if err := g.oMessageStruct(); err != nil {
 		return err
@@ -470,7 +470,7 @@ func (g *generator) oMessage() error {
 		return err
 	}
 
-	g.o("")
+	g.o(``)
 
 	return nil
 }
@@ -482,21 +482,21 @@ func (g *generator) oComment(comment string) {
 
 	lines := strings.Split(comment, "\n")
 	for _, line := range lines {
-		g.o("// %s", line)
+		g.o(`// %s`, line)
 	}
 }
 
 func (g *generator) oMessageStruct() error {
 	g.oComment(getLeadingComment(g.msg.GetSourceInfo()))
 
-	g.o("type $MessageName struct {")
+	g.o(`type $MessageName struct {`)
 	g.i(1)
-	g.o("_protoMessage protomessage.ProtoMessage")
+	g.o(`_protoMessage protomessage.ProtoMessage`)
 
 	if g.msg.FlagsBitCount > 0 {
-		g.o("_flags %s", g.msg.FlagsType)
+		g.o(`_flags %s`, g.msg.FlagsType)
 	}
-	g.o("")
+	g.o(``)
 
 	first := true
 	for _, field := range g.msg.Fields {
@@ -507,20 +507,20 @@ func (g *generator) oMessageStruct() error {
 		g.setField(field)
 		comment := getLeadingComment(field.GetSourceInfo())
 		if !first && comment != "" {
-			g.o("")
+			g.o(``)
 		}
 		g.oComment(comment)
-		g.o("$fieldName %s", g.convertTypeToGo(field))
+		g.o(`$fieldName %s`, g.convertTypeToGo(field))
 		first = false
 	}
 
 	// Generate oneof fields.
 	for _, oneof := range g.msg.GetOneOfs() {
-		g.o("%s oneof.OneOf", oneof.GetName())
+		g.o(`%s oneof.OneOf`, oneof.GetName())
 	}
 	g.i(-1)
-	g.o("}")
-	g.o("")
+	g.o(`}`)
+	g.o(``)
 
 	return g.lastErr
 }
@@ -554,13 +554,14 @@ func (g *generator) oOneOfTypeConsts(oneof *desc.OneOfDescriptor) {
 		"// %s defines the possible types for oneof field %q.", typeName,
 		oneof.GetName(),
 	)
-	g.o("type %s int\n", typeName)
-	g.o("const (")
+	g.o(`type %s int`, typeName)
+	g.o(``)
+	g.o(`const (`)
 	g.i(1)
 
 	noneChoiceName := composeOneOfNoneChoiceName(g.msg, oneof)
-	g.o("// %s indicates that none of the oneof choices is set.", noneChoiceName)
-	g.o("%s %s = 0", noneChoiceName, typeName)
+	g.o(`// %s indicates that none of the oneof choices is set.`, noneChoiceName)
+	g.o(`%s %s = 0`, noneChoiceName, typeName)
 
 	for i, choice := range oneof.GetChoices() {
 		choiceField := g.msg.FieldsMap[choice.GetName()]
@@ -569,11 +570,12 @@ func (g *generator) oOneOfTypeConsts(oneof *desc.OneOfDescriptor) {
 			"// %s indicates that oneof field %q is set.", choiceName,
 			choiceField.GetName(),
 		)
-		g.o("%s %s = %d", choiceName, typeName, i+1)
+		g.o(`%s %s = %d`, choiceName, typeName, i+1)
 	}
 
 	g.i(-1)
-	g.o(")\n")
+	g.o(`)`)
+	g.o(``)
 }
 
 func (g *generator) oOneOfTypeFunc(oneof *desc.OneOfDescriptor) {
@@ -583,19 +585,21 @@ func (g *generator) oOneOfTypeFunc(oneof *desc.OneOfDescriptor) {
 		"// %s returns the type of the current stored oneof %q.", funcName,
 		oneof.GetName(),
 	)
-	g.o("// To set the type use one of the setters.")
-	g.o("func (m *$MessageName) %s() %s {", funcName, typeName)
-	g.o("	return %s(m.%s.FieldIndex())", typeName, oneof.GetName())
-	g.o("}\n")
+	g.o(`// To set the type use one of the setters.`)
+	g.o(`func (m *$MessageName) %s() %s {`, funcName, typeName)
+	g.o(`	return %s(m.%s.FieldIndex())`, typeName, oneof.GetName())
+	g.o(`}`)
+	g.o(``)
 
 	funcName = fmt.Sprintf("%sUnset", capitalCamelCase(oneof.GetName()))
 	g.o(
 		"// %s unsets the oneof field %q, so that it contains none of the choices.",
 		funcName, oneof.GetName(),
 	)
-	g.o("func (m *$MessageName) %s() {", funcName)
-	g.o("	m.%s = oneof.NewOneOfNone()", oneof.GetName())
-	g.o("}\n")
+	g.o(`func (m *$MessageName) %s() {`, funcName)
+	g.o(`	m.%s = oneof.NewOneOfNone()`, oneof.GetName())
+	g.o(`}`)
+	g.o(``)
 }
 
 func (g *generator) oUnmarshalFree() error {
@@ -637,7 +641,8 @@ func (m *$MessageName) decode() error {
 
 	if g.msg.FlagsBitCount > 0 {
 		g.o(`// Reset all "decoded" and "presence" flags.`)
-		g.o("m._flags = 0\n")
+		g.o(`m._flags = 0`)
+		g.o(``)
 	}
 
 	g.oCalcRepeatedFieldCounts()
@@ -722,7 +727,7 @@ for !buf.EOF() {
 					field.GetNumber(), field.GetName(), wireType,
 					wireTypeToString[wireType],
 				)
-				g.o("	buf.SkipByteUnsafe()")
+				g.o(`	buf.SkipByteUnsafe()`)
 				g.setField(field)
 				g.oDecodeField(mode, false)
 				continue
@@ -751,26 +756,26 @@ if err != nil {
 `,
 	)
 
-	g.o("switch fieldNum {")
+	g.o(`switch fieldNum {`)
 	for _, field := range slowFields {
 		g.setField(field)
-		g.o("case %d:", field.GetNumber())
+		g.o(`case %d:`, field.GetNumber())
 		g.i(1)
-		g.o("// Field %q", field.GetName())
+		g.o(`// Field %q`, field.GetName())
 		g.oDecodeField(mode, true)
 		g.i(-1)
 	}
-	g.o("default:")
-	g.o("	// Unknown field number.")
-	g.o("	if err := buf.SkipFieldByWireType(wireType); err != nil {")
-	g.o("		return err")
-	g.o("	}")
+	g.o(`default:`)
+	g.o(`	// Unknown field number.`)
+	g.o(`	if err := buf.SkipFieldByWireType(wireType); err != nil {`)
+	g.o(`		return err`)
+	g.o(`	}`)
 
-	g.o("}") // switch
+	g.o(`}`) // switch
 
 	g.i(-1)
 
-	g.o("}") // switch
+	g.o(`}`) // switch
 
 	g.i(-1)
 
@@ -809,8 +814,8 @@ func (g *generator) oDecodeFieldValidateOrFull(mode decodeMode, checkWireType bo
 func (g *generator) oRepeatFieldCount() {
 	if g.field.IsRepeated() {
 		counterName := g.field.GetName() + "Count"
-		g.o("	%s++", counterName)
-		g.o("	buf.SkipRawBytes()")
+		g.o(`	%s++`, counterName)
+		g.o(`	buf.SkipRawBytes()`)
 	} else {
 		g.oSkipFieldByWireType()
 	}
@@ -820,13 +825,13 @@ func (g *generator) oSkipFieldByWireType() {
 	wireType := protoTypeToWireType[g.field.GetType()]
 	switch wireType {
 	case codec.WireVarint:
-		g.o("buf.SkipVarint()")
+		g.o(`buf.SkipVarint()`)
 	case codec.WireFixed64:
-		g.o("buf.SkipFixed64()")
+		g.o(`buf.SkipFixed64()`)
 	case codec.WireBytes:
-		g.o("buf.SkipRawBytes()")
+		g.o(`buf.SkipRawBytes()`)
 	case codec.WireFixed32:
-		g.o("buf.SkipFixed32()")
+		g.o(`buf.SkipFixed32()`)
 	}
 }
 
@@ -897,9 +902,9 @@ m.$fieldName[%[1]s] = v
 %[1]s++`, counterName,
 		)
 	} else {
-		g.o("m.$fieldName = v")
+		g.o(`m.$fieldName = v`)
 		if g.options.WithPresence {
-			g.o("m._flags |= %s", g.msg.PresenceFlagName[g.field])
+			g.o(`m._flags |= %s`, g.msg.PresenceFlagName[g.field])
 		}
 	}
 }
@@ -932,7 +937,7 @@ if err != nil {
 
 	g.o(`m.$fieldName = %s(v)`, enumTypeName)
 	if g.options.WithPresence {
-		g.o("m._flags |= %s", g.msg.PresenceFlagName[g.field])
+		g.o(`m._flags |= %s`, g.msg.PresenceFlagName[g.field])
 	}
 }
 
@@ -1083,50 +1088,50 @@ func (g *generator) oCalcRepeatedFieldCounts() {
 		return
 	}
 
-	g.o("")
-	g.o("// Count all repeated fields. We need one counter per field.")
+	g.o(``)
+	g.o(`// Count all repeated fields. We need one counter per field.`)
 
 	for _, field := range fields {
 		g.setField(field)
 		counterName := field.GetName() + "Count"
-		g.o("%s := 0", counterName)
+		g.o(`%s := 0`, counterName)
 	}
 
 	g.oMsgDecodeLoop(decodeCountRepeat)
 
-	g.o("")
-	g.o("// Pre-allocate slices for repeated fields.")
+	g.o(``)
+	g.o(`// Pre-allocate slices for repeated fields.`)
 
 	for _, field := range fields {
 		g.setField(field)
 		counterName := field.GetName() + "Count"
 
 		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			g.o("if cap(m.$fieldName) < %s {", counterName)
-			g.o("	// Need new space.")
-			g.o("	m.$fieldName = make(%s, %s)", g.convertTypeToGo(field), counterName)
-			g.o("} else {")
-			g.o("	// Existing capacity is enough.")
-			g.o("	m.$fieldName = m.$fieldName[0:%s]", counterName)
-			g.o("}")
-			g.o("$fieldTypeMessagePool.GetSlice(m.$fieldName)")
+			g.o(`if cap(m.$fieldName) < %s {`, counterName)
+			g.o(`	// Need new space.`)
+			g.o(`	m.$fieldName = make(%s, %s)`, g.convertTypeToGo(field), counterName)
+			g.o(`} else {`)
+			g.o(`	// Existing capacity is enough.`)
+			g.o(`	m.$fieldName = m.$fieldName[0:%s]`, counterName)
+			g.o(`}`)
+			g.o(`$fieldTypeMessagePool.GetSlice(m.$fieldName)`)
 		} else {
-			//g.o("if cap(m.$fieldName) < %s {", counterName)
-			g.o("m.$fieldName = make(%s, %s)", g.convertTypeToGo(field), counterName)
-			//g.o("} else {")
-			//g.o("	m.$fieldName = m.$fieldName[0:%s]", counterName)
-			//g.o("}")
+			//g.o(`if cap(m.$fieldName) < %s {`, counterName)
+			g.o(`m.$fieldName = make(%s, %s)`, g.convertTypeToGo(field), counterName)
+			//g.o(`} else {`)
+			//g.o(`	m.$fieldName = m.$fieldName[0:%s]`, counterName)
+			//g.o(`}`)
 		}
 	}
-	g.o("")
-	g.o("// Reset the buffer to start iterating over the fields again")
-	g.o("buf.Reset(protomessage.BytesFromBytesView(m._protoMessage.Bytes))")
-	g.o("")
-	g.o("// Set slice indexes to 0 to begin iterating over repeated fields.")
+	g.o(``)
+	g.o(`// Reset the buffer to start iterating over the fields again`)
+	g.o(`buf.Reset(protomessage.BytesFromBytesView(m._protoMessage.Bytes))`)
+	g.o(``)
+	g.o(`// Set slice indexes to 0 to begin iterating over repeated fields.`)
 	for _, field := range fields {
 		g.setField(field)
 		counterName := field.GetName() + "Count"
-		g.o("%s = 0", counterName)
+		g.o(`%s = 0`, counterName)
 	}
 }
 
@@ -1142,30 +1147,30 @@ func (g *generator) getRepeatedFields() []*Field {
 
 func (g *generator) oFlagConsts() error {
 	if len(g.msg.DecodedFlags) > 0 || len(g.msg.PresenceFlags) > 0 {
-		g.o("// %s is the type of the bit flags.", g.msg.FlagsType)
-		g.o("type %s %s", g.msg.FlagsType, g.msg.FlagsUnderlyingType)
+		g.o(`// %s is the type of the bit flags.`, g.msg.FlagsType)
+		g.o(`type %s %s`, g.msg.FlagsType, g.msg.FlagsUnderlyingType)
 	}
 
 	if len(g.msg.DecodedFlags) > 0 {
-		g.o("// Bitmasks that indicate that the particular nested message is decoded.")
+		g.o(`// Bitmasks that indicate that the particular nested message is decoded.`)
 		for _, bitDef := range g.msg.DecodedFlags {
 			g.o(
 				"const %s %s = 0x%X", bitDef.flagName, g.msg.FlagsType,
 				bitDef.maskVal,
 			)
 		}
-		g.o("")
+		g.o(``)
 	}
 
 	if len(g.msg.PresenceFlags) > 0 {
-		g.o("// Bitmasks that indicate that the particular field is present.")
+		g.o(`// Bitmasks that indicate that the particular field is present.`)
 		for _, bitDef := range g.msg.PresenceFlags {
 			g.o(
 				"const %s %s = 0x%X", bitDef.flagName, g.msg.FlagsType,
 				bitDef.maskVal,
 			)
 		}
-		g.o("")
+		g.o(``)
 	}
 	return g.lastErr
 }
@@ -1191,7 +1196,7 @@ func (g *generator) oFieldsAccessors() error {
 }
 
 func (g *generator) oFieldGetter() error {
-	g.o("// $FieldName returns the value of the $fieldName.")
+	g.o(`// $FieldName returns the value of the $fieldName.`)
 
 	if g.field.GetOneOf() != nil {
 		g.o(
@@ -1202,18 +1207,18 @@ func (g *generator) oFieldGetter() error {
 
 	goType := g.convertTypeToGo(g.field)
 
-	g.o("func (m *$MessageName) $FieldName() %s {", goType)
+	g.o(`func (m *$MessageName) $FieldName() %s {`, goType)
 
 	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		g.i(1)
-		g.o("if m._flags&%s == 0 {", g.msg.DecodedFlagName[g.field])
+		g.o(`if m._flags&%s == 0 {`, g.msg.DecodedFlagName[g.field])
 		g.i(1)
-		g.o("// Decode nested message(s).")
+		g.o(`// Decode nested message(s).`)
 		if g.field.IsRepeated() {
-			g.o("for i := range m.$fieldName {")
-			g.o("	// TODO: decide how to handle decoding errors.")
-			g.o("	_ = m.$fieldName[i].decode()")
-			g.o("}")
+			g.o(`for i := range m.$fieldName {`)
+			g.o(`	// TODO: decide how to handle decoding errors.`)
+			g.o(`	_ = m.$fieldName[i].decode()`)
+			g.o(`}`)
 		} else {
 			if g.field.GetOneOf() != nil {
 				choiceName := composeOneOfChoiceName(g.msg, g.field)
@@ -1227,51 +1232,52 @@ func (g *generator) oFieldGetter() error {
 					g.field.GetOneOf().GetName(),
 				)
 			} else {
-				g.o("$fieldName := m.$fieldName")
+				g.o(`$fieldName := m.$fieldName`)
 			}
 
-			g.o("if $fieldName != nil {")
-			g.o("	// TODO: decide how to handle decoding errors.")
-			g.o("	_ = $fieldName.decode()")
-			g.o("}")
+			g.o(`if $fieldName != nil {`)
+			g.o(`	// TODO: decide how to handle decoding errors.`)
+			g.o(`	_ = $fieldName.decode()`)
+			g.o(`}`)
 
 			if g.field.GetOneOf() != nil {
 				g.i(-1)
-				g.o("}")
+				g.o(`}`)
 			}
 		}
 		g.i(-1)
 
-		g.o("	m._flags |= %s", g.msg.DecodedFlagName[g.field])
-		g.o("}")
+		g.o(`	m._flags |= %s`, g.msg.DecodedFlagName[g.field])
+		g.o(`}`)
 		g.i(-1)
 	}
 
 	if g.field.GetOneOf() != nil {
 		switch g.field.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			g.o("	return m.%s.BoolVal()", g.field.GetOneOf().GetName())
+			g.o(`	return m.%s.BoolVal()`, g.field.GetOneOf().GetName())
 
 		case descriptor.FieldDescriptorProto_TYPE_INT64:
 			fallthrough
 		case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-			g.o("	return m.%s.Int64Val()", g.field.GetOneOf().GetName())
+			g.o(`	return m.%s.Int64Val()`, g.field.GetOneOf().GetName())
 
 		case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-			g.o("	return m.%s.DoubleVal()", g.field.GetOneOf().GetName())
+			g.o(`	return m.%s.DoubleVal()`, g.field.GetOneOf().GetName())
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			g.o("	return m.%s.StringVal()", g.field.GetOneOf().GetName())
+			g.o(`	return m.%s.StringVal()`, g.field.GetOneOf().GetName())
 		case descriptor.FieldDescriptorProto_TYPE_BYTES:
-			g.o("	return m.%s.BytesVal()", g.field.GetOneOf().GetName())
+			g.o(`	return m.%s.BytesVal()`, g.field.GetOneOf().GetName())
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-			g.o("	return (%s)(m.%s.PtrVal())", goType, g.field.GetOneOf().GetName())
+			g.o(`	return (%s)(m.%s.PtrVal())`, goType, g.field.GetOneOf().GetName())
 		default:
 			return fmt.Errorf("unsupported oneof field type %v", g.field.GetType())
 		}
 	} else {
 		g.o(`	return m.$fieldName`)
 	}
-	g.o("}\n")
+	g.o(`}`)
+	g.o(``)
 
 	return g.lastErr
 }
@@ -1299,7 +1305,7 @@ func (g *generator) isOneOfField() bool {
 }
 
 func (g *generator) oFieldSetter() error {
-	g.o("// Set$FieldName sets the value of the $fieldName.")
+	g.o(`// Set$FieldName sets the value of the $fieldName.`)
 
 	if g.field.GetOneOf() != nil {
 		g.o(
@@ -1308,7 +1314,7 @@ func (g *generator) oFieldSetter() error {
 		)
 	}
 
-	g.o("func (m *$MessageName) Set$FieldName(v %s) {", g.convertTypeToGo(g.field))
+	g.o(`func (m *$MessageName) Set$FieldName(v %s) {`, g.convertTypeToGo(g.field))
 
 	if g.field.GetOneOf() != nil {
 		if !g.isOneOfField() {
@@ -1356,29 +1362,30 @@ func (g *generator) oFieldSetter() error {
 			return fmt.Errorf("unsupported oneof field type %v", g.field.GetType())
 		}
 	} else {
-		g.o("	m.$fieldName = v")
+		g.o(`	m.$fieldName = v`)
 		if g.options.WithPresence {
 			if g.field.GetType() != descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-				g.o("m._flags |= %s", g.msg.PresenceFlagName[g.field])
+				g.o(`m._flags |= %s`, g.msg.PresenceFlagName[g.field])
 			}
 		}
 	}
 
 	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-		g.o("")
-		g.o("	// Make sure the field's Parent points to this message.")
+		g.o(``)
+		g.o(`	// Make sure the field's Parent points to this message.`)
 		if g.field.IsRepeated() {
-			g.o("	for _, elem := range m.$fieldName {")
-			g.o("		elem._protoMessage.Parent = &m._protoMessage")
-			g.o("	}")
+			g.o(`	for _, elem := range m.$fieldName {`)
+			g.o(`		elem._protoMessage.Parent = &m._protoMessage`)
+			g.o(`	}`)
 		} else {
-			g.o("	v._protoMessage.Parent = &m._protoMessage")
+			g.o(`	v._protoMessage.Parent = &m._protoMessage`)
 		}
 	}
-	g.o("")
-	g.o("	// Mark this message modified, if not already.")
-	g.o("	m._protoMessage.MarkModified()")
-	g.o("}\n")
+	g.o(``)
+	g.o(`	// Mark this message modified, if not already.`)
+	g.o(`	m._protoMessage.MarkModified()`)
+	g.o(`}`)
+	g.o(``)
 
 	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE && g.field.IsRepeated() {
 		if err := g.oFieldSliceMethods(); err != nil {
@@ -1396,24 +1403,25 @@ func (g *generator) oHasField() error {
 	}
 
 	g.o(`// Has$FieldName returns true if the $fieldName is present.`)
-	g.o("func (m *$MessageName) Has$FieldName() bool {")
+	g.o(`func (m *$MessageName) Has$FieldName() bool {`)
 
 	g.i(1)
 
 	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		if g.field.IsRepeated() {
-			g.o("return len(m.$fieldName) > 0")
+			g.o(`return len(m.$fieldName) > 0`)
 		} else {
-			g.o("return m.$fieldName != nil")
+			g.o(`return m.$fieldName != nil`)
 		}
 	} else {
 		if g.field.GetType() != descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			g.o("return m._flags & %s != 0", g.msg.PresenceFlagName[g.field])
+			g.o(`return m._flags & %s != 0`, g.msg.PresenceFlagName[g.field])
 		}
 	}
 
 	g.i(-1)
-	g.o("}\n")
+	g.o(`}`)
+	g.o(``)
 
 	return g.lastErr
 }
@@ -1465,14 +1473,14 @@ func (g *generator) oMarshalFunc() error {
 		g.oPrepareMarshalField(field)
 	}
 
-	g.o("")
+	g.o(``)
 	if g.useSizedMarshaler {
-		g.o("func (m *$MessageName) Marshal(ps *sizedstream.ProtoStream) error {")
+		g.o(`func (m *$MessageName) Marshal(ps *sizedstream.ProtoStream) error {`)
 	} else {
-		g.o("func (m *$MessageName) Marshal(ps *molecule.ProtoStream) error {")
+		g.o(`func (m *$MessageName) Marshal(ps *molecule.ProtoStream) error {`)
 	}
 	g.i(1)
-	g.o("if m._protoMessage.IsModified() {")
+	g.o(`if m._protoMessage.IsModified() {`)
 	g.i(1)
 
 	// Order the fields by their number to ensure marshaling is done in an
@@ -1495,38 +1503,38 @@ func (g *generator) oMarshalFunc() error {
 				// Already generated this oneof, nothing else to do.
 				continue
 			}
-			g.o("// Marshal %q.", g.field.GetOneOf().GetName())
+			g.o(`// Marshal %q.`, g.field.GetOneOf().GetName())
 
 			typeName := composeOneOfTypeName(g.msg, g.field.GetOneOf())
-			g.o("switch %s(m.%s.FieldIndex()) {", typeName, g.field.GetOneOf().GetName())
+			g.o(`switch %s(m.%s.FieldIndex()) {`, typeName, g.field.GetOneOf().GetName())
 
 			// Add the "none" case.
 			noneChoiceName := composeOneOfNoneChoiceName(g.msg, g.field.GetOneOf())
-			g.o("case %s:", noneChoiceName)
-			g.o("	// Nothing to do, oneof is unset.")
+			g.o(`case %s:`, noneChoiceName)
+			g.o(`	// Nothing to do, oneof is unset.`)
 
 			for _, choice := range field.GetOneOf().GetChoices() {
 				oneofField := g.msg.FieldsMap[choice.GetName()]
 				g.setField(oneofField)
 				typeName := composeOneOfChoiceName(g.msg, g.field)
-				g.o("case %s:", typeName)
+				g.o(`case %s:`, typeName)
 				g.i(1)
 				g.oMarshalField()
 				g.i(-1)
 			}
-			g.o("}")
+			g.o(`}`)
 		} else {
 			g.oMarshalField()
 		}
 	}
 	g.i(-1)
-	g.o("} else {")
-	g.o("	// Message is unchanged. Used original bytes.")
-	g.o("	ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))")
-	g.o("}")
-	g.o("return nil")
+	g.o(`} else {`)
+	g.o(`	// Message is unchanged. Used original bytes.`)
+	g.o(`	ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))`)
+	g.o(`}`)
+	g.o(`return nil`)
 	g.i(-1)
-	g.o("}")
+	g.o(`}`)
 	return g.lastErr
 }
 
@@ -1575,7 +1583,7 @@ func (g *generator) oMarshalField() {
 	usePresence := g.options.WithPresence && !g.isOneOfField()
 
 	if usePresence {
-		g.o("if m._flags&%s != 0 {", g.msg.PresenceFlagName[g.field])
+		g.o(`if m._flags&%s != 0 {`, g.msg.PresenceFlagName[g.field])
 		g.i(1)
 	}
 
@@ -1614,7 +1622,7 @@ func (g *generator) oMarshalField() {
 		g.oMarshalPreparedField("Double")
 
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
-		g.o("ps.Uint32Prepared(prepared_$MessageName_$FieldName, uint32(m.$fieldName))")
+		g.o(`ps.Uint32Prepared(prepared_$MessageName_$FieldName, uint32(m.$fieldName))`)
 
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 
@@ -1624,7 +1632,7 @@ func (g *generator) oMarshalField() {
 
 	if usePresence {
 		g.i(-1)
-		g.o("}")
+		g.o(`}`)
 	}
 }
 
@@ -1664,7 +1672,7 @@ func (g *generator) oMarshalPrimitiveRepeated() {
 		g.oMarshalPrimitiveRepeatedField("Double")
 
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
-		g.o("ps.Uint32Prepared(prepared_$MessageName_$FieldName, uint32(m.$fieldName))")
+		g.o(`ps.Uint32Prepared(prepared_$MessageName_$FieldName, uint32(m.$fieldName))`)
 
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 
@@ -1674,16 +1682,16 @@ func (g *generator) oMarshalPrimitiveRepeated() {
 }
 
 func (g *generator) oMarshalPrimitiveRepeatedField(protoTypeName string) {
-	g.o("ps.%sPacked(%d, m.$fieldName)", protoTypeName, g.field.GetNumber())
+	g.o(`ps.%sPacked(%d, m.$fieldName)`, protoTypeName, g.field.GetNumber())
 }
 
 func (g *generator) oMarshalMessageTypeField() {
 	if g.field.IsRepeated() {
-		g.o("for _, elem := range m.$fieldName {")
-		g.o("	token := ps.BeginEmbedded()")
-		g.o("	if err := elem.Marshal(ps); err != nil {")
-		g.o("		return err")
-		g.o("	}")
+		g.o(`for _, elem := range m.$fieldName {`)
+		g.o(`	token := ps.BeginEmbedded()`)
+		g.o(`	if err := elem.Marshal(ps); err != nil {`)
+		g.o(`		return err`)
+		g.o(`	}`)
 		g.o(
 			"	ps.EndEmbeddedPrepared(token, %s)",
 			embeddedFieldName(g.msg, g.field),
@@ -1695,20 +1703,20 @@ func (g *generator) oMarshalMessageTypeField() {
 				g.field.GetOneOf().GetName(),
 			)
 		} else {
-			g.o("$fieldName := m.$fieldName")
+			g.o(`$fieldName := m.$fieldName`)
 		}
 
-		g.o("if $fieldName != nil {")
-		g.o("	token := ps.BeginEmbedded()")
-		g.o("	if err := $fieldName.Marshal(ps); err != nil {")
-		g.o("		return err")
-		g.o("	}")
+		g.o(`if $fieldName != nil {`)
+		g.o(`	token := ps.BeginEmbedded()`)
+		g.o(`	if err := $fieldName.Marshal(ps); err != nil {`)
+		g.o(`		return err`)
+		g.o(`	}`)
 		g.o(
 			"	ps.EndEmbeddedPrepared(token, %s)",
 			embeddedFieldName(g.msg, g.field),
 		)
 	}
-	g.o("}")
+	g.o(`}`)
 }
 
 func (g *generator) oPrepareMarshalField(field *Field) {
@@ -1762,7 +1770,7 @@ func unexportedName(name string) string {
 }
 
 func (g *generator) oPool() error {
-	g.o("")
+	g.o(``)
 	g.o(
 		`
 // Pool of $MessageName structs.
@@ -1847,25 +1855,25 @@ func (g *generator) oPoolReleaseElem() {
 			}
 
 			typeName := composeOneOfTypeName(g.msg, field.GetOneOf())
-			g.o("switch %s(elem.%s.FieldIndex()) {", typeName, field.GetOneOf().GetName())
+			g.o(`switch %s(elem.%s.FieldIndex()) {`, typeName, field.GetOneOf().GetName())
 			for _, choice := range field.GetOneOf().GetChoices() {
 				choiceField := g.msg.FieldsMap[choice.GetName()]
 				g.setField(choiceField)
 				if choiceField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 					choiceName := composeOneOfChoiceName(g.msg, choiceField)
-					g.o("case %s:", choiceName)
+					g.o(`case %s:`, choiceName)
 					g.i(1)
 					g.o(
 						"ptr := (*$FieldMessageTypeName)(elem.%s.PtrVal())",
 						field.GetOneOf().GetName(),
 					)
-					g.o("if ptr != nil {")
-					g.o("	$fieldTypeMessagePool.Release(ptr)")
-					g.o("}")
+					g.o(`if ptr != nil {`)
+					g.o(`	$fieldTypeMessagePool.Release(ptr)`)
+					g.o(`}`)
 					g.i(-1)
 				}
 			}
-			g.o("}")
+			g.o(`}`)
 			continue
 		}
 
@@ -1875,17 +1883,17 @@ func (g *generator) oPoolReleaseElem() {
 		}
 
 		// Not a oneof field.
-		g.o("// Release nested $fieldName recursively to their pool.")
+		g.o(`// Release nested $fieldName recursively to their pool.`)
 		if field.IsRepeated() {
-			g.o("$fieldTypeMessagePool.ReleaseSlice(elem.$fieldName)")
+			g.o(`$fieldTypeMessagePool.ReleaseSlice(elem.$fieldName)`)
 		} else {
-			g.o("if elem.$fieldName != nil {")
-			g.o("	$fieldTypeMessagePool.Release(elem.$fieldName)")
-			g.o("}")
+			g.o(`if elem.$fieldName != nil {`)
+			g.o(`	$fieldTypeMessagePool.Release(elem.$fieldName)`)
+			g.o(`}`)
 		}
 	}
 
-	g.o("")
+	g.o(``)
 	//	g.o(
 	//		`
 	//// Zero-initialize the released element.
@@ -1896,22 +1904,22 @@ func (g *generator) oPoolReleaseElem() {
 }
 
 func (g *generator) oResetElem() {
-	g.o("// Reset the released element.")
-	g.o("elem._protoMessage = protomessage.ProtoMessage{}")
+	g.o(`// Reset the released element.`)
+	g.o(`elem._protoMessage = protomessage.ProtoMessage{}`)
 	if g.msg.FlagsBitCount > 0 {
-		g.o("elem._flags = 0")
+		g.o(`elem._flags = 0`)
 	}
 	for _, field := range g.msg.Fields {
 		g.setField(field)
 
 		if field.IsRepeated() {
-			g.o("elem.$fieldName = elem.$fieldName[:0]")
+			g.o(`elem.$fieldName = elem.$fieldName[:0]`)
 			continue
 		}
 		if field.GetOneOf() != nil {
 			idx := g.calcOneOfFieldIndex()
 			if idx == 0 {
-				g.o("elem.%s = oneof.NewOneOfNone()", field.GetOneOf().GetName())
+				g.o(`elem.%s = oneof.NewOneOfNone()`, field.GetOneOf().GetName())
 			}
 			continue
 		}
@@ -1944,12 +1952,12 @@ func (g *generator) oResetElem() {
 			g.lastErr = fmt.Errorf("unsupported field type %v", field.GetType())
 		}
 
-		g.o("elem.$fieldName = %s", zeroVal)
+		g.o(`elem.$fieldName = %s`, zeroVal)
 	}
 }
 
 func (g *generator) oPoolReleaseFuncs() {
-	g.o("")
+	g.o(``)
 	g.o(
 		`
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -1974,7 +1982,7 @@ func (p *$messagePoolType) ReleaseSlice(slice []*$MessageName) {
 }
 
 func (g *generator) oPoolRelease() {
-	g.o("")
+	g.o(``)
 	g.o(
 		`
 // Release an element back to the pool.
@@ -1985,7 +1993,7 @@ func (p *$messagePoolType) Release(elem *$MessageName) {`,
 	g.oPoolReleaseElem()
 	g.i(-1)
 
-	g.o("")
+	g.o(``)
 	g.o(
 		`
 	p.mux.Lock()
@@ -2026,7 +2034,7 @@ const (`, enum.GetName(),
 	for i, value := range enum.GetValues() {
 		comment := getLeadingComment(value.GetSourceInfo())
 		if i > 0 && comment != "" {
-			g.o("")
+			g.o(``)
 		}
 		g.oComment(comment)
 		g.o(
@@ -2036,8 +2044,8 @@ const (`, enum.GetName(),
 	}
 	g.i(-1)
 
-	g.o(")")
-	g.o("")
+	g.o(`)`)
+	g.o(``)
 
 	return g.lastErr
 }
