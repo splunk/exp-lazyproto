@@ -9,6 +9,7 @@ import (
 )
 
 func (g *generator) oMarshalMethod() error {
+	// Output "prepared" field definitions.
 	for _, field := range g.msg.Fields {
 		g.setField(field)
 
@@ -19,6 +20,8 @@ func (g *generator) oMarshalMethod() error {
 
 		g.oPrepareMarshalField(field)
 	}
+
+	// Output the Marshal() func.
 
 	g.o(``)
 	if g.useSizedMarshaler {
@@ -41,18 +44,25 @@ func (g *generator) oMarshalMethod() error {
 		},
 	)
 
+	// Marshal one field at a time.
+
 	for _, field := range fields {
 		g.setField(field)
 
 		if field.GetOneOf() != nil {
 			fieldIndex := g.calcOneOfFieldIndex()
+
+			// Only marshal oneof field once. We generate the marshaling code
+			// when we see the field with index 0 in the list of choices.
 			if fieldIndex != 0 {
 				// Already generated this oneof, nothing else to do.
 				continue
 			}
+
 			g.o(`// Marshal %q.`, g.field.GetOneOf().GetName())
 
 			typeName := composeOneOfAliasTypeName(g.msg, g.field.GetOneOf())
+			g.o(`// Switch on the type of the value stored in the oneof field.`)
 			g.o(`switch %s(m.%s.FieldIndex()) {`, typeName, g.field.GetOneOf().GetName())
 
 			// Add the "none" case.
@@ -60,6 +70,7 @@ func (g *generator) oMarshalMethod() error {
 			g.o(`case %s:`, noneChoiceName)
 			g.o(`	// Nothing to do, oneof is unset.`)
 
+			// Generate cases for each choice of this oneof.
 			for _, choice := range field.GetOneOf().GetChoices() {
 				oneofField := g.msg.FieldsMap[choice.GetName()]
 				g.setField(oneofField)
@@ -76,7 +87,7 @@ func (g *generator) oMarshalMethod() error {
 	}
 	g.i(-1)
 	g.o(`} else {`)
-	g.o(`	// Message is unchanged. Used original bytes.`)
+	g.o(`	// We have the original bytes and the message is unchanged. Use the original bytes.`)
 	g.o(`	ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))`)
 	g.o(`}`)
 	g.o(`return nil`)
@@ -85,7 +96,8 @@ func (g *generator) oMarshalMethod() error {
 	return g.lastErr
 }
 
-func embeddedFieldName(msg *Message, field *Field) string {
+// Returns the name of the var which contains prepared data for the specified field.
+func embeddedFieldPreparedVarName(msg *Message, field *Field) string {
 	return fmt.Sprintf("prepared_%s_%s", msg.GetName(), field.GetCapitalName())
 }
 
@@ -241,7 +253,7 @@ func (g *generator) oMarshalMessageTypeField() {
 		g.o(`	}`)
 		g.o(
 			"	ps.EndEmbeddedPrepared(token, %s)",
-			embeddedFieldName(g.msg, g.field),
+			embeddedFieldPreparedVarName(g.msg, g.field),
 		)
 	} else {
 		if g.field.GetOneOf() != nil {
@@ -260,7 +272,7 @@ func (g *generator) oMarshalMessageTypeField() {
 		g.o(`	}`)
 		g.o(
 			"	ps.EndEmbeddedPrepared(token, %s)",
-			embeddedFieldName(g.msg, g.field),
+			embeddedFieldPreparedVarName(g.msg, g.field),
 		)
 	}
 	g.o(`}`)

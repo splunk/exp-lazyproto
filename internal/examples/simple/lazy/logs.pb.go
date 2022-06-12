@@ -292,7 +292,7 @@ func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_LogsData_ResourceLogs)
 		}
 	} else {
-		// Message is unchanged. Used original bytes.
+		// We have the original bytes and the message is unchanged. Use the original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
@@ -727,7 +727,7 @@ func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 		// Marshal "schemaUrl".
 		ps.StringPrepared(prepared_ResourceLogs_SchemaUrl, m.schemaUrl)
 	} else {
-		// Message is unchanged. Used original bytes.
+		// We have the original bytes and the message is unchanged. Use the original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
@@ -1111,7 +1111,7 @@ func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 		// Marshal "droppedAttributesCount".
 		ps.Uint32Prepared(prepared_Resource_DroppedAttributesCount, m.droppedAttributesCount)
 	} else {
-		// Message is unchanged. Used original bytes.
+		// We have the original bytes and the message is unchanged. Use the original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
@@ -1550,7 +1550,7 @@ func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 		// Marshal "schemaUrl".
 		ps.StringPrepared(prepared_ScopeLogs_SchemaUrl, m.schemaUrl)
 	} else {
-		// Message is unchanged. Used original bytes.
+		// We have the original bytes and the message is unchanged. Use the original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
@@ -2000,7 +2000,7 @@ func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 		// Marshal "droppedAttributesCount".
 		ps.Uint32Prepared(prepared_InstrumentationScope_DroppedAttributesCount, m.droppedAttributesCount)
 	} else {
-		// Message is unchanged. Used original bytes.
+		// We have the original bytes and the message is unchanged. Use the original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
@@ -2610,7 +2610,7 @@ func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 		// Marshal "observedTimeUnixNano".
 		ps.Fixed64Prepared(prepared_LogRecord_ObservedTimeUnixNano, m.observedTimeUnixNano)
 	} else {
-		// Message is unchanged. Used original bytes.
+		// We have the original bytes and the message is unchanged. Use the original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
@@ -2917,7 +2917,7 @@ func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_KeyValue_Value)
 		}
 	} else {
-		// Message is unchanged. Used original bytes.
+		// We have the original bytes and the message is unchanged. Use the original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
@@ -3410,6 +3410,7 @@ var prepared_AnyValue_BytesValue = molecule.PrepareBytesField(7)
 func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
 		// Marshal "value".
+		// Switch on the type of the value stored in the oneof field.
 		switch AnyValueValue(m.value.FieldIndex()) {
 		case AnyValueValueNone:
 			// Nothing to do, oneof is unset.
@@ -3450,7 +3451,7 @@ func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
 			ps.BytesPrepared(prepared_AnyValue_BytesValue, m.value.BytesVal())
 		}
 	} else {
-		// Message is unchanged. Used original bytes.
+		// We have the original bytes and the message is unchanged. Use the original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
@@ -3809,7 +3810,7 @@ func (m *ArrayValue) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_ArrayValue_Values)
 		}
 	} else {
-		// Message is unchanged. Used original bytes.
+		// We have the original bytes and the message is unchanged. Use the original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
@@ -4148,7 +4149,7 @@ func (m *KeyValueList) Marshal(ps *molecule.ProtoStream) error {
 			ps.EndEmbeddedPrepared(token, prepared_KeyValueList_Values)
 		}
 	} else {
-		// Message is unchanged. Used original bytes.
+		// We have the original bytes and the message is unchanged. Use the original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
@@ -4403,7 +4404,7 @@ func (m *PlainMessage) Marshal(ps *molecule.ProtoStream) error {
 		// Marshal "value".
 		ps.StringPrepared(prepared_PlainMessage_Value, m.value)
 	} else {
-		// Message is unchanged. Used original bytes.
+		// We have the original bytes and the message is unchanged. Use the original bytes.
 		ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
 	}
 	return nil
