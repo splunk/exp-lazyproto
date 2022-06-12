@@ -27,7 +27,6 @@ var includePaths flagList
 func main() {
 	options := generator.Options{}
 
-	//flag.Var(&files, "input", "Input file list.")
 	flag.Var(
 		&includePaths, "proto_path",
 		"Directory relative to which all .proto files are found.",

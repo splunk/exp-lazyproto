@@ -6,33 +6,52 @@ import (
 	"github.com/jhump/protoreflect/desc"
 )
 
+// File that is parsed from a source proto.
 type File struct {
 	Messages map[string]*Message
 }
 
+// Message is the representation of a source proto "message".
 type Message struct {
 	desc.MessageDescriptor
 
-	Parent   *Message
+	// FullName is the full unique name of this message (includes parent names).
 	FullName string
 
-	Fields    []*Field
+	// Fields of this message.
+	Fields []*Field
+
+	// FieldsMap maps the name of the field to its representation.
 	FieldsMap map[string]*Field
 
-	FlagsType           string
-	FlagsBitCount       int
-	HasEmbeddedMessages bool
+	// FlagsTypeAlias is the name of the type alias for the _flags field.
+	FlagsTypeAlias string
+
+	// FlagsTypeAlias is the underlying unsigned integer type of the _flags field.
 	FlagsUnderlyingType string
 
-	DecodedFlags     []flagBitDef
-	PresenceFlags    []flagBitDef
-	DecodedFlagName  map[*Field]string
+	// FlagsBitCount is the number of the bits that the _flags field contains.
+	FlagsBitCount int
+
+	// DecodedFlags are definitions for "decoded" flags. Each such flag indicates
+	// that a particular field of the message is already decoded.
+	DecodedFlags []flagBitDef
+	// DecodedFlagName maps the field to its "decoded" const name.
+	DecodedFlagName map[*Field]string
+
+	// DecodedFlags are definitions for "present" flags. Each such flag indicates
+	// that a particular field of the message is present. Used for "Has" methods.
+	PresenceFlags []flagBitDef
+	// PresenceFlagName maps the field to its "present" const name.
 	PresenceFlagName map[*Field]string
 }
 
 type flagBitDef struct {
+	// The name of the const.
 	flagName string
-	maskVal  uint64
+
+	// The value of the const.
+	maskVal uint64
 }
 
 func NewMessage(parent *Message, descr *desc.MessageDescriptor) *Message {
@@ -44,8 +63,11 @@ func NewMessage(parent *Message, descr *desc.MessageDescriptor) *Message {
 	}
 
 	if parent != nil {
+		// This is message declared inside another message.
+		// Compose the name using parent's name to make sure the FullName is unique.
 		m.FullName = parent.GetName() + "_" + descr.GetName()
 	} else {
+		// This is a top-level message.
 		m.FullName = descr.GetName()
 	}
 
@@ -66,6 +88,7 @@ func (f *Message) GetName() string {
 	return f.FullName
 }
 
+// Field is the representation of a source proto field.
 type Field struct {
 	desc.FieldDescriptor
 	camelName string
@@ -97,6 +120,7 @@ func camelCase(s string) string {
 	return strings.Join(parts, "")
 }
 
+// Enum is the representation of a source proto enum.
 type Enum struct {
 	desc.EnumDescriptor
 	FullName string

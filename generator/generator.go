@@ -254,7 +254,6 @@ func (g *generator) prepareMessage() error {
 	for _, field := range g.msg.Fields {
 		maskVal := uint64(1) << g.msg.FlagsBitCount
 		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			g.msg.HasEmbeddedMessages = true
 			flagName := fmt.Sprintf(
 				"flags_%s_%s_Decoded", g.msg.GetName(), field.GetCapitalName(),
 			)
@@ -317,7 +316,7 @@ func (g *generator) prepareMessage() error {
 			return fmt.Errorf("more than 64 bits flags not supported")
 		}
 
-		g.msg.FlagsType = fmt.Sprintf("flags_%s", g.msg.GetName())
+		g.msg.FlagsTypeAlias = fmt.Sprintf("flags_%s", g.msg.GetName())
 	}
 
 	return nil
@@ -496,7 +495,7 @@ func (g *generator) oMessageStruct() error {
 	g.o(`_protoMessage protomessage.ProtoMessage`)
 
 	if g.msg.FlagsBitCount > 0 {
-		g.o(`_flags %s`, g.msg.FlagsType)
+		g.o(`_flags %s`, g.msg.FlagsTypeAlias)
 	}
 	g.o(``)
 
@@ -606,15 +605,15 @@ func (g *generator) oOneOfTypeMethod(oneof *desc.OneOfDescriptor) {
 
 func (g *generator) oFlagConsts() error {
 	if len(g.msg.DecodedFlags) > 0 || len(g.msg.PresenceFlags) > 0 {
-		g.o(`// %s is the type of the bit flags.`, g.msg.FlagsType)
-		g.o(`type %s %s`, g.msg.FlagsType, g.msg.FlagsUnderlyingType)
+		g.o(`// %s is the type of the bit flags.`, g.msg.FlagsTypeAlias)
+		g.o(`type %s %s`, g.msg.FlagsTypeAlias, g.msg.FlagsUnderlyingType)
 	}
 
 	if len(g.msg.DecodedFlags) > 0 {
 		g.o(`// Bitmasks that indicate that the particular nested message is decoded.`)
 		for _, bitDef := range g.msg.DecodedFlags {
 			g.o(
-				"const %s %s = 0x%X", bitDef.flagName, g.msg.FlagsType,
+				"const %s %s = 0x%X", bitDef.flagName, g.msg.FlagsTypeAlias,
 				bitDef.maskVal,
 			)
 		}
@@ -625,7 +624,7 @@ func (g *generator) oFlagConsts() error {
 		g.o(`// Bitmasks that indicate that the particular field is present.`)
 		for _, bitDef := range g.msg.PresenceFlags {
 			g.o(
-				"const %s %s = 0x%X", bitDef.flagName, g.msg.FlagsType,
+				"const %s %s = 0x%X", bitDef.flagName, g.msg.FlagsTypeAlias,
 				bitDef.maskVal,
 			)
 		}

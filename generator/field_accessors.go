@@ -12,7 +12,7 @@ func (g *generator) oFieldsAccessors() error {
 		g.setField(field)
 
 		if g.options.WithPresence {
-			if err := g.oHasField(); err != nil {
+			if err := g.oHasMethod(); err != nil {
 				return err
 			}
 		}
@@ -20,9 +20,11 @@ func (g *generator) oFieldsAccessors() error {
 		if err := g.oFieldGetter(); err != nil {
 			return err
 		}
+
 		if err := g.oFieldSetter(); err != nil {
 			return err
 		}
+
 		if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE && g.field.IsRepeated() {
 			if err := g.oFieldSliceMethods(); err != nil {
 				return err
@@ -46,8 +48,8 @@ func (g *generator) oFieldGetter() error {
 
 	g.o(`func (m *$MessageName) $FieldName() %s {`, goType)
 
+	g.i(1)
 	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-		g.i(1)
 		g.o(`if m._flags&%s == 0 {`, g.msg.DecodedFlagName[g.field])
 		g.i(1)
 		g.o(`// Decode nested message(s).`)
@@ -82,37 +84,38 @@ func (g *generator) oFieldGetter() error {
 				g.o(`}`)
 			}
 		}
-		g.i(-1)
 
-		g.o(`	m._flags |= %s`, g.msg.DecodedFlagName[g.field])
-		g.o(`}`)
+		g.o(`m._flags |= %s`, g.msg.DecodedFlagName[g.field])
+
 		g.i(-1)
+		g.o(`}`)
 	}
 
 	if g.field.GetOneOf() != nil {
 		switch g.field.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			g.o(`	return m.%s.BoolVal()`, g.field.GetOneOf().GetName())
+			g.o(`return m.%s.BoolVal()`, g.field.GetOneOf().GetName())
 
-		case descriptor.FieldDescriptorProto_TYPE_INT64:
-			fallthrough
-		case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-			g.o(`	return m.%s.Int64Val()`, g.field.GetOneOf().GetName())
+		case descriptor.FieldDescriptorProto_TYPE_INT64,
+			descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+			g.o(`return m.%s.Int64Val()`, g.field.GetOneOf().GetName())
 
 		case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-			g.o(`	return m.%s.DoubleVal()`, g.field.GetOneOf().GetName())
+			g.o(`return m.%s.DoubleVal()`, g.field.GetOneOf().GetName())
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			g.o(`	return m.%s.StringVal()`, g.field.GetOneOf().GetName())
+			g.o(`return m.%s.StringVal()`, g.field.GetOneOf().GetName())
 		case descriptor.FieldDescriptorProto_TYPE_BYTES:
-			g.o(`	return m.%s.BytesVal()`, g.field.GetOneOf().GetName())
+			g.o(`return m.%s.BytesVal()`, g.field.GetOneOf().GetName())
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-			g.o(`	return (%s)(m.%s.PtrVal())`, goType, g.field.GetOneOf().GetName())
+			g.o(`return (%s)(m.%s.PtrVal())`, goType, g.field.GetOneOf().GetName())
 		default:
 			return fmt.Errorf("unsupported oneof field type %v", g.field.GetType())
 		}
 	} else {
-		g.o(`	return m.$fieldName`)
+		g.o(`return m.$fieldName`)
 	}
+
+	g.i(-1)
 	g.o(`}`)
 	g.o(``)
 
@@ -132,50 +135,47 @@ func (g *generator) oFieldSetter() error {
 	g.o(`func (m *$MessageName) Set$FieldName(v %s) {`, g.convertTypeToGo(g.field))
 
 	if g.field.GetOneOf() != nil {
-		if !g.isOneOfField() {
-			return g.lastErr
-		}
-
 		choiceName := composeOneOfChoiceName(g.msg, g.field)
 
+		g.i(1)
 		switch g.field.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
 			g.o(
-				"	m.%s = oneof.NewOneOfBool(v, int(%s))",
+				"m.%s = oneof.NewOneOfBool(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 
-		case descriptor.FieldDescriptorProto_TYPE_INT64:
-			fallthrough
-		case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		case descriptor.FieldDescriptorProto_TYPE_INT64,
+			descriptor.FieldDescriptorProto_TYPE_SFIXED64:
 			g.o(
-				"	m.%s = oneof.NewOneOfInt64(v, int(%s))",
+				"m.%s = oneof.NewOneOfInt64(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 
 		case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 			g.o(
-				"	m.%s = oneof.NewOneOfDouble(v, int(%s))",
+				"m.%s = oneof.NewOneOfDouble(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
 			g.o(
-				"	m.%s = oneof.NewOneOfString(v, int(%s))",
+				"m.%s = oneof.NewOneOfString(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_BYTES:
 			g.o(
-				"	m.%s = oneof.NewOneOfBytes(v, int(%s))",
+				"m.%s = oneof.NewOneOfBytes(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			g.o(
-				"	m.%s = oneof.NewOneOfPtr(unsafe.Pointer(v), int(%s))",
+				"m.%s = oneof.NewOneOfPtr(unsafe.Pointer(v), int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		default:
 			return fmt.Errorf("unsupported oneof field type %v", g.field.GetType())
 		}
+		g.i(-1)
 	} else {
 		g.o(`	m.$fieldName = v`)
 		if g.options.WithPresence {
@@ -205,7 +205,7 @@ func (g *generator) oFieldSetter() error {
 	return g.lastErr
 }
 
-func (g *generator) oHasField() error {
+func (g *generator) oHasMethod() error {
 	if g.field.GetOneOf() != nil {
 		// Has() func is not needed for oneof fields since they have the Type() func.
 		return nil
