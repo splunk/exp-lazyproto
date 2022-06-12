@@ -598,7 +598,7 @@ func (g *generator) oOneOfTypeMethod(oneof *desc.OneOfDescriptor) {
 		funcName, oneof.GetName(),
 	)
 	g.o(`func (m *$MessageName) %s() {`, funcName)
-	g.o(`	m.%s = oneof.NewOneOfNone()`, oneof.GetName())
+	g.o(`	m.%s = oneof.NewNone()`, oneof.GetName())
 	g.o(`}`)
 	g.o(``)
 }

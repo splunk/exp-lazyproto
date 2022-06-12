@@ -161,7 +161,7 @@ func (g *generator) oResetElem() {
 		if field.GetOneOf() != nil {
 			idx := g.calcOneOfFieldIndex()
 			if idx == 0 {
-				g.o(`elem.%s = oneof.NewOneOfNone()`, field.GetOneOf().GetName())
+				g.o(`elem.%s = oneof.NewNone()`, field.GetOneOf().GetName())
 			}
 			continue
 		}

@@ -24,18 +24,18 @@ const fieldIdxMask = (1 << fieldIdxBitCount) - 1
 // maxint / (2^fieldIdxBitCount), which we calculate below.
 const MaxSliceLen = int((^uint(0))>>1) >> fieldIdxBitCount
 
-func NewOneOfNone() OneOf {
+func NewNone() OneOf {
 	return OneOf{}
 }
 
-func NewOneOfInt64(v int64, fieldIdx int) OneOf {
+func NewInt64(v int64, fieldIdx int) OneOf {
 	return OneOf{
 		lenAndFieldIdx: int64(fieldIdx),
 		capOrVal:       v,
 	}
 }
 
-func NewOneOfDouble(v float64, fieldIdx int) OneOf {
+func NewDouble(v float64, fieldIdx int) OneOf {
 	return OneOf{
 		lenAndFieldIdx: int64(fieldIdx),
 		capOrVal:       *(*int64)(unsafe.Pointer(&v)),
@@ -49,21 +49,21 @@ func boolToInt64(b bool) int64 {
 	return 0
 }
 
-func NewOneOfBool(v bool, fieldIdx int) OneOf {
+func NewBool(v bool, fieldIdx int) OneOf {
 	return OneOf{
 		lenAndFieldIdx: int64(fieldIdx),
 		capOrVal:       boolToInt64(v),
 	}
 }
 
-func NewOneOfPtr(v unsafe.Pointer, fieldIdx int) OneOf {
+func NewPtr(v unsafe.Pointer, fieldIdx int) OneOf {
 	return OneOf{
 		lenAndFieldIdx: int64(fieldIdx),
 		ptr:            v,
 	}
 }
 
-func NewOneOfString(v string, fieldIdx int) OneOf {
+func NewString(v string, fieldIdx int) OneOf {
 	hdr := (*reflect.StringHeader)(unsafe.Pointer(&v))
 	if hdr.Len > MaxSliceLen {
 		panic("maximum len exceeded")
@@ -75,7 +75,7 @@ func NewOneOfString(v string, fieldIdx int) OneOf {
 	}
 }
 
-func NewOneOfBytes(v []byte, fieldIdx int) OneOf {
+func NewBytes(v []byte, fieldIdx int) OneOf {
 	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&v))
 	if hdr.Len > MaxSliceLen {
 		panic("maximum len exceeded")

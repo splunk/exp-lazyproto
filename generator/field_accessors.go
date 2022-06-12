@@ -141,35 +141,35 @@ func (g *generator) oFieldSetter() error {
 		switch g.field.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
 			g.o(
-				"m.%s = oneof.NewOneOfBool(v, int(%s))",
+				"m.%s = oneof.NewBool(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 
 		case descriptor.FieldDescriptorProto_TYPE_INT64,
 			descriptor.FieldDescriptorProto_TYPE_SFIXED64:
 			g.o(
-				"m.%s = oneof.NewOneOfInt64(v, int(%s))",
+				"m.%s = oneof.NewInt64(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 
 		case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 			g.o(
-				"m.%s = oneof.NewOneOfDouble(v, int(%s))",
+				"m.%s = oneof.NewDouble(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
 			g.o(
-				"m.%s = oneof.NewOneOfString(v, int(%s))",
+				"m.%s = oneof.NewString(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_BYTES:
 			g.o(
-				"m.%s = oneof.NewOneOfBytes(v, int(%s))",
+				"m.%s = oneof.NewBytes(v, int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			g.o(
-				"m.%s = oneof.NewOneOfPtr(unsafe.Pointer(v), int(%s))",
+				"m.%s = oneof.NewPtr(unsafe.Pointer(v), int(%s))",
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		default:

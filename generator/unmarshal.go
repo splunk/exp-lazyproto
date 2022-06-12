@@ -292,7 +292,7 @@ if err != nil {
 	if g.field.GetOneOf() != nil {
 		choiceName := composeOneOfChoiceName(g.msg, g.field)
 		g.o(
-			"m.%s = oneof.NewOneOf%s(v, int(%s))", g.field.GetOneOf().GetName(),
+			"m.%s = oneof.New%s(v, int(%s))", g.field.GetOneOf().GetName(),
 			task.oneOfType, choiceName,
 		)
 	} else if g.field.IsRepeated() {
@@ -470,7 +470,7 @@ elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)`, counterName,
 elem := $fieldTypeMessagePool.Get()
 elem._protoMessage.Parent = &m._protoMessage
 elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
-m.%s = oneof.NewOneOfPtr(unsafe.Pointer(elem), int(%s))`,
+m.%s = oneof.NewPtr(unsafe.Pointer(elem), int(%s))`,
 				g.field.GetOneOf().GetName(), choiceName,
 			)
 		} else {

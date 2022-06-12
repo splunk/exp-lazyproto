@@ -3082,7 +3082,7 @@ func (m *AnyValue) ValueType() AnyValueValue {
 
 // ValueUnset unsets the oneof field "value", so that it contains none of the choices.
 func (m *AnyValue) ValueUnset() {
-	m.value = oneof.NewOneOfNone()
+	m.value = oneof.NewNone()
 }
 
 // flags_AnyValue is the type of the bit flags.
@@ -3101,7 +3101,7 @@ func (m *AnyValue) StringValue() string {
 // SetStringValue sets the value of the stringValue.
 // The oneof field "value" will be set to "stringValue".
 func (m *AnyValue) SetStringValue(v string) {
-	m.value = oneof.NewOneOfString(v, int(AnyValueStringValue))
+	m.value = oneof.NewString(v, int(AnyValueStringValue))
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -3116,7 +3116,7 @@ func (m *AnyValue) BoolValue() bool {
 // SetBoolValue sets the value of the boolValue.
 // The oneof field "value" will be set to "boolValue".
 func (m *AnyValue) SetBoolValue(v bool) {
-	m.value = oneof.NewOneOfBool(v, int(AnyValueBoolValue))
+	m.value = oneof.NewBool(v, int(AnyValueBoolValue))
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -3131,7 +3131,7 @@ func (m *AnyValue) IntValue() int64 {
 // SetIntValue sets the value of the intValue.
 // The oneof field "value" will be set to "intValue".
 func (m *AnyValue) SetIntValue(v int64) {
-	m.value = oneof.NewOneOfInt64(v, int(AnyValueIntValue))
+	m.value = oneof.NewInt64(v, int(AnyValueIntValue))
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -3146,7 +3146,7 @@ func (m *AnyValue) DoubleValue() float64 {
 // SetDoubleValue sets the value of the doubleValue.
 // The oneof field "value" will be set to "doubleValue".
 func (m *AnyValue) SetDoubleValue(v float64) {
-	m.value = oneof.NewOneOfDouble(v, int(AnyValueDoubleValue))
+	m.value = oneof.NewDouble(v, int(AnyValueDoubleValue))
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -3172,7 +3172,7 @@ func (m *AnyValue) ArrayValue() *ArrayValue {
 // SetArrayValue sets the value of the arrayValue.
 // The oneof field "value" will be set to "arrayValue".
 func (m *AnyValue) SetArrayValue(v *ArrayValue) {
-	m.value = oneof.NewOneOfPtr(unsafe.Pointer(v), int(AnyValueArrayValue))
+	m.value = oneof.NewPtr(unsafe.Pointer(v), int(AnyValueArrayValue))
 
 	// Make sure the field's Parent points to this message.
 	v._protoMessage.Parent = &m._protoMessage
@@ -3201,7 +3201,7 @@ func (m *AnyValue) KvlistValue() *KeyValueList {
 // SetKvlistValue sets the value of the kvlistValue.
 // The oneof field "value" will be set to "kvlistValue".
 func (m *AnyValue) SetKvlistValue(v *KeyValueList) {
-	m.value = oneof.NewOneOfPtr(unsafe.Pointer(v), int(AnyValueKvlistValue))
+	m.value = oneof.NewPtr(unsafe.Pointer(v), int(AnyValueKvlistValue))
 
 	// Make sure the field's Parent points to this message.
 	v._protoMessage.Parent = &m._protoMessage
@@ -3219,7 +3219,7 @@ func (m *AnyValue) BytesValue() []byte {
 // SetBytesValue sets the value of the bytesValue.
 // The oneof field "value" will be set to "bytesValue".
 func (m *AnyValue) SetBytesValue(v []byte) {
-	m.value = oneof.NewOneOfBytes(v, int(AnyValueBytesValue))
+	m.value = oneof.NewBytes(v, int(AnyValueBytesValue))
 
 	// Mark this message modified, if not already.
 	m._protoMessage.MarkModified()
@@ -3325,28 +3325,28 @@ func (m *AnyValue) decode() error {
 			if err != nil {
 				return err
 			}
-			m.value = oneof.NewOneOfString(v, int(AnyValueStringValue))
+			m.value = oneof.NewString(v, int(AnyValueStringValue))
 		case 0b0_0010_000: // field number 2 (boolValue), wire type 0 (Varint)
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBool()
 			if err != nil {
 				return err
 			}
-			m.value = oneof.NewOneOfBool(v, int(AnyValueBoolValue))
+			m.value = oneof.NewBool(v, int(AnyValueBoolValue))
 		case 0b0_0011_000: // field number 3 (intValue), wire type 0 (Varint)
 			buf.SkipByteUnsafe()
 			v, err := buf.AsInt64()
 			if err != nil {
 				return err
 			}
-			m.value = oneof.NewOneOfInt64(v, int(AnyValueIntValue))
+			m.value = oneof.NewInt64(v, int(AnyValueIntValue))
 		case 0b0_0100_001: // field number 4 (doubleValue), wire type 1 (Fixed64)
 			buf.SkipByteUnsafe()
 			v, err := buf.AsDouble()
 			if err != nil {
 				return err
 			}
-			m.value = oneof.NewOneOfDouble(v, int(AnyValueDoubleValue))
+			m.value = oneof.NewDouble(v, int(AnyValueDoubleValue))
 		case 0b0_0101_010: // field number 5 (arrayValue), wire type 2 (Bytes)
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
@@ -3357,7 +3357,7 @@ func (m *AnyValue) decode() error {
 			elem := arrayValuePool.Get()
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
-			m.value = oneof.NewOneOfPtr(unsafe.Pointer(elem), int(AnyValueArrayValue))
+			m.value = oneof.NewPtr(unsafe.Pointer(elem), int(AnyValueArrayValue))
 		case 0b0_0110_010: // field number 6 (kvlistValue), wire type 2 (Bytes)
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
@@ -3368,14 +3368,14 @@ func (m *AnyValue) decode() error {
 			elem := keyValueListPool.Get()
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
-			m.value = oneof.NewOneOfPtr(unsafe.Pointer(elem), int(AnyValueKvlistValue))
+			m.value = oneof.NewPtr(unsafe.Pointer(elem), int(AnyValueKvlistValue))
 		case 0b0_0111_010: // field number 7 (bytesValue), wire type 2 (Bytes)
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
 			}
-			m.value = oneof.NewOneOfBytes(v, int(AnyValueBytesValue))
+			m.value = oneof.NewBytes(v, int(AnyValueBytesValue))
 		default:
 			// Our speculation was wrong. Do the full (slow) decoding.
 			v, err := buf.DecodeVarint()
@@ -3534,7 +3534,7 @@ func (p *anyValuePoolType) ReleaseSlice(slice []*AnyValue) {
 		// Reset the released element.
 		elem._protoMessage = protomessage.ProtoMessage{}
 		elem._flags = 0
-		elem.value = oneof.NewOneOfNone()
+		elem.value = oneof.NewNone()
 	}
 
 	p.mux.Lock()
@@ -3562,7 +3562,7 @@ func (p *anyValuePoolType) Release(elem *AnyValue) {
 	// Reset the released element.
 	elem._protoMessage = protomessage.ProtoMessage{}
 	elem._flags = 0
-	elem.value = oneof.NewOneOfNone()
+	elem.value = oneof.NewNone()
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
