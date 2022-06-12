@@ -52,7 +52,7 @@ func (g *generator) oMarshalMethod() error {
 			}
 			g.o(`// Marshal %q.`, g.field.GetOneOf().GetName())
 
-			typeName := composeOneOfTypeName(g.msg, g.field.GetOneOf())
+			typeName := composeOneOfAliasTypeName(g.msg, g.field.GetOneOf())
 			g.o(`switch %s(m.%s.FieldIndex()) {`, typeName, g.field.GetOneOf().GetName())
 
 			// Add the "none" case.

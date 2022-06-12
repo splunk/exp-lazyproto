@@ -96,7 +96,7 @@ func (g *generator) oPoolReleaseElem() {
 				continue
 			}
 
-			typeName := composeOneOfTypeName(g.msg, field.GetOneOf())
+			typeName := composeOneOfAliasTypeName(g.msg, field.GetOneOf())
 			g.o(`switch %s(elem.%s.FieldIndex()) {`, typeName, field.GetOneOf().GetName())
 			for _, choice := range field.GetOneOf().GetChoices() {
 				choiceField := g.msg.FieldsMap[choice.GetName()]

@@ -136,42 +136,29 @@ func (g *generator) oFieldSetter() error {
 
 	if g.field.GetOneOf() != nil {
 		choiceName := composeOneOfChoiceName(g.msg, g.field)
+		oneofName := g.field.GetOneOf().GetName()
 
 		g.i(1)
 		switch g.field.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			g.o(
-				"m.%s = oneof.NewBool(v, int(%s))",
-				g.field.GetOneOf().GetName(), choiceName,
-			)
+			g.o("m.%s = oneof.NewBool(v, int(%s))", oneofName, choiceName)
 
 		case descriptor.FieldDescriptorProto_TYPE_INT64,
 			descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-			g.o(
-				"m.%s = oneof.NewInt64(v, int(%s))",
-				g.field.GetOneOf().GetName(), choiceName,
-			)
+			g.o("m.%s = oneof.NewInt64(v, int(%s))", oneofName, choiceName)
 
 		case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-			g.o(
-				"m.%s = oneof.NewDouble(v, int(%s))",
-				g.field.GetOneOf().GetName(), choiceName,
-			)
+			g.o("m.%s = oneof.NewDouble(v, int(%s))", oneofName, choiceName)
+
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			g.o(
-				"m.%s = oneof.NewString(v, int(%s))",
-				g.field.GetOneOf().GetName(), choiceName,
-			)
+			g.o("m.%s = oneof.NewString(v, int(%s))", oneofName, choiceName)
+
 		case descriptor.FieldDescriptorProto_TYPE_BYTES:
-			g.o(
-				"m.%s = oneof.NewBytes(v, int(%s))",
-				g.field.GetOneOf().GetName(), choiceName,
-			)
+			g.o("m.%s = oneof.NewBytes(v, int(%s))", oneofName, choiceName)
+
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-			g.o(
-				"m.%s = oneof.NewPtr(unsafe.Pointer(v), int(%s))",
-				g.field.GetOneOf().GetName(), choiceName,
-			)
+			g.o("m.%s = oneof.NewPtr(unsafe.Pointer(v), int(%s))", oneofName, choiceName)
+
 		default:
 			return fmt.Errorf("unsupported oneof field type %v", g.field.GetType())
 		}

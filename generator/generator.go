@@ -20,10 +20,20 @@ type Options struct {
 }
 
 func Generate(
-	protoPath []string, inputProtoFiles []string, outputDir string, options Options,
+	// Path where to look for imported proto files.
+	protoImportPath []string,
+
+	// List of input proto files.
+	inputProtoFiles []string,
+
+	// Directory to output generated files to.
+	outputDir string,
+
+	// Generation options.
+	options Options,
 ) error {
 	g := generator{
-		includePaths:          protoPath,
+		protoImportPath:       protoImportPath,
 		outputDir:             outputDir,
 		options:               options,
 		templateData:          map[string]string{},
@@ -40,41 +50,53 @@ func Generate(
 }
 
 type generator struct {
-	includePaths []string
-	outputDir    string
+	protoImportPath []string
+	outputDir       string
 
 	options Options
 
+	// Buffer to accumulated generated file.
 	outBuf  *bytes.Buffer
 	lastErr error
+	// Number of tabs to indent output of the o() method.
+	indentTabs int
 
-	file *File
-
-	messagesToGen         []*Message
+	// List of messages that need to be generated for the current file.
+	messagesToGen []*Message
+	// Map of all message declared in the current file or any of imported files.
 	messageDescrToMessage map[*desc.MessageDescriptor]*Message
 
-	enumsToGen      []*Enum
+	// List of enums that need to be generated for the current file.
+	enumsToGen []*Enum
+	// Map of all enums declared in the current file or any of imported files.
 	enumDescrToEnum map[*desc.EnumDescriptor]*Enum
 
-	msg          *Message
-	field        *Field
+	// The current message being generated.
+	msg *Message
+	// The current field being generated.
+	field *Field
+
+	// Fields to replace in templates. Key is the field name, value is the value
+	// replace the key by.
 	templateData map[string]string
-	spaces       int
 
 	useSizedMarshaler bool
 }
 
 func (g *generator) processFile(inputFilePath string) error {
+	// Parse the input file.
 	p := protoparse.Parser{
+		// Accessor is used when the parser needs to read an input file.
 		Accessor: func(filename string) (io.ReadCloser, error) {
-			for _, includePath := range g.includePaths {
+			// Try all import paths until we find the requested file.
+			for _, includePath := range g.protoImportPath {
 				f, err := os.Open(path.Join(includePath, filename))
 				if err == nil {
 					return f, nil
 				}
 			}
 			return nil, fmt.Errorf(
-				"file %s not found in paths %v", inputFilePath, g.includePaths,
+				"file %s not found in paths %v", inputFilePath, g.protoImportPath,
 			)
 		},
 		IncludeSourceCodeInfo: true,
@@ -92,13 +114,13 @@ func (g *generator) processFile(inputFilePath string) error {
 			return err
 		}
 
-		// List to generate all enums declared in this file
+		// List all enums declared in this file.
 		g.listAllEnums(nil, fileDescr.GetEnumTypes(), true)
 
-		// List to generate all messages declared in this file
+		// List all messages declared in this file.
 		g.listAllMessages(nil, fileDescr.GetMessageTypes(), true)
 
-		// List and remember all messages in dependencies, but without generating.
+		// List and remember all messages in imported files, but without generating.
 		// We need these messages to be available for lookup if they are used as a
 		// field type.
 		for _, dep := range fileDescr.GetDependencies() {
@@ -113,6 +135,8 @@ func (g *generator) processFile(inputFilePath string) error {
 			return err
 		}
 
+		// Generation is done. Format the generated code nicely and write it to the
+		// target file.
 		if err := g.formatAndWriteToFile(fileDescr); err != nil {
 			return err
 		}
@@ -170,36 +194,41 @@ func (g *generator) listAllMessages(
 		}
 		g.messageDescrToMessage[descr] = msg
 
+		// Add all enums declared inside this message to the list of all enums.
 		g.listAllEnums(msg, msg.GetNestedEnumTypes(), toGen)
 
+		// Add all messages declared inside this message to the list of all messages.
 		g.listAllMessages(msg, msg.GetNestedMessageTypes(), toGen)
 	}
 }
 
 func (g *generator) formatAndWriteToFile(fdescr *desc.FileDescriptor) error {
-	fname := path.Base(strings.TrimSuffix(fdescr.GetName(), ".proto")) + ".pb.go"
-	fname = path.Join(g.outputDir, fname)
-	fdir := path.Dir(fname)
+	destFileName := path.Base(strings.TrimSuffix(fdescr.GetName(), ".proto")) + ".pb.go"
+	destFileName = path.Join(g.outputDir, destFileName)
+	destDir := path.Dir(destFileName)
 
-	fmt.Printf("Generating %s\n", fname)
+	fmt.Printf("Generating %s\n", destFileName)
 
-	if err := os.MkdirAll(fdir, 0700); err != nil {
+	if err := os.MkdirAll(destDir, 0700); err != nil {
 		return err
 	}
 
 	var err error
-	f, err := os.Create(fname)
+	f, err := os.Create(destFileName)
 	if err != nil {
 		return err
 	}
 
-	srcCode, err := format.Source(g.outBuf.Bytes())
+	// Nicely format the generated Go code.
+	goCode, err := format.Source(g.outBuf.Bytes())
 	if err != nil {
+		// Write unformatted code to have something to look at.
 		f.Write(g.outBuf.Bytes())
+		// But still return an error.
 		return err
 	}
 
-	_, err = f.Write(srcCode)
+	_, err = f.Write(goCode)
 	return err
 }
 
@@ -250,13 +279,20 @@ var _ = fmt.Errorf // To avoid unused import warning.
 	return g.lastErr
 }
 
+// prepareMessage prepares data that we need during generation of this message.
 func (g *generator) prepareMessage() error {
+	// Prepare "decoded" flags.
 	for _, field := range g.msg.Fields {
 		maskVal := uint64(1) << g.msg.FlagsBitCount
 		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			// We need a flag for this field since it is an embedded message.
+
+			// Create a name for the flag.
 			flagName := fmt.Sprintf(
 				"flags_%s_%s_Decoded", g.msg.GetName(), field.GetCapitalName(),
 			)
+
+			// Remember the flag definition.
 			g.msg.DecodedFlags = append(
 				g.msg.DecodedFlags, flagBitDef{
 					flagName: flagName,
@@ -264,16 +300,19 @@ func (g *generator) prepareMessage() error {
 				},
 			)
 			g.msg.DecodedFlagName[field] = flagName
+
+			// Count the total number of bits allocated in the flags so far.
 			g.msg.FlagsBitCount++
 		}
 	}
 
+	// Prepare "presence" flags.
 	for _, field := range g.msg.Fields {
 		g.setField(field)
 
 		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 			// Embedded messages don't need a bit for presence since they use
-			// non-nil pointer's to indicate presence instead.
+			// non-nil pointer value to indicate presence instead.
 			continue
 		}
 
@@ -285,12 +324,13 @@ func (g *generator) prepareMessage() error {
 
 		maskVal := uint64(1) << g.msg.FlagsBitCount
 
-		// Note that embedded messages and oneof fields don't need a bit for presence
-		// since they use non-nil pointer's to indicate presence instead.
 		if g.options.WithPresence {
+			// Create a name for the flag.
 			flagName := fmt.Sprintf(
 				"flags_%s_%s_Present", g.msg.GetName(), field.GetCapitalName(),
 			)
+
+			// Remember the flag definition.
 			g.msg.PresenceFlags = append(
 				g.msg.PresenceFlags, flagBitDef{
 					flagName: flagName,
@@ -298,10 +338,14 @@ func (g *generator) prepareMessage() error {
 				},
 			)
 			g.msg.PresenceFlagName[field] = flagName
+
+			// Count the total number of bits allocated in the flags so far.
 			g.msg.FlagsBitCount++
 		}
 	}
 
+	// Use the smallest unsigned int type that fits the number of the bits
+	// we need in the flag field.
 	if g.msg.FlagsBitCount > 0 {
 		switch {
 		case g.msg.FlagsBitCount <= 8:
@@ -346,23 +390,31 @@ func (g *generator) setField(field *Field) {
 
 func (g *generator) o(str string, a ...any) {
 
+	// Delete leading newlines (we use them to format multiline message nicely in this
+	// file, but they are not desirable in the output).
 	str = strings.TrimLeft(str, "\n")
 
+	// Replace all templated values.
 	for k, v := range g.templateData {
 		str = strings.ReplaceAll(str, k, v)
 	}
 
+	// Substitute provided parameters.
 	str = fmt.Sprintf(str, a...)
 
+	// Split into lines.
 	strs := strings.Split(str, "\n")
 	for i := range strs {
 		if strings.TrimSpace(strs[i]) != "" {
-			strs[i] = strings.Repeat("\t", g.spaces) + strs[i]
+			// Prepend with necessary number of tabs.
+			strs[i] = strings.Repeat("\t", g.indentTabs) + strs[i]
 		}
 	}
 
+	// Join into one string again.
 	str = strings.Join(strs, "\n")
 
+	// And write to output buffer.
 	_, err := io.WriteString(g.outBuf, str+"\n")
 	if err != nil {
 		g.lastErr = err
@@ -370,7 +422,7 @@ func (g *generator) o(str string, a ...any) {
 }
 
 func (g *generator) i(ofs int) {
-	g.spaces += ofs
+	g.indentTabs += ofs
 }
 
 func (g *generator) convertTypeToGo(field *Field) string {
@@ -384,21 +436,19 @@ func (g *generator) convertTypeToGo(field *Field) string {
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
 		s += "bool"
 
-	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
-		fallthrough
-	case descriptor.FieldDescriptorProto_TYPE_UINT64:
+	case descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_UINT64:
 		s += "uint64"
 
-	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-		fallthrough
-	case descriptor.FieldDescriptorProto_TYPE_INT64:
+	case descriptor.FieldDescriptorProto_TYPE_SFIXED64,
+		descriptor.FieldDescriptorProto_TYPE_INT64:
 		s += "int64"
 
 	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
 		s += "uint32"
 
-	case descriptor.FieldDescriptorProto_TYPE_SFIXED32:
-	case descriptor.FieldDescriptorProto_TYPE_SINT32:
+	case descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SINT32:
 		s += "int32"
 
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
@@ -443,11 +493,11 @@ func (g *generator) oMessage() error {
 		return err
 	}
 
-	if err := g.oOneOf(); err != nil {
+	if err := g.oOneOfFields(); err != nil {
 		return err
 	}
 
-	if err := g.oFlagConsts(); err != nil {
+	if err := g.oFlagsDeclAndConsts(); err != nil {
 		return err
 	}
 
@@ -455,11 +505,11 @@ func (g *generator) oMessage() error {
 		return err
 	}
 
-	if err := g.oMsgValidateFunc(); err != nil {
+	if err := g.oValidateFunc(); err != nil {
 		return err
 	}
 
-	if err := g.oMsgDecodeMethod(); err != nil {
+	if err := g.oDecodeMethod(); err != nil {
 		return err
 	}
 
@@ -494,15 +544,17 @@ func (g *generator) oMessageStruct() error {
 	g.i(1)
 	g.o(`_protoMessage protomessage.ProtoMessage`)
 
+	// Add _flags field if any bits are allocated.
 	if g.msg.FlagsBitCount > 0 {
 		g.o(`_flags %s`, g.msg.FlagsTypeAlias)
 	}
 	g.o(``)
 
+	// Add fields to the struct.
 	first := true
 	for _, field := range g.msg.Fields {
 		if field.GetOneOf() != nil {
-			// Skip oneof fields for now. They will be generated separately.
+			// Skip oneof fields for now. They will be generated later.
 			continue
 		}
 		g.setField(field)
@@ -515,7 +567,7 @@ func (g *generator) oMessageStruct() error {
 		first = false
 	}
 
-	// Generate oneof fields.
+	// Generate oneof fields now.
 	for _, oneof := range g.msg.GetOneOfs() {
 		g.o(`%s oneof.OneOf`, oneof.GetName())
 	}
@@ -526,31 +578,29 @@ func (g *generator) oMessageStruct() error {
 	return g.lastErr
 }
 
-func composeOneOfTypeName(msg *Message, oneof *desc.OneOfDescriptor) string {
+func composeOneOfAliasTypeName(msg *Message, oneof *desc.OneOfDescriptor) string {
 	return msg.GetName() + capitalCamelCase(oneof.GetName())
 }
 
 func composeOneOfChoiceName(msg *Message, choice *Field) string {
-	return fmt.Sprintf(
-		"%s%s", msg.GetName(), choice.GetCapitalName(),
-	)
+	return msg.GetName() + choice.GetCapitalName()
 }
 
 func composeOneOfNoneChoiceName(msg *Message, oneof *desc.OneOfDescriptor) string {
 	return msg.GetName() + capitalCamelCase(oneof.GetName()+"None")
 }
 
-func (g *generator) oOneOf() error {
+func (g *generator) oOneOfFields() error {
 	for _, oneof := range g.msg.GetOneOfs() {
 		g.oOneOfTypeConsts(oneof)
-		g.oOneOfTypeMethod(oneof)
+		g.oOneOfSpecialMethods(oneof)
 	}
 
 	return g.lastErr
 }
 
 func (g *generator) oOneOfTypeConsts(oneof *desc.OneOfDescriptor) {
-	typeName := composeOneOfTypeName(g.msg, oneof)
+	typeName := composeOneOfAliasTypeName(g.msg, oneof)
 	g.o(
 		"// %s defines the possible types for oneof field %q.", typeName,
 		oneof.GetName(),
@@ -579,9 +629,12 @@ func (g *generator) oOneOfTypeConsts(oneof *desc.OneOfDescriptor) {
 	g.o(``)
 }
 
-func (g *generator) oOneOfTypeMethod(oneof *desc.OneOfDescriptor) {
-	typeName := composeOneOfTypeName(g.msg, oneof)
-	funcName := fmt.Sprintf("%sType", capitalCamelCase(oneof.GetName()))
+func (g *generator) oOneOfSpecialMethods(oneof *desc.OneOfDescriptor) {
+	typeName := composeOneOfAliasTypeName(g.msg, oneof)
+
+	// Generate the Type() method.
+
+	funcName := capitalCamelCase(oneof.GetName()) + "Type"
 	g.o(
 		"// %s returns the type of the current stored oneof %q.", funcName,
 		oneof.GetName(),
@@ -592,7 +645,9 @@ func (g *generator) oOneOfTypeMethod(oneof *desc.OneOfDescriptor) {
 	g.o(`}`)
 	g.o(``)
 
-	funcName = fmt.Sprintf("%sUnset", capitalCamelCase(oneof.GetName()))
+	// Generate the Unset() method.
+
+	funcName = capitalCamelCase(oneof.GetName()) + "Unset"
 	g.o(
 		"// %s unsets the oneof field %q, so that it contains none of the choices.",
 		funcName, oneof.GetName(),
@@ -603,12 +658,14 @@ func (g *generator) oOneOfTypeMethod(oneof *desc.OneOfDescriptor) {
 	g.o(``)
 }
 
-func (g *generator) oFlagConsts() error {
+func (g *generator) oFlagsDeclAndConsts() error {
+	// Declare the type alias.
 	if len(g.msg.DecodedFlags) > 0 || len(g.msg.PresenceFlags) > 0 {
 		g.o(`// %s is the type of the bit flags.`, g.msg.FlagsTypeAlias)
 		g.o(`type %s %s`, g.msg.FlagsTypeAlias, g.msg.FlagsUnderlyingType)
 	}
 
+	// Declare the "decoded" consts.
 	if len(g.msg.DecodedFlags) > 0 {
 		g.o(`// Bitmasks that indicate that the particular nested message is decoded.`)
 		for _, bitDef := range g.msg.DecodedFlags {
@@ -620,6 +677,7 @@ func (g *generator) oFlagConsts() error {
 		g.o(``)
 	}
 
+	// Declare the "presence" consts.
 	if len(g.msg.PresenceFlags) > 0 {
 		g.o(`// Bitmasks that indicate that the particular field is present.`)
 		for _, bitDef := range g.msg.PresenceFlags {
@@ -633,6 +691,9 @@ func (g *generator) oFlagConsts() error {
 	return g.lastErr
 }
 
+// calcOneOfFieldIndex calculates the index of the current field within the list of
+// all choices of the oneof field to which this field belongs.
+// Returns -1 if the current field does not belong to a oneof field.
 func (g *generator) calcOneOfFieldIndex() int {
 	fieldIdx := -1
 	if g.field.GetOneOf() == nil {
@@ -651,18 +712,19 @@ func (g *generator) calcOneOfFieldIndex() int {
 	return fieldIdx
 }
 
+// Returns true if the current field belongs to a oneof field.
 func (g *generator) isOneOfField() bool {
 	return g.calcOneOfFieldIndex() >= 0
 }
 
 func (g *generator) oEnumDecl(enum *Enum) error {
+	// Declare type alias for enum.
 	g.oComment(getLeadingComment(enum.GetSourceInfo()))
-	g.o(
-		`
-type %[1]s uint32
+	g.o(`type %[1]s uint32`, enum.GetName())
+	g.o(``)
 
-const (`, enum.GetName(),
-	)
+	// Declare enum consts.
+	g.o(`const (`)
 
 	g.i(1)
 	for i, value := range enum.GetValues() {

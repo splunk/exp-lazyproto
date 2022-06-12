@@ -30,7 +30,7 @@ func Unmarshal$MessageName(bytes []byte, opts lazyproto.UnmarshalOpts) (*$Messag
 	return g.lastErr
 }
 
-func (g *generator) oMsgDecodeMethod() error {
+func (g *generator) oDecodeMethod() error {
 
 	g.o(
 		`
@@ -63,7 +63,7 @@ func (m *$MessageName) decode() error {
 	return g.lastErr
 }
 
-func (g *generator) oMsgValidateFunc() error {
+func (g *generator) oValidateFunc() error {
 
 	g.o(
 		`
