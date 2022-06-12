@@ -128,7 +128,11 @@ func (m *LogsData) ResourceLogsRemoveIf(f func(*ResourceLogs) bool) {
 			newLen++
 			continue
 		}
+		if m.resourceLogs[newLen] != nil {
+			m.resourceLogs[newLen].Free()
+		}
 		m.resourceLogs[newLen] = m.resourceLogs[i]
+		m.resourceLogs[i] = nil
 		newLen++
 	}
 	if newLen != len(m.resourceLogs) {
@@ -494,7 +498,11 @@ func (m *ResourceLogs) ScopeLogsRemoveIf(f func(*ScopeLogs) bool) {
 			newLen++
 			continue
 		}
+		if m.scopeLogs[newLen] != nil {
+			m.scopeLogs[newLen].Free()
+		}
 		m.scopeLogs[newLen] = m.scopeLogs[i]
+		m.scopeLogs[i] = nil
 		newLen++
 	}
 	if newLen != len(m.scopeLogs) {
@@ -907,7 +915,11 @@ func (m *Resource) AttributesRemoveIf(f func(*KeyValue) bool) {
 			newLen++
 			continue
 		}
+		if m.attributes[newLen] != nil {
+			m.attributes[newLen].Free()
+		}
 		m.attributes[newLen] = m.attributes[i]
+		m.attributes[i] = nil
 		newLen++
 	}
 	if newLen != len(m.attributes) {
@@ -1309,7 +1321,11 @@ func (m *ScopeLogs) LogRecordsRemoveIf(f func(*LogRecord) bool) {
 			newLen++
 			continue
 		}
+		if m.logRecords[newLen] != nil {
+			m.logRecords[newLen].Free()
+		}
 		m.logRecords[newLen] = m.logRecords[i]
+		m.logRecords[i] = nil
 		newLen++
 	}
 	if newLen != len(m.logRecords) {
@@ -1750,7 +1766,11 @@ func (m *InstrumentationScope) AttributesRemoveIf(f func(*KeyValue) bool) {
 			newLen++
 			continue
 		}
+		if m.attributes[newLen] != nil {
+			m.attributes[newLen].Free()
+		}
 		m.attributes[newLen] = m.attributes[i]
+		m.attributes[i] = nil
 		newLen++
 	}
 	if newLen != len(m.attributes) {
@@ -2221,7 +2241,11 @@ func (m *LogRecord) AttributesRemoveIf(f func(*KeyValue) bool) {
 			newLen++
 			continue
 		}
+		if m.attributes[newLen] != nil {
+			m.attributes[newLen].Free()
+		}
 		m.attributes[newLen] = m.attributes[i]
+		m.attributes[i] = nil
 		newLen++
 	}
 	if newLen != len(m.attributes) {
@@ -3621,7 +3645,11 @@ func (m *ArrayValue) ValuesRemoveIf(f func(*AnyValue) bool) {
 			newLen++
 			continue
 		}
+		if m.values[newLen] != nil {
+			m.values[newLen].Free()
+		}
 		m.values[newLen] = m.values[i]
+		m.values[i] = nil
 		newLen++
 	}
 	if newLen != len(m.values) {
@@ -3956,7 +3984,11 @@ func (m *KeyValueList) ValuesRemoveIf(f func(*KeyValue) bool) {
 			newLen++
 			continue
 		}
+		if m.values[newLen] != nil {
+			m.values[newLen].Free()
+		}
 		m.values[newLen] = m.values[i]
+		m.values[i] = nil
 		newLen++
 	}
 	if newLen != len(m.values) {

@@ -1435,7 +1435,11 @@ func (m *$MessageName) $FieldNameRemoveIf(f func(*$FieldMessageTypeName) bool) {
 			newLen++
 			continue
 		}
+		if m.$fieldName[newLen] != nil {
+			m.$fieldName[newLen].Free()
+		}
 		m.$fieldName[newLen] = m.$fieldName[i]
+		m.$fieldName[i] = nil
 		newLen++
 	}
 	if newLen != len(m.$fieldName) {
