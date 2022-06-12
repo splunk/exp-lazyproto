@@ -3,8 +3,9 @@ package protomessage
 type ProtoMessage struct {
 	// Bytes are set to nil when the message is modified (i.e. marshaling will do
 	// full field-by-field encoding).
-	Bytes  BytesView
-	Parent *ProtoMessage
+	Bytes       BytesView
+	Parent      *ProtoMessage
+	DecodeBlock *DecodeBlock
 }
 
 func (m *ProtoMessage) IsModified() bool {

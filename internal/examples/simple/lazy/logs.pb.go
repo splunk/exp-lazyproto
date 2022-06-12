@@ -64,14 +64,19 @@ type LogsData struct {
 }
 
 func UnmarshalLogsData(bytes []byte, opts lazyproto.UnmarshalOpts) (*LogsData, error) {
+	var decodeBlock *protomessage.DecodeBlock
 	if opts.WithValidate {
-		if err := validateLogsData(bytes); err != nil {
+		decodeBlock = &protomessage.DecodeBlock{}
+		if err := validateLogsData(bytes, decodeBlock); err != nil {
 			return nil, err
 		}
+		// decodeBlock.RepeatPtrSlice = make([]unsafe.Pointer, 0, decodeBlock.RepeatPtrCount)
 	}
 
 	m := logsDataPool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
+	m._protoMessage.DecodeBlock = decodeBlock
+
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -138,7 +143,7 @@ func (m *LogsData) ResourceLogsRemoveIf(f func(*ResourceLogs) bool) {
 	}
 }
 
-func validateLogsData(b []byte) error {
+func validateLogsData(b []byte, decodeBlock *protomessage.DecodeBlock) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
@@ -153,10 +158,11 @@ func validateLogsData(b []byte) error {
 			if err != nil {
 				return err
 			}
-			err = validateResourceLogs(v)
+			err = validateResourceLogs(v, decodeBlock)
 			if err != nil {
 				return err
 			}
+			decodeBlock.RepeatPtrCount++
 		default:
 			// Our speculation was wrong. Do the full (slow) decoding.
 			v, err := buf.DecodeVarint()
@@ -395,14 +401,19 @@ type ResourceLogs struct {
 }
 
 func UnmarshalResourceLogs(bytes []byte, opts lazyproto.UnmarshalOpts) (*ResourceLogs, error) {
+	var decodeBlock *protomessage.DecodeBlock
 	if opts.WithValidate {
-		if err := validateResourceLogs(bytes); err != nil {
+		decodeBlock = &protomessage.DecodeBlock{}
+		if err := validateResourceLogs(bytes, decodeBlock); err != nil {
 			return nil, err
 		}
+		// decodeBlock.RepeatPtrSlice = make([]unsafe.Pointer, 0, decodeBlock.RepeatPtrCount)
 	}
 
 	m := resourceLogsPool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
+	m._protoMessage.DecodeBlock = decodeBlock
+
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -508,7 +519,7 @@ func (m *ResourceLogs) SetSchemaUrl(v string) {
 	m._protoMessage.MarkModified()
 }
 
-func validateResourceLogs(b []byte) error {
+func validateResourceLogs(b []byte, decodeBlock *protomessage.DecodeBlock) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
@@ -523,7 +534,7 @@ func validateResourceLogs(b []byte) error {
 			if err != nil {
 				return err
 			}
-			err = validateResource(v)
+			err = validateResource(v, decodeBlock)
 			if err != nil {
 				return err
 			}
@@ -533,10 +544,11 @@ func validateResourceLogs(b []byte) error {
 			if err != nil {
 				return err
 			}
-			err = validateScopeLogs(v)
+			err = validateScopeLogs(v, decodeBlock)
 			if err != nil {
 				return err
 			}
+			decodeBlock.RepeatPtrCount++
 		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
@@ -821,14 +833,19 @@ type Resource struct {
 }
 
 func UnmarshalResource(bytes []byte, opts lazyproto.UnmarshalOpts) (*Resource, error) {
+	var decodeBlock *protomessage.DecodeBlock
 	if opts.WithValidate {
-		if err := validateResource(bytes); err != nil {
+		decodeBlock = &protomessage.DecodeBlock{}
+		if err := validateResource(bytes, decodeBlock); err != nil {
 			return nil, err
 		}
+		// decodeBlock.RepeatPtrSlice = make([]unsafe.Pointer, 0, decodeBlock.RepeatPtrCount)
 	}
 
 	m := resourcePool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
+	m._protoMessage.DecodeBlock = decodeBlock
+
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -908,7 +925,7 @@ func (m *Resource) SetDroppedAttributesCount(v uint32) {
 	m._protoMessage.MarkModified()
 }
 
-func validateResource(b []byte) error {
+func validateResource(b []byte, decodeBlock *protomessage.DecodeBlock) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
@@ -923,10 +940,11 @@ func validateResource(b []byte) error {
 			if err != nil {
 				return err
 			}
-			err = validateKeyValue(v)
+			err = validateKeyValue(v, decodeBlock)
 			if err != nil {
 				return err
 			}
+			decodeBlock.RepeatPtrCount++
 		case 0b0_0010_000: // field number 2 (droppedAttributesCount), wire type 0 (Varint)
 			buf.SkipByteUnsafe()
 			_, err := buf.AsUint32()
@@ -1186,14 +1204,19 @@ type ScopeLogs struct {
 }
 
 func UnmarshalScopeLogs(bytes []byte, opts lazyproto.UnmarshalOpts) (*ScopeLogs, error) {
+	var decodeBlock *protomessage.DecodeBlock
 	if opts.WithValidate {
-		if err := validateScopeLogs(bytes); err != nil {
+		decodeBlock = &protomessage.DecodeBlock{}
+		if err := validateScopeLogs(bytes, decodeBlock); err != nil {
 			return nil, err
 		}
+		// decodeBlock.RepeatPtrSlice = make([]unsafe.Pointer, 0, decodeBlock.RepeatPtrCount)
 	}
 
 	m := scopeLogsPool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
+	m._protoMessage.DecodeBlock = decodeBlock
+
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -1299,7 +1322,7 @@ func (m *ScopeLogs) SetSchemaUrl(v string) {
 	m._protoMessage.MarkModified()
 }
 
-func validateScopeLogs(b []byte) error {
+func validateScopeLogs(b []byte, decodeBlock *protomessage.DecodeBlock) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
@@ -1314,7 +1337,7 @@ func validateScopeLogs(b []byte) error {
 			if err != nil {
 				return err
 			}
-			err = validateInstrumentationScope(v)
+			err = validateInstrumentationScope(v, decodeBlock)
 			if err != nil {
 				return err
 			}
@@ -1324,10 +1347,11 @@ func validateScopeLogs(b []byte) error {
 			if err != nil {
 				return err
 			}
-			err = validateLogRecord(v)
+			err = validateLogRecord(v, decodeBlock)
 			if err != nil {
 				return err
 			}
+			decodeBlock.RepeatPtrCount++
 		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
@@ -1614,14 +1638,19 @@ type InstrumentationScope struct {
 }
 
 func UnmarshalInstrumentationScope(bytes []byte, opts lazyproto.UnmarshalOpts) (*InstrumentationScope, error) {
+	var decodeBlock *protomessage.DecodeBlock
 	if opts.WithValidate {
-		if err := validateInstrumentationScope(bytes); err != nil {
+		decodeBlock = &protomessage.DecodeBlock{}
+		if err := validateInstrumentationScope(bytes, decodeBlock); err != nil {
 			return nil, err
 		}
+		// decodeBlock.RepeatPtrSlice = make([]unsafe.Pointer, 0, decodeBlock.RepeatPtrCount)
 	}
 
 	m := instrumentationScopePool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
+	m._protoMessage.DecodeBlock = decodeBlock
+
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -1727,7 +1756,7 @@ func (m *InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 	m._protoMessage.MarkModified()
 }
 
-func validateInstrumentationScope(b []byte) error {
+func validateInstrumentationScope(b []byte, decodeBlock *protomessage.DecodeBlock) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
@@ -1754,10 +1783,11 @@ func validateInstrumentationScope(b []byte) error {
 			if err != nil {
 				return err
 			}
-			err = validateKeyValue(v)
+			err = validateKeyValue(v, decodeBlock)
 			if err != nil {
 				return err
 			}
+			decodeBlock.RepeatPtrCount++
 		case 0b0_0100_000: // field number 4 (droppedAttributesCount), wire type 0 (Varint)
 			buf.SkipByteUnsafe()
 			_, err := buf.AsUint32()
@@ -2044,14 +2074,19 @@ type LogRecord struct {
 }
 
 func UnmarshalLogRecord(bytes []byte, opts lazyproto.UnmarshalOpts) (*LogRecord, error) {
+	var decodeBlock *protomessage.DecodeBlock
 	if opts.WithValidate {
-		if err := validateLogRecord(bytes); err != nil {
+		decodeBlock = &protomessage.DecodeBlock{}
+		if err := validateLogRecord(bytes, decodeBlock); err != nil {
 			return nil, err
 		}
+		// decodeBlock.RepeatPtrSlice = make([]unsafe.Pointer, 0, decodeBlock.RepeatPtrCount)
 	}
 
 	m := logRecordPool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
+	m._protoMessage.DecodeBlock = decodeBlock
+
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -2222,7 +2257,7 @@ func (m *LogRecord) SetSpanId(v []byte) {
 	m._protoMessage.MarkModified()
 }
 
-func validateLogRecord(b []byte) error {
+func validateLogRecord(b []byte, decodeBlock *protomessage.DecodeBlock) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
@@ -2262,10 +2297,11 @@ func validateLogRecord(b []byte) error {
 			if err != nil {
 				return err
 			}
-			err = validateKeyValue(v)
+			err = validateKeyValue(v, decodeBlock)
 			if err != nil {
 				return err
 			}
+			decodeBlock.RepeatPtrCount++
 		case 0b0_0111_000: // field number 7 (droppedAttributesCount), wire type 0 (Varint)
 			buf.SkipByteUnsafe()
 			_, err := buf.AsUint32()
@@ -2628,14 +2664,19 @@ type KeyValue struct {
 }
 
 func UnmarshalKeyValue(bytes []byte, opts lazyproto.UnmarshalOpts) (*KeyValue, error) {
+	var decodeBlock *protomessage.DecodeBlock
 	if opts.WithValidate {
-		if err := validateKeyValue(bytes); err != nil {
+		decodeBlock = &protomessage.DecodeBlock{}
+		if err := validateKeyValue(bytes, decodeBlock); err != nil {
 			return nil, err
 		}
+		// decodeBlock.RepeatPtrSlice = make([]unsafe.Pointer, 0, decodeBlock.RepeatPtrCount)
 	}
 
 	m := keyValuePool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
+	m._protoMessage.DecodeBlock = decodeBlock
+
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -2690,7 +2731,7 @@ func (m *KeyValue) SetValue(v *AnyValue) {
 	m._protoMessage.MarkModified()
 }
 
-func validateKeyValue(b []byte) error {
+func validateKeyValue(b []byte, decodeBlock *protomessage.DecodeBlock) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
@@ -2711,7 +2752,7 @@ func validateKeyValue(b []byte) error {
 			if err != nil {
 				return err
 			}
-			err = validateAnyValue(v)
+			err = validateAnyValue(v, decodeBlock)
 			if err != nil {
 				return err
 			}
@@ -2920,14 +2961,19 @@ type AnyValue struct {
 }
 
 func UnmarshalAnyValue(bytes []byte, opts lazyproto.UnmarshalOpts) (*AnyValue, error) {
+	var decodeBlock *protomessage.DecodeBlock
 	if opts.WithValidate {
-		if err := validateAnyValue(bytes); err != nil {
+		decodeBlock = &protomessage.DecodeBlock{}
+		if err := validateAnyValue(bytes, decodeBlock); err != nil {
 			return nil, err
 		}
+		// decodeBlock.RepeatPtrSlice = make([]unsafe.Pointer, 0, decodeBlock.RepeatPtrCount)
 	}
 
 	m := anyValuePool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
+	m._protoMessage.DecodeBlock = decodeBlock
+
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -3111,7 +3157,7 @@ func (m *AnyValue) SetBytesValue(v []byte) {
 	m._protoMessage.MarkModified()
 }
 
-func validateAnyValue(b []byte) error {
+func validateAnyValue(b []byte, decodeBlock *protomessage.DecodeBlock) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
@@ -3150,7 +3196,7 @@ func validateAnyValue(b []byte) error {
 			if err != nil {
 				return err
 			}
-			err = validateArrayValue(v)
+			err = validateArrayValue(v, decodeBlock)
 			if err != nil {
 				return err
 			}
@@ -3160,7 +3206,7 @@ func validateAnyValue(b []byte) error {
 			if err != nil {
 				return err
 			}
-			err = validateKeyValueList(v)
+			err = validateKeyValueList(v, decodeBlock)
 			if err != nil {
 				return err
 			}
@@ -3465,14 +3511,19 @@ type ArrayValue struct {
 }
 
 func UnmarshalArrayValue(bytes []byte, opts lazyproto.UnmarshalOpts) (*ArrayValue, error) {
+	var decodeBlock *protomessage.DecodeBlock
 	if opts.WithValidate {
-		if err := validateArrayValue(bytes); err != nil {
+		decodeBlock = &protomessage.DecodeBlock{}
+		if err := validateArrayValue(bytes, decodeBlock); err != nil {
 			return nil, err
 		}
+		// decodeBlock.RepeatPtrSlice = make([]unsafe.Pointer, 0, decodeBlock.RepeatPtrCount)
 	}
 
 	m := arrayValuePool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
+	m._protoMessage.DecodeBlock = decodeBlock
+
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -3539,7 +3590,7 @@ func (m *ArrayValue) ValuesRemoveIf(f func(*AnyValue) bool) {
 	}
 }
 
-func validateArrayValue(b []byte) error {
+func validateArrayValue(b []byte, decodeBlock *protomessage.DecodeBlock) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
@@ -3554,10 +3605,11 @@ func validateArrayValue(b []byte) error {
 			if err != nil {
 				return err
 			}
-			err = validateAnyValue(v)
+			err = validateAnyValue(v, decodeBlock)
 			if err != nil {
 				return err
 			}
+			decodeBlock.RepeatPtrCount++
 		default:
 			// Our speculation was wrong. Do the full (slow) decoding.
 			v, err := buf.DecodeVarint()
@@ -3791,14 +3843,19 @@ type KeyValueList struct {
 }
 
 func UnmarshalKeyValueList(bytes []byte, opts lazyproto.UnmarshalOpts) (*KeyValueList, error) {
+	var decodeBlock *protomessage.DecodeBlock
 	if opts.WithValidate {
-		if err := validateKeyValueList(bytes); err != nil {
+		decodeBlock = &protomessage.DecodeBlock{}
+		if err := validateKeyValueList(bytes, decodeBlock); err != nil {
 			return nil, err
 		}
+		// decodeBlock.RepeatPtrSlice = make([]unsafe.Pointer, 0, decodeBlock.RepeatPtrCount)
 	}
 
 	m := keyValueListPool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
+	m._protoMessage.DecodeBlock = decodeBlock
+
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -3865,7 +3922,7 @@ func (m *KeyValueList) ValuesRemoveIf(f func(*KeyValue) bool) {
 	}
 }
 
-func validateKeyValueList(b []byte) error {
+func validateKeyValueList(b []byte, decodeBlock *protomessage.DecodeBlock) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {
@@ -3880,10 +3937,11 @@ func validateKeyValueList(b []byte) error {
 			if err != nil {
 				return err
 			}
-			err = validateKeyValue(v)
+			err = validateKeyValue(v, decodeBlock)
 			if err != nil {
 				return err
 			}
+			decodeBlock.RepeatPtrCount++
 		default:
 			// Our speculation was wrong. Do the full (slow) decoding.
 			v, err := buf.DecodeVarint()
@@ -4117,14 +4175,19 @@ type PlainMessage struct {
 }
 
 func UnmarshalPlainMessage(bytes []byte, opts lazyproto.UnmarshalOpts) (*PlainMessage, error) {
+	var decodeBlock *protomessage.DecodeBlock
 	if opts.WithValidate {
-		if err := validatePlainMessage(bytes); err != nil {
+		decodeBlock = &protomessage.DecodeBlock{}
+		if err := validatePlainMessage(bytes, decodeBlock); err != nil {
 			return nil, err
 		}
+		// decodeBlock.RepeatPtrSlice = make([]unsafe.Pointer, 0, decodeBlock.RepeatPtrCount)
 	}
 
 	m := plainMessagePool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
+	m._protoMessage.DecodeBlock = decodeBlock
+
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -4161,7 +4224,7 @@ func (m *PlainMessage) SetValue(v string) {
 	m._protoMessage.MarkModified()
 }
 
-func validatePlainMessage(b []byte) error {
+func validatePlainMessage(b []byte, decodeBlock *protomessage.DecodeBlock) error {
 	buf := codec.NewBuffer(b)
 
 	for !buf.EOF() {

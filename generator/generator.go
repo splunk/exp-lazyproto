@@ -602,14 +602,19 @@ func (g *generator) oUnmarshalFree() error {
 	g.o(
 		`
 func Unmarshal$MessageName(bytes []byte, opts lazyproto.UnmarshalOpts) (*$MessageName, error) {
+	var decodeBlock *protomessage.DecodeBlock
 	if opts.WithValidate {
-		if err := validate$MessageName(bytes); err != nil {
+		decodeBlock = &protomessage.DecodeBlock{}
+		if err := validate$MessageName(bytes, decodeBlock); err != nil {
 			return nil, err		
 		}
+		// decodeBlock.RepeatPtrSlice = make([]unsafe.Pointer, 0, decodeBlock.RepeatPtrCount) 
 	}
 
 	m := $messagePool.Get()
 	m._protoMessage.Bytes = protomessage.BytesViewFromBytes(bytes)
+	m._protoMessage.DecodeBlock = decodeBlock
+
 	if err := m.decode(); err != nil {
 		return nil, err
 	}
@@ -660,7 +665,7 @@ func (g *generator) oMsgValidateFunc() error {
 
 	g.o(
 		`
-func validate$MessageName(b []byte) error {
+func validate$MessageName(b []byte, decodeBlock *protomessage.DecodeBlock) error {
 	buf := codec.NewBuffer(b)
 `,
 	)
@@ -1030,11 +1035,14 @@ v, err := buf.DecodeRawBytes()
 if err != nil {
 	return err
 }
-err = validate$FieldMessageTypeName(v)
+err = validate$FieldMessageTypeName(v, decodeBlock)
 if err != nil {
 	return err
 }`,
 		)
+		if g.field.IsRepeated() && g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			g.o("decodeBlock.RepeatPtrCount++")
+		}
 	} else {
 
 		g.o(
