@@ -7,6 +7,9 @@ test: gen-proto
 benchmark:
 	-rm internal/benchmark/benchmark.log
 	-rm internal/benchmark/benchmark.csv
+	cd internal/examples/simple && FORREPORT=1 go test -run=nosuchname -bench BenchmarkGoogle --benchmem $(BENCHARGS) | tee ../../benchmark/benchmark-temp.log
+	cd internal/benchmark && sed -f patch_results.sed benchmark-temp.log > benchmark.log
+	cd internal/benchmark && benchstat -csv ./benchmark.log >> benchmark.csv
 	cd internal/examples/simple && FORREPORT=1 go test -run=nosuchname -bench BenchmarkGogo --benchmem $(BENCHARGS) | tee ../../benchmark/benchmark-temp.log
 	cd internal/benchmark && sed -f patch_results.sed benchmark-temp.log > benchmark.log
 	cd internal/benchmark && benchstat -csv ./benchmark.log >> benchmark.csv

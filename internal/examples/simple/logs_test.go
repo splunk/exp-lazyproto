@@ -286,6 +286,11 @@ func notForReport(b *testing.B) {
 	}
 }
 
+func BenchmarkGoogle_Unmarshal(b *testing.B) {
+	forReport(b)
+	BenchmarkGoogle_Unmarshal_AndReadAll(b)
+}
+
 func BenchmarkGoogle_Unmarshal_AndReadAll(b *testing.B) {
 	src := createLogsData(scaleCount, 1)
 
@@ -878,6 +883,42 @@ func BenchmarkLazy_Pass_ModifyAllConc(b *testing.B) {
 	wg.Wait()
 }
 
+func BenchmarkGoogle_Inspect_ScopeAttr(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var lazy googlemsg.LogsData
+		err := googlelib.Unmarshal(goldenWireBytes, &lazy)
+		require.NoError(b, err)
+
+		foundCount := 0
+		for _, rl := range lazy.ResourceLogs {
+			for _, sl := range rl.ScopeLogs {
+				//if sl.Scope == nil {
+				//	continue
+				//}
+				for _, attr := range sl.Scope.Attributes {
+					if attr.Key == "otel.profiling" &&
+						attr.GetValue().Value.(*googlemsg.AnyValue_StringValue).StringValue == "true" {
+						foundCount++
+					}
+				}
+			}
+		}
+		assert.Equal(b, 50, foundCount)
+
+		destBytes, err := googlelib.Marshal(&lazy)
+		require.NoError(b, err)
+		assert.EqualValues(b, goldenWireBytes, destBytes)
+	}
+}
+
 func BenchmarkGogo_Inspect_ScopeAttr(b *testing.B) {
 	src := createLogsData(scaleCount, 1)
 
@@ -954,6 +995,41 @@ func BenchmarkLazy_Inspect_ScopeAttr(b *testing.B) {
 		assert.EqualValues(b, goldenWireBytes, lazyBytes)
 
 		inputMsg.Free()
+	}
+}
+
+func BenchmarkGoogle_Inspect_LogAttr(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var lazy googlemsg.LogsData
+		err := googlelib.Unmarshal(goldenWireBytes, &lazy)
+		require.NoError(b, err)
+
+		foundCount := 0
+		for _, rl := range lazy.ResourceLogs {
+			for _, sl := range rl.ScopeLogs {
+				for _, lr := range sl.LogRecords {
+					for _, attr := range lr.Attributes {
+						if attr.Key == "http.method" &&
+							attr.GetValue().Value.(*googlemsg.AnyValue_StringValue).StringValue == "GET" {
+							foundCount++
+						}
+					}
+				}
+			}
+		}
+		assert.Equal(b, 1000, foundCount)
+
+		destBytes, err := googlelib.Marshal(&lazy)
+		require.NoError(b, err)
+		assert.EqualValues(b, goldenWireBytes, destBytes)
 	}
 }
 
@@ -1034,6 +1110,47 @@ func BenchmarkLazy_Inspect_LogAttr(b *testing.B) {
 		assert.EqualValues(b, goldenWireBytes, lazyBytes)
 
 		inputMsg.Free()
+	}
+}
+
+func BenchmarkGoogle_Filter_ScopeAttr(b *testing.B) {
+	src := createLogsData(scaleCount, 1)
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var lazy googlemsg.LogsData
+		err := googlelib.Unmarshal(goldenWireBytes, &lazy)
+		require.NoError(b, err)
+
+		foundCount := 0
+		for _, rl := range lazy.ResourceLogs {
+			for j := 0; j < len(rl.ScopeLogs); j++ {
+				sl := rl.ScopeLogs[j]
+				found := false
+				for _, attr := range sl.Scope.Attributes {
+					if attr.Key == "otel.profiling" &&
+						attr.GetValue().Value.(*googlemsg.AnyValue_StringValue).StringValue == "true" {
+						foundCount++
+						found = true
+						break
+					}
+				}
+				if found {
+					rl.ScopeLogs = append(rl.ScopeLogs[:j], rl.ScopeLogs[j+1:]...)
+					j--
+				}
+			}
+		}
+		assert.Equal(b, 50, foundCount)
+
+		destBytes, err := googlelib.Marshal(&lazy)
+		require.NoError(b, err)
+		assert.NotNil(b, destBytes)
 	}
 }
 
@@ -1122,6 +1239,34 @@ func BenchmarkLazy_Filter_ScopeAttr(b *testing.B) {
 		assert.NotNil(b, lazyBytes)
 
 		inputMsg.Free()
+	}
+}
+
+func BenchmarkGoogle_Batch(b *testing.B) {
+	src := createLogsData(scaleCount/10, 1)
+
+	inputWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, inputWireBytes)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var inputMsg [10]googlemsg.LogsData
+		var outputMsg googlemsg.LogsData
+
+		for j := 0; j < 10; j++ {
+			err := googlelib.Unmarshal(inputWireBytes, &inputMsg[j])
+			require.NoError(b, err)
+
+			outputMsg.ResourceLogs = append(
+				outputMsg.ResourceLogs, inputMsg[j].ResourceLogs...,
+			)
+		}
+
+		batchedWireBytes, err := googlelib.Marshal(&outputMsg)
+		require.NoError(b, err)
+		assert.NotNil(b, batchedWireBytes)
 	}
 }
 
