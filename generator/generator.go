@@ -1102,9 +1102,20 @@ func (g *generator) oCalcRepeatedFieldCounts() {
 		counterName := field.GetName() + "Count"
 
 		if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			g.o("m.$fieldName = $fieldTypeMessagePool.GetSlice(%s)", counterName)
+			g.o("if cap(m.$fieldName) < %s {", counterName)
+			g.o("	// Need new space.")
+			g.o("	m.$fieldName = make(%s, %s)", g.convertTypeToGo(field), counterName)
+			g.o("} else {")
+			g.o("	// Existing capacity is enough.")
+			g.o("	m.$fieldName = m.$fieldName[0:%s]", counterName)
+			g.o("}")
+			g.o("$fieldTypeMessagePool.GetSlice(m.$fieldName)")
 		} else {
+			//g.o("if cap(m.$fieldName) < %s {", counterName)
 			g.o("m.$fieldName = make(%s, %s)", g.convertTypeToGo(field), counterName)
+			//g.o("} else {")
+			//g.o("	m.$fieldName = m.$fieldName[0:%s]", counterName)
+			//g.o("}")
 		}
 	}
 	g.o("")
@@ -1776,9 +1787,9 @@ func (p *$messagePoolType) Get() *$MessageName {
 	return &$MessageName{}
 }
 
-func (p *$messagePoolType) GetSlice(count int) []*$MessageName {
+func (p *$messagePoolType) GetSlice(r []*$MessageName) {
 	// Create a new slice.
-	r := make([]*$MessageName, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -1791,7 +1802,7 @@ func (p *$messagePoolType) GetSlice(count int) []*$MessageName {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -1807,8 +1818,6 @@ func (p *$messagePoolType) GetSlice(count int) []*$MessageName {
 			j++
 		}
 	}
-
-	return r
 }`,
 	)
 
@@ -1873,11 +1882,66 @@ func (g *generator) oPoolReleaseElem() {
 	}
 
 	g.o("")
-	g.o(
-		`
-// Zero-initialize the released element.
-*elem = $MessageName{}`,
-	)
+	//	g.o(
+	//		`
+	//// Zero-initialize the released element.
+	//*elem = $MessageName{}`,
+	//	)
+
+	g.oResetElem()
+}
+
+func (g *generator) oResetElem() {
+	g.o("// Reset the released element.")
+	g.o("elem._protoMessage = protomessage.ProtoMessage{}")
+	if g.msg.FlagsBitCount > 0 {
+		g.o("elem._flags = 0")
+	}
+	for _, field := range g.msg.Fields {
+		g.setField(field)
+
+		if field.IsRepeated() {
+			g.o("elem.$fieldName = elem.$fieldName[:0]")
+			continue
+		}
+		if field.GetOneOf() != nil {
+			idx := g.calcOneOfFieldIndex()
+			if idx == 0 {
+				g.o("elem.%s = oneof.NewOneOfNone()", field.GetOneOf().GetName())
+			}
+			continue
+		}
+
+		var zeroVal string
+		switch field.GetType() {
+		case descriptor.FieldDescriptorProto_TYPE_BOOL:
+			zeroVal += "false"
+
+		case descriptor.FieldDescriptorProto_TYPE_FIXED64,
+			descriptor.FieldDescriptorProto_TYPE_SFIXED64,
+			descriptor.FieldDescriptorProto_TYPE_UINT64,
+			descriptor.FieldDescriptorProto_TYPE_INT64,
+			descriptor.FieldDescriptorProto_TYPE_FIXED32,
+			descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+			descriptor.FieldDescriptorProto_TYPE_SINT32,
+			descriptor.FieldDescriptorProto_TYPE_UINT32,
+			descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+			zeroVal += "0"
+
+		case descriptor.FieldDescriptorProto_TYPE_STRING:
+			zeroVal += `""`
+		case descriptor.FieldDescriptorProto_TYPE_BYTES:
+			zeroVal += "nil"
+		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+			zeroVal += "nil"
+		case descriptor.FieldDescriptorProto_TYPE_ENUM:
+			zeroVal += g.enumDescrToEnum[field.GetEnumType()].GetName() + "(0)"
+		default:
+			g.lastErr = fmt.Errorf("unsupported field type %v", field.GetType())
+		}
+
+		g.o("elem.$fieldName = %s", zeroVal)
+	}
 }
 
 func (g *generator) oPoolReleaseFuncs() {

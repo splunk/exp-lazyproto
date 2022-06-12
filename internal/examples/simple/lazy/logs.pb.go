@@ -220,7 +220,14 @@ func (m *LogsData) decode() error {
 	}
 
 	// Pre-allocate slices for repeated fields.
-	m.resourceLogs = resourceLogsPool.GetSlice(resourceLogsCount)
+	if cap(m.resourceLogs) < resourceLogsCount {
+		// Need new space.
+		m.resourceLogs = make([]*ResourceLogs, resourceLogsCount)
+	} else {
+		// Existing capacity is enough.
+		m.resourceLogs = m.resourceLogs[0:resourceLogsCount]
+	}
+	resourceLogsPool.GetSlice(m.resourceLogs)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
@@ -313,9 +320,9 @@ func (p *logsDataPoolType) Get() *LogsData {
 	return &LogsData{}
 }
 
-func (p *logsDataPoolType) GetSlice(count int) []*LogsData {
+func (p *logsDataPoolType) GetSlice(r []*LogsData) {
 	// Create a new slice.
-	r := make([]*LogsData, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -328,7 +335,7 @@ func (p *logsDataPoolType) GetSlice(count int) []*LogsData {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -344,8 +351,6 @@ func (p *logsDataPoolType) GetSlice(count int) []*LogsData {
 			j++
 		}
 	}
-
-	return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -354,8 +359,10 @@ func (p *logsDataPoolType) ReleaseSlice(slice []*LogsData) {
 		// Release nested resourceLogs recursively to their pool.
 		resourceLogsPool.ReleaseSlice(elem.resourceLogs)
 
-		// Zero-initialize the released element.
-		*elem = LogsData{}
+		// Reset the released element.
+		elem._protoMessage = protomessage.ProtoMessage{}
+		elem._flags = 0
+		elem.resourceLogs = elem.resourceLogs[:0]
 	}
 
 	p.mux.Lock()
@@ -370,8 +377,10 @@ func (p *logsDataPoolType) Release(elem *LogsData) {
 	// Release nested resourceLogs recursively to their pool.
 	resourceLogsPool.ReleaseSlice(elem.resourceLogs)
 
-	// Zero-initialize the released element.
-	*elem = LogsData{}
+	// Reset the released element.
+	elem._protoMessage = protomessage.ProtoMessage{}
+	elem._flags = 0
+	elem.resourceLogs = elem.resourceLogs[:0]
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -612,7 +621,14 @@ func (m *ResourceLogs) decode() error {
 	}
 
 	// Pre-allocate slices for repeated fields.
-	m.scopeLogs = scopeLogsPool.GetSlice(scopeLogsCount)
+	if cap(m.scopeLogs) < scopeLogsCount {
+		// Need new space.
+		m.scopeLogs = make([]*ScopeLogs, scopeLogsCount)
+	} else {
+		// Existing capacity is enough.
+		m.scopeLogs = m.scopeLogs[0:scopeLogsCount]
+	}
+	scopeLogsPool.GetSlice(m.scopeLogs)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
@@ -735,9 +751,9 @@ func (p *resourceLogsPoolType) Get() *ResourceLogs {
 	return &ResourceLogs{}
 }
 
-func (p *resourceLogsPoolType) GetSlice(count int) []*ResourceLogs {
+func (p *resourceLogsPoolType) GetSlice(r []*ResourceLogs) {
 	// Create a new slice.
-	r := make([]*ResourceLogs, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -750,7 +766,7 @@ func (p *resourceLogsPoolType) GetSlice(count int) []*ResourceLogs {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -766,8 +782,6 @@ func (p *resourceLogsPoolType) GetSlice(count int) []*ResourceLogs {
 			j++
 		}
 	}
-
-	return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -780,8 +794,12 @@ func (p *resourceLogsPoolType) ReleaseSlice(slice []*ResourceLogs) {
 		// Release nested scopeLogs recursively to their pool.
 		scopeLogsPool.ReleaseSlice(elem.scopeLogs)
 
-		// Zero-initialize the released element.
-		*elem = ResourceLogs{}
+		// Reset the released element.
+		elem._protoMessage = protomessage.ProtoMessage{}
+		elem._flags = 0
+		elem.resource = nil
+		elem.scopeLogs = elem.scopeLogs[:0]
+		elem.schemaUrl = ""
 	}
 
 	p.mux.Lock()
@@ -800,8 +818,12 @@ func (p *resourceLogsPoolType) Release(elem *ResourceLogs) {
 	// Release nested scopeLogs recursively to their pool.
 	scopeLogsPool.ReleaseSlice(elem.scopeLogs)
 
-	// Zero-initialize the released element.
-	*elem = ResourceLogs{}
+	// Reset the released element.
+	elem._protoMessage = protomessage.ProtoMessage{}
+	elem._flags = 0
+	elem.resource = nil
+	elem.scopeLogs = elem.scopeLogs[:0]
+	elem.schemaUrl = ""
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -999,7 +1021,14 @@ func (m *Resource) decode() error {
 	}
 
 	// Pre-allocate slices for repeated fields.
-	m.attributes = keyValuePool.GetSlice(attributesCount)
+	if cap(m.attributes) < attributesCount {
+		// Need new space.
+		m.attributes = make([]*KeyValue, attributesCount)
+	} else {
+		// Existing capacity is enough.
+		m.attributes = m.attributes[0:attributesCount]
+	}
+	keyValuePool.GetSlice(m.attributes)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
@@ -1102,9 +1131,9 @@ func (p *resourcePoolType) Get() *Resource {
 	return &Resource{}
 }
 
-func (p *resourcePoolType) GetSlice(count int) []*Resource {
+func (p *resourcePoolType) GetSlice(r []*Resource) {
 	// Create a new slice.
-	r := make([]*Resource, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -1117,7 +1146,7 @@ func (p *resourcePoolType) GetSlice(count int) []*Resource {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -1133,8 +1162,6 @@ func (p *resourcePoolType) GetSlice(count int) []*Resource {
 			j++
 		}
 	}
-
-	return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -1143,8 +1170,11 @@ func (p *resourcePoolType) ReleaseSlice(slice []*Resource) {
 		// Release nested attributes recursively to their pool.
 		keyValuePool.ReleaseSlice(elem.attributes)
 
-		// Zero-initialize the released element.
-		*elem = Resource{}
+		// Reset the released element.
+		elem._protoMessage = protomessage.ProtoMessage{}
+		elem._flags = 0
+		elem.attributes = elem.attributes[:0]
+		elem.droppedAttributesCount = 0
 	}
 
 	p.mux.Lock()
@@ -1159,8 +1189,11 @@ func (p *resourcePoolType) Release(elem *Resource) {
 	// Release nested attributes recursively to their pool.
 	keyValuePool.ReleaseSlice(elem.attributes)
 
-	// Zero-initialize the released element.
-	*elem = Resource{}
+	// Reset the released element.
+	elem._protoMessage = protomessage.ProtoMessage{}
+	elem._flags = 0
+	elem.attributes = elem.attributes[:0]
+	elem.droppedAttributesCount = 0
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -1403,7 +1436,14 @@ func (m *ScopeLogs) decode() error {
 	}
 
 	// Pre-allocate slices for repeated fields.
-	m.logRecords = logRecordPool.GetSlice(logRecordsCount)
+	if cap(m.logRecords) < logRecordsCount {
+		// Need new space.
+		m.logRecords = make([]*LogRecord, logRecordsCount)
+	} else {
+		// Existing capacity is enough.
+		m.logRecords = m.logRecords[0:logRecordsCount]
+	}
+	logRecordPool.GetSlice(m.logRecords)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
@@ -1526,9 +1566,9 @@ func (p *scopeLogsPoolType) Get() *ScopeLogs {
 	return &ScopeLogs{}
 }
 
-func (p *scopeLogsPoolType) GetSlice(count int) []*ScopeLogs {
+func (p *scopeLogsPoolType) GetSlice(r []*ScopeLogs) {
 	// Create a new slice.
-	r := make([]*ScopeLogs, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -1541,7 +1581,7 @@ func (p *scopeLogsPoolType) GetSlice(count int) []*ScopeLogs {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -1557,8 +1597,6 @@ func (p *scopeLogsPoolType) GetSlice(count int) []*ScopeLogs {
 			j++
 		}
 	}
-
-	return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -1571,8 +1609,12 @@ func (p *scopeLogsPoolType) ReleaseSlice(slice []*ScopeLogs) {
 		// Release nested logRecords recursively to their pool.
 		logRecordPool.ReleaseSlice(elem.logRecords)
 
-		// Zero-initialize the released element.
-		*elem = ScopeLogs{}
+		// Reset the released element.
+		elem._protoMessage = protomessage.ProtoMessage{}
+		elem._flags = 0
+		elem.scope = nil
+		elem.logRecords = elem.logRecords[:0]
+		elem.schemaUrl = ""
 	}
 
 	p.mux.Lock()
@@ -1591,8 +1633,12 @@ func (p *scopeLogsPoolType) Release(elem *ScopeLogs) {
 	// Release nested logRecords recursively to their pool.
 	logRecordPool.ReleaseSlice(elem.logRecords)
 
-	// Zero-initialize the released element.
-	*elem = ScopeLogs{}
+	// Reset the released element.
+	elem._protoMessage = protomessage.ProtoMessage{}
+	elem._flags = 0
+	elem.scope = nil
+	elem.logRecords = elem.logRecords[:0]
+	elem.schemaUrl = ""
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -1836,7 +1882,14 @@ func (m *InstrumentationScope) decode() error {
 	}
 
 	// Pre-allocate slices for repeated fields.
-	m.attributes = keyValuePool.GetSlice(attributesCount)
+	if cap(m.attributes) < attributesCount {
+		// Need new space.
+		m.attributes = make([]*KeyValue, attributesCount)
+	} else {
+		// Existing capacity is enough.
+		m.attributes = m.attributes[0:attributesCount]
+	}
+	keyValuePool.GetSlice(m.attributes)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
@@ -1959,9 +2012,9 @@ func (p *instrumentationScopePoolType) Get() *InstrumentationScope {
 	return &InstrumentationScope{}
 }
 
-func (p *instrumentationScopePoolType) GetSlice(count int) []*InstrumentationScope {
+func (p *instrumentationScopePoolType) GetSlice(r []*InstrumentationScope) {
 	// Create a new slice.
-	r := make([]*InstrumentationScope, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -1974,7 +2027,7 @@ func (p *instrumentationScopePoolType) GetSlice(count int) []*InstrumentationSco
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -1990,8 +2043,6 @@ func (p *instrumentationScopePoolType) GetSlice(count int) []*InstrumentationSco
 			j++
 		}
 	}
-
-	return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -2000,8 +2051,13 @@ func (p *instrumentationScopePoolType) ReleaseSlice(slice []*InstrumentationScop
 		// Release nested attributes recursively to their pool.
 		keyValuePool.ReleaseSlice(elem.attributes)
 
-		// Zero-initialize the released element.
-		*elem = InstrumentationScope{}
+		// Reset the released element.
+		elem._protoMessage = protomessage.ProtoMessage{}
+		elem._flags = 0
+		elem.name = ""
+		elem.version = ""
+		elem.attributes = elem.attributes[:0]
+		elem.droppedAttributesCount = 0
 	}
 
 	p.mux.Lock()
@@ -2016,8 +2072,13 @@ func (p *instrumentationScopePoolType) Release(elem *InstrumentationScope) {
 	// Release nested attributes recursively to their pool.
 	keyValuePool.ReleaseSlice(elem.attributes)
 
-	// Zero-initialize the released element.
-	*elem = InstrumentationScope{}
+	// Reset the released element.
+	elem._protoMessage = protomessage.ProtoMessage{}
+	elem._flags = 0
+	elem.name = ""
+	elem.version = ""
+	elem.attributes = elem.attributes[:0]
+	elem.droppedAttributesCount = 0
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -2377,7 +2438,14 @@ func (m *LogRecord) decode() error {
 	}
 
 	// Pre-allocate slices for repeated fields.
-	m.attributes = keyValuePool.GetSlice(attributesCount)
+	if cap(m.attributes) < attributesCount {
+		// Need new space.
+		m.attributes = make([]*KeyValue, attributesCount)
+	} else {
+		// Existing capacity is enough.
+		m.attributes = m.attributes[0:attributesCount]
+	}
+	keyValuePool.GetSlice(m.attributes)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
@@ -2550,9 +2618,9 @@ func (p *logRecordPoolType) Get() *LogRecord {
 	return &LogRecord{}
 }
 
-func (p *logRecordPoolType) GetSlice(count int) []*LogRecord {
+func (p *logRecordPoolType) GetSlice(r []*LogRecord) {
 	// Create a new slice.
-	r := make([]*LogRecord, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -2565,7 +2633,7 @@ func (p *logRecordPoolType) GetSlice(count int) []*LogRecord {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -2581,8 +2649,6 @@ func (p *logRecordPoolType) GetSlice(count int) []*LogRecord {
 			j++
 		}
 	}
-
-	return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -2591,8 +2657,18 @@ func (p *logRecordPoolType) ReleaseSlice(slice []*LogRecord) {
 		// Release nested attributes recursively to their pool.
 		keyValuePool.ReleaseSlice(elem.attributes)
 
-		// Zero-initialize the released element.
-		*elem = LogRecord{}
+		// Reset the released element.
+		elem._protoMessage = protomessage.ProtoMessage{}
+		elem._flags = 0
+		elem.timeUnixNano = 0
+		elem.observedTimeUnixNano = 0
+		elem.severityNumber = SeverityNumber(0)
+		elem.severityText = ""
+		elem.attributes = elem.attributes[:0]
+		elem.droppedAttributesCount = 0
+		elem.flags = 0
+		elem.traceId = nil
+		elem.spanId = nil
 	}
 
 	p.mux.Lock()
@@ -2607,8 +2683,18 @@ func (p *logRecordPoolType) Release(elem *LogRecord) {
 	// Release nested attributes recursively to their pool.
 	keyValuePool.ReleaseSlice(elem.attributes)
 
-	// Zero-initialize the released element.
-	*elem = LogRecord{}
+	// Reset the released element.
+	elem._protoMessage = protomessage.ProtoMessage{}
+	elem._flags = 0
+	elem.timeUnixNano = 0
+	elem.observedTimeUnixNano = 0
+	elem.severityNumber = SeverityNumber(0)
+	elem.severityText = ""
+	elem.attributes = elem.attributes[:0]
+	elem.droppedAttributesCount = 0
+	elem.flags = 0
+	elem.traceId = nil
+	elem.spanId = nil
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -2839,9 +2925,9 @@ func (p *keyValuePoolType) Get() *KeyValue {
 	return &KeyValue{}
 }
 
-func (p *keyValuePoolType) GetSlice(count int) []*KeyValue {
+func (p *keyValuePoolType) GetSlice(r []*KeyValue) {
 	// Create a new slice.
-	r := make([]*KeyValue, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -2854,7 +2940,7 @@ func (p *keyValuePoolType) GetSlice(count int) []*KeyValue {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -2870,8 +2956,6 @@ func (p *keyValuePoolType) GetSlice(count int) []*KeyValue {
 			j++
 		}
 	}
-
-	return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -2882,8 +2966,11 @@ func (p *keyValuePoolType) ReleaseSlice(slice []*KeyValue) {
 			anyValuePool.Release(elem.value)
 		}
 
-		// Zero-initialize the released element.
-		*elem = KeyValue{}
+		// Reset the released element.
+		elem._protoMessage = protomessage.ProtoMessage{}
+		elem._flags = 0
+		elem.key = ""
+		elem.value = nil
 	}
 
 	p.mux.Lock()
@@ -2900,8 +2987,11 @@ func (p *keyValuePoolType) Release(elem *KeyValue) {
 		anyValuePool.Release(elem.value)
 	}
 
-	// Zero-initialize the released element.
-	*elem = KeyValue{}
+	// Reset the released element.
+	elem._protoMessage = protomessage.ProtoMessage{}
+	elem._flags = 0
+	elem.key = ""
+	elem.value = nil
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -3368,9 +3458,9 @@ func (p *anyValuePoolType) Get() *AnyValue {
 	return &AnyValue{}
 }
 
-func (p *anyValuePoolType) GetSlice(count int) []*AnyValue {
+func (p *anyValuePoolType) GetSlice(r []*AnyValue) {
 	// Create a new slice.
-	r := make([]*AnyValue, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -3383,7 +3473,7 @@ func (p *anyValuePoolType) GetSlice(count int) []*AnyValue {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -3399,8 +3489,6 @@ func (p *anyValuePoolType) GetSlice(count int) []*AnyValue {
 			j++
 		}
 	}
-
-	return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -3419,8 +3507,10 @@ func (p *anyValuePoolType) ReleaseSlice(slice []*AnyValue) {
 			}
 		}
 
-		// Zero-initialize the released element.
-		*elem = AnyValue{}
+		// Reset the released element.
+		elem._protoMessage = protomessage.ProtoMessage{}
+		elem._flags = 0
+		elem.value = oneof.NewOneOfNone()
 	}
 
 	p.mux.Lock()
@@ -3445,8 +3535,10 @@ func (p *anyValuePoolType) Release(elem *AnyValue) {
 		}
 	}
 
-	// Zero-initialize the released element.
-	*elem = AnyValue{}
+	// Reset the released element.
+	elem._protoMessage = protomessage.ProtoMessage{}
+	elem._flags = 0
+	elem.value = oneof.NewOneOfNone()
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -3621,7 +3713,14 @@ func (m *ArrayValue) decode() error {
 	}
 
 	// Pre-allocate slices for repeated fields.
-	m.values = anyValuePool.GetSlice(valuesCount)
+	if cap(m.values) < valuesCount {
+		// Need new space.
+		m.values = make([]*AnyValue, valuesCount)
+	} else {
+		// Existing capacity is enough.
+		m.values = m.values[0:valuesCount]
+	}
+	anyValuePool.GetSlice(m.values)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
@@ -3714,9 +3813,9 @@ func (p *arrayValuePoolType) Get() *ArrayValue {
 	return &ArrayValue{}
 }
 
-func (p *arrayValuePoolType) GetSlice(count int) []*ArrayValue {
+func (p *arrayValuePoolType) GetSlice(r []*ArrayValue) {
 	// Create a new slice.
-	r := make([]*ArrayValue, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -3729,7 +3828,7 @@ func (p *arrayValuePoolType) GetSlice(count int) []*ArrayValue {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -3745,8 +3844,6 @@ func (p *arrayValuePoolType) GetSlice(count int) []*ArrayValue {
 			j++
 		}
 	}
-
-	return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -3755,8 +3852,10 @@ func (p *arrayValuePoolType) ReleaseSlice(slice []*ArrayValue) {
 		// Release nested values recursively to their pool.
 		anyValuePool.ReleaseSlice(elem.values)
 
-		// Zero-initialize the released element.
-		*elem = ArrayValue{}
+		// Reset the released element.
+		elem._protoMessage = protomessage.ProtoMessage{}
+		elem._flags = 0
+		elem.values = elem.values[:0]
 	}
 
 	p.mux.Lock()
@@ -3771,8 +3870,10 @@ func (p *arrayValuePoolType) Release(elem *ArrayValue) {
 	// Release nested values recursively to their pool.
 	anyValuePool.ReleaseSlice(elem.values)
 
-	// Zero-initialize the released element.
-	*elem = ArrayValue{}
+	// Reset the released element.
+	elem._protoMessage = protomessage.ProtoMessage{}
+	elem._flags = 0
+	elem.values = elem.values[:0]
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -3947,7 +4048,14 @@ func (m *KeyValueList) decode() error {
 	}
 
 	// Pre-allocate slices for repeated fields.
-	m.values = keyValuePool.GetSlice(valuesCount)
+	if cap(m.values) < valuesCount {
+		// Need new space.
+		m.values = make([]*KeyValue, valuesCount)
+	} else {
+		// Existing capacity is enough.
+		m.values = m.values[0:valuesCount]
+	}
+	keyValuePool.GetSlice(m.values)
 
 	// Reset the buffer to start iterating over the fields again
 	buf.Reset(protomessage.BytesFromBytesView(m._protoMessage.Bytes))
@@ -4040,9 +4148,9 @@ func (p *keyValueListPoolType) Get() *KeyValueList {
 	return &KeyValueList{}
 }
 
-func (p *keyValueListPoolType) GetSlice(count int) []*KeyValueList {
+func (p *keyValueListPoolType) GetSlice(r []*KeyValueList) {
 	// Create a new slice.
-	r := make([]*KeyValueList, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -4055,7 +4163,7 @@ func (p *keyValueListPoolType) GetSlice(count int) []*KeyValueList {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -4071,8 +4179,6 @@ func (p *keyValueListPoolType) GetSlice(count int) []*KeyValueList {
 			j++
 		}
 	}
-
-	return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
@@ -4081,8 +4187,10 @@ func (p *keyValueListPoolType) ReleaseSlice(slice []*KeyValueList) {
 		// Release nested values recursively to their pool.
 		keyValuePool.ReleaseSlice(elem.values)
 
-		// Zero-initialize the released element.
-		*elem = KeyValueList{}
+		// Reset the released element.
+		elem._protoMessage = protomessage.ProtoMessage{}
+		elem._flags = 0
+		elem.values = elem.values[:0]
 	}
 
 	p.mux.Lock()
@@ -4097,8 +4205,10 @@ func (p *keyValueListPoolType) Release(elem *KeyValueList) {
 	// Release nested values recursively to their pool.
 	keyValuePool.ReleaseSlice(elem.values)
 
-	// Zero-initialize the released element.
-	*elem = KeyValueList{}
+	// Reset the released element.
+	elem._protoMessage = protomessage.ProtoMessage{}
+	elem._flags = 0
+	elem.values = elem.values[:0]
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -4293,9 +4403,9 @@ func (p *plainMessagePoolType) Get() *PlainMessage {
 	return &PlainMessage{}
 }
 
-func (p *plainMessagePoolType) GetSlice(count int) []*PlainMessage {
+func (p *plainMessagePoolType) GetSlice(r []*PlainMessage) {
 	// Create a new slice.
-	r := make([]*PlainMessage, count)
+	count := len(r)
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
@@ -4308,7 +4418,7 @@ func (p *plainMessagePoolType) GetSlice(count int) []*PlainMessage {
 		// Shrink the pool.
 		p.pool = p.pool[:len(p.pool)-count]
 
-		return r
+		return
 	}
 
 	// Initialize with what remains in the pool.
@@ -4324,16 +4434,16 @@ func (p *plainMessagePoolType) GetSlice(count int) []*PlainMessage {
 			j++
 		}
 	}
-
-	return r
 }
 
 // ReleaseSlice releases a slice of elements back to the pool.
 func (p *plainMessagePoolType) ReleaseSlice(slice []*PlainMessage) {
 	for _, elem := range slice {
 
-		// Zero-initialize the released element.
-		*elem = PlainMessage{}
+		// Reset the released element.
+		elem._protoMessage = protomessage.ProtoMessage{}
+		elem.key = ""
+		elem.value = ""
 	}
 
 	p.mux.Lock()
@@ -4346,8 +4456,10 @@ func (p *plainMessagePoolType) ReleaseSlice(slice []*PlainMessage) {
 // Release an element back to the pool.
 func (p *plainMessagePoolType) Release(elem *PlainMessage) {
 
-	// Zero-initialize the released element.
-	*elem = PlainMessage{}
+	// Reset the released element.
+	elem._protoMessage = protomessage.ProtoMessage{}
+	elem.key = ""
+	elem.value = ""
 
 	p.mux.Lock()
 	defer p.mux.Unlock()
