@@ -635,7 +635,9 @@ func BenchmarkLazy_Marshal_Unchanged(b *testing.B) {
 
 		lazyBytes, err := ps.BufferBytes()
 		assert.NoError(b, err)
-		assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		if i%20 == 0 {
+			assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		}
 	}
 }
 
@@ -662,7 +664,9 @@ func BenchmarkLazy_Marshal_ModifyAll(b *testing.B) {
 
 		lazyBytes, err := ps.BufferBytes()
 		assert.NoError(b, err)
-		assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		if i%20 == 0 {
+			assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		}
 	}
 }
 
@@ -767,7 +771,9 @@ func BenchmarkLazy_Pass_NoReadNoModify(b *testing.B) {
 
 		lazyBytes, err := ps.BufferBytes()
 		assert.NoError(b, err)
-		assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		if i%20 == 0 {
+			assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		}
 	}
 }
 
@@ -795,7 +801,9 @@ func BenchmarkLazy_Pass_ReadAllNoModify(b *testing.B) {
 
 		lazyBytes, err := ps.BufferBytes()
 		assert.NoError(b, err)
-		assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		if i%20 == 0 {
+			assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		}
 
 		lazy.Free()
 	}
@@ -827,7 +835,9 @@ func BenchmarkLazy_Pass_ModifyAll(b *testing.B) {
 
 		lazyBytes, err := ps.BufferBytes()
 		assert.NoError(b, err)
-		assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		if i%20 == 0 {
+			assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		}
 
 		lazy.Free()
 	}
@@ -873,7 +883,9 @@ func BenchmarkLazy_Pass_ModifyAllConc(b *testing.B) {
 
 				lazyBytes, err := ps.BufferBytes()
 				assert.NoError(b, err)
-				assert.EqualValues(b, goldenWireBytes, lazyBytes)
+				if i%20 == 0 {
+					assert.EqualValues(b, goldenWireBytes, lazyBytes)
+				}
 
 				lazy.Free()
 			}
@@ -915,7 +927,9 @@ func BenchmarkGoogle_Inspect_ScopeAttr(b *testing.B) {
 
 		destBytes, err := googlelib.Marshal(&lazy)
 		require.NoError(b, err)
-		assert.EqualValues(b, goldenWireBytes, destBytes)
+		if i%20 == 0 {
+			assert.EqualValues(b, goldenWireBytes, destBytes)
+		}
 	}
 }
 
@@ -951,7 +965,9 @@ func BenchmarkGogo_Inspect_ScopeAttr(b *testing.B) {
 
 		destBytes, err := gogolib.Marshal(&lazy)
 		require.NoError(b, err)
-		assert.EqualValues(b, goldenWireBytes, destBytes)
+		if i%20 == 0 {
+			assert.EqualValues(b, goldenWireBytes, destBytes)
+		}
 	}
 }
 
@@ -992,7 +1008,9 @@ func BenchmarkLazy_Inspect_ScopeAttr(b *testing.B) {
 
 		lazyBytes, err := ps.BufferBytes()
 		assert.NoError(b, err)
-		assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		if i%20 == 0 {
+			assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		}
 
 		inputMsg.Free()
 	}
@@ -1029,7 +1047,9 @@ func BenchmarkGoogle_Inspect_LogAttr(b *testing.B) {
 
 		destBytes, err := googlelib.Marshal(&lazy)
 		require.NoError(b, err)
-		assert.EqualValues(b, goldenWireBytes, destBytes)
+		if i%20 == 0 {
+			assert.EqualValues(b, goldenWireBytes, destBytes)
+		}
 	}
 }
 
@@ -1064,7 +1084,9 @@ func BenchmarkGogo_Inspect_LogAttr(b *testing.B) {
 
 		destBytes, err := gogolib.Marshal(&lazy)
 		require.NoError(b, err)
-		assert.EqualValues(b, goldenWireBytes, destBytes)
+		if i%20 == 0 {
+			assert.EqualValues(b, goldenWireBytes, destBytes)
+		}
 	}
 }
 
@@ -1107,7 +1129,9 @@ func BenchmarkLazy_Inspect_LogAttr(b *testing.B) {
 
 		lazyBytes, err := ps.BufferBytes()
 		assert.NoError(b, err)
-		assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		if i%20 == 0 {
+			assert.EqualValues(b, goldenWireBytes, lazyBytes)
+		}
 
 		inputMsg.Free()
 	}
@@ -1341,7 +1365,7 @@ func BenchmarkLazy_Batch(b *testing.B) {
 		require.NoError(b, err)
 		assert.NotNil(b, destBytes)
 
-		if i == 0 {
+		if i%20 == 0 {
 			assert.EqualValues(b, goldenBatchedBytes, destBytes)
 		}
 
