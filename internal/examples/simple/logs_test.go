@@ -476,40 +476,60 @@ func BenchmarkGogo_Marshal_ModifyAll(b *testing.B) {
 	BenchmarkGogo_Marshal_Unchanged(b)
 }
 
-func readAnyValueLazy(v *lazymsg.AnyValue) {
+func readAnyValueLazy(v *lazymsg.AnyValue) int {
+	count := 0
 	switch v.ValueType() {
+	case lazymsg.AnyValueStringValue:
+		if v.StringValue() != "" {
+			count++
+		}
 	case lazymsg.AnyValueArrayValue:
 		for _, e := range v.ArrayValue().Values() {
-			readAnyValueLazy(e)
+			count += readAnyValueLazy(e)
 		}
 	case lazymsg.AnyValueKvlistValue:
-		readAttrsLazy(v.KvlistValue().Values())
+		count += readAttrsLazy(v.KvlistValue().Values())
 	}
+	return count
 }
 
-func readAnyValueGogo(v gogomsg.AnyValue) {
+func readAnyValueGogo(v gogomsg.AnyValue) int {
+	count := 0
 	switch v := v.Value.(type) {
+	case *gogomsg.AnyValue_StringValue:
+		if v.StringValue != "" {
+			count++
+		}
 	case *gogomsg.AnyValue_ArrayValue:
 		for _, e := range v.ArrayValue.Values {
-			readAnyValueGogo(*e)
+			count += readAnyValueGogo(*e)
 		}
 	case *gogomsg.AnyValue_KvlistValue:
-		readAttrsGogo(v.KvlistValue.Values)
+		count += readAttrsGogo(v.KvlistValue.Values)
 	}
+	return count
 }
 
-func readAttrsLazy(v []*lazymsg.KeyValue) {
+func readAttrsLazy(v []*lazymsg.KeyValue) int {
+	count := 0
 	for _, e := range v {
-		e.Key()
-		readAnyValueLazy(e.Value())
+		if e.Key() != "" {
+			count++
+		}
+		count += readAnyValueLazy(e.Value())
 	}
+	return count
 }
 
-func readAttrsGogo(v []gogomsg.KeyValue) {
+func readAttrsGogo(v []gogomsg.KeyValue) int {
+	count := 0
 	for _, e := range v {
-		_ = e.Key
-		readAnyValueGogo(e.Value)
+		if e.Key != "" {
+			count++
+		}
+		count += readAnyValueGogo(e.Value)
 	}
+	return count
 }
 
 func countAttrsLazy(lazy *lazymsg.LogsData) int {
@@ -545,19 +565,17 @@ func countAttrsGogo(msg *gogomsg.LogsData) int {
 		resource := rl.Resource
 
 		attrs := resource.Attributes
-		attrCount += len(attrs)
-		readAttrsGogo(attrs)
+		attrCount += readAttrsGogo(attrs)
 
 		sls := rl.ScopeLogs
 		for _, sl := range sls {
-			readAttrsGogo(sl.Scope.Attributes)
+			attrCount += readAttrsGogo(sl.Scope.Attributes)
 
 			logRecords := sl.LogRecords
 
 			for _, logRecord := range logRecords {
 				attrs2 := logRecord.Attributes
-				attrCount += len(attrs2)
-				readAttrsGogo(attrs2)
+				attrCount += readAttrsGogo(attrs2)
 			}
 		}
 	}
@@ -1393,5 +1411,46 @@ func BenchmarkLazy_TouchAll(b *testing.B) {
 
 		countAttrsLazy(lazy)
 		touchAll(lazy)
+	}
+}
+
+func BenchmarkGogo_CountAttrs(b *testing.B) {
+	notForReport(b)
+
+	src := createLogsData(scaleCount, 1)
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	var lazy gogomsg.LogsData
+	err = gogolib.Unmarshal(goldenWireBytes, &lazy)
+	require.NoError(b, err)
+
+	countAttrsGogo(&lazy)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		countAttrsGogo(&lazy)
+	}
+}
+
+func BenchmarkLazy_CountAttrs(b *testing.B) {
+	notForReport(b)
+
+	src := createLogsData(scaleCount, 1)
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(b, err)
+	require.NotNil(b, goldenWireBytes)
+
+	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
+	require.NoError(b, err)
+
+	countAttrsLazy(lazy)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		countAttrsLazy(lazy)
 	}
 }
