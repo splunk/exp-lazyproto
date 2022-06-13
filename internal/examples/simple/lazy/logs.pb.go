@@ -89,16 +89,22 @@ type flags_LogsData uint8
 const flags_LogsData_ResourceLogs_Decoded flags_LogsData = 0x1
 
 // ResourceLogs returns the value of the resourceLogs.
-func (m *LogsData) ResourceLogs() []*ResourceLogs {
+func (m *LogsData) ResourceLogs() (r []*ResourceLogs) {
 	if m._flags&flags_LogsData_ResourceLogs_Decoded == 0 {
-		// Decode nested message(s).
-		for i := range m.resourceLogs {
-			// TODO: decide how to handle decoding errors.
-			_ = m.resourceLogs[i].decode()
-		}
-		m._flags |= flags_LogsData_ResourceLogs_Decoded
+		m.decodeResourceLogs()
 	}
 	return m.resourceLogs
+}
+
+// This is noinline, so that ResourceLogs() is inlined instead.
+//go:noinline
+func (m *LogsData) decodeResourceLogs() {
+	// Decode nested message(s).
+	for i := range m.resourceLogs {
+		// TODO: decide how to handle decoding errors.
+		_ = m.resourceLogs[i].decode()
+	}
+	m._flags |= flags_LogsData_ResourceLogs_Decoded
 }
 
 // SetResourceLogs sets the value of the resourceLogs.
@@ -434,17 +440,23 @@ const flags_ResourceLogs_Resource_Decoded flags_ResourceLogs = 0x1
 const flags_ResourceLogs_ScopeLogs_Decoded flags_ResourceLogs = 0x2
 
 // Resource returns the value of the resource.
-func (m *ResourceLogs) Resource() *Resource {
+func (m *ResourceLogs) Resource() (r *Resource) {
 	if m._flags&flags_ResourceLogs_Resource_Decoded == 0 {
-		// Decode nested message(s).
-		resource := m.resource
-		if resource != nil {
-			// TODO: decide how to handle decoding errors.
-			_ = resource.decode()
-		}
-		m._flags |= flags_ResourceLogs_Resource_Decoded
+		m.decodeResource()
 	}
 	return m.resource
+}
+
+// This is noinline, so that Resource() is inlined instead.
+//go:noinline
+func (m *ResourceLogs) decodeResource() {
+	// Decode nested message(s).
+	resource := m.resource
+	if resource != nil {
+		// TODO: decide how to handle decoding errors.
+		_ = resource.decode()
+	}
+	m._flags |= flags_ResourceLogs_Resource_Decoded
 }
 
 // SetResource sets the value of the resource.
@@ -459,16 +471,22 @@ func (m *ResourceLogs) SetResource(v *Resource) {
 }
 
 // ScopeLogs returns the value of the scopeLogs.
-func (m *ResourceLogs) ScopeLogs() []*ScopeLogs {
+func (m *ResourceLogs) ScopeLogs() (r []*ScopeLogs) {
 	if m._flags&flags_ResourceLogs_ScopeLogs_Decoded == 0 {
-		// Decode nested message(s).
-		for i := range m.scopeLogs {
-			// TODO: decide how to handle decoding errors.
-			_ = m.scopeLogs[i].decode()
-		}
-		m._flags |= flags_ResourceLogs_ScopeLogs_Decoded
+		m.decodeScopeLogs()
 	}
 	return m.scopeLogs
+}
+
+// This is noinline, so that ScopeLogs() is inlined instead.
+//go:noinline
+func (m *ResourceLogs) decodeScopeLogs() {
+	// Decode nested message(s).
+	for i := range m.scopeLogs {
+		// TODO: decide how to handle decoding errors.
+		_ = m.scopeLogs[i].decode()
+	}
+	m._flags |= flags_ResourceLogs_ScopeLogs_Decoded
 }
 
 // SetScopeLogs sets the value of the scopeLogs.
@@ -513,7 +531,7 @@ func (m *ResourceLogs) ScopeLogsRemoveIf(f func(*ScopeLogs) bool) {
 }
 
 // SchemaUrl returns the value of the schemaUrl.
-func (m *ResourceLogs) SchemaUrl() string {
+func (m *ResourceLogs) SchemaUrl() (r string) {
 	return m.schemaUrl
 }
 
@@ -876,16 +894,22 @@ type flags_Resource uint8
 const flags_Resource_Attributes_Decoded flags_Resource = 0x1
 
 // Attributes returns the value of the attributes.
-func (m *Resource) Attributes() []*KeyValue {
+func (m *Resource) Attributes() (r []*KeyValue) {
 	if m._flags&flags_Resource_Attributes_Decoded == 0 {
-		// Decode nested message(s).
-		for i := range m.attributes {
-			// TODO: decide how to handle decoding errors.
-			_ = m.attributes[i].decode()
-		}
-		m._flags |= flags_Resource_Attributes_Decoded
+		m.decodeAttributes()
 	}
 	return m.attributes
+}
+
+// This is noinline, so that Attributes() is inlined instead.
+//go:noinline
+func (m *Resource) decodeAttributes() {
+	// Decode nested message(s).
+	for i := range m.attributes {
+		// TODO: decide how to handle decoding errors.
+		_ = m.attributes[i].decode()
+	}
+	m._flags |= flags_Resource_Attributes_Decoded
 }
 
 // SetAttributes sets the value of the attributes.
@@ -930,7 +954,7 @@ func (m *Resource) AttributesRemoveIf(f func(*KeyValue) bool) {
 }
 
 // DroppedAttributesCount returns the value of the droppedAttributesCount.
-func (m *Resource) DroppedAttributesCount() uint32 {
+func (m *Resource) DroppedAttributesCount() (r uint32) {
 	return m.droppedAttributesCount
 }
 
@@ -1257,17 +1281,23 @@ const flags_ScopeLogs_Scope_Decoded flags_ScopeLogs = 0x1
 const flags_ScopeLogs_LogRecords_Decoded flags_ScopeLogs = 0x2
 
 // Scope returns the value of the scope.
-func (m *ScopeLogs) Scope() *InstrumentationScope {
+func (m *ScopeLogs) Scope() (r *InstrumentationScope) {
 	if m._flags&flags_ScopeLogs_Scope_Decoded == 0 {
-		// Decode nested message(s).
-		scope := m.scope
-		if scope != nil {
-			// TODO: decide how to handle decoding errors.
-			_ = scope.decode()
-		}
-		m._flags |= flags_ScopeLogs_Scope_Decoded
+		m.decodeScope()
 	}
 	return m.scope
+}
+
+// This is noinline, so that Scope() is inlined instead.
+//go:noinline
+func (m *ScopeLogs) decodeScope() {
+	// Decode nested message(s).
+	scope := m.scope
+	if scope != nil {
+		// TODO: decide how to handle decoding errors.
+		_ = scope.decode()
+	}
+	m._flags |= flags_ScopeLogs_Scope_Decoded
 }
 
 // SetScope sets the value of the scope.
@@ -1282,16 +1312,22 @@ func (m *ScopeLogs) SetScope(v *InstrumentationScope) {
 }
 
 // LogRecords returns the value of the logRecords.
-func (m *ScopeLogs) LogRecords() []*LogRecord {
+func (m *ScopeLogs) LogRecords() (r []*LogRecord) {
 	if m._flags&flags_ScopeLogs_LogRecords_Decoded == 0 {
-		// Decode nested message(s).
-		for i := range m.logRecords {
-			// TODO: decide how to handle decoding errors.
-			_ = m.logRecords[i].decode()
-		}
-		m._flags |= flags_ScopeLogs_LogRecords_Decoded
+		m.decodeLogRecords()
 	}
 	return m.logRecords
+}
+
+// This is noinline, so that LogRecords() is inlined instead.
+//go:noinline
+func (m *ScopeLogs) decodeLogRecords() {
+	// Decode nested message(s).
+	for i := range m.logRecords {
+		// TODO: decide how to handle decoding errors.
+		_ = m.logRecords[i].decode()
+	}
+	m._flags |= flags_ScopeLogs_LogRecords_Decoded
 }
 
 // SetLogRecords sets the value of the logRecords.
@@ -1336,7 +1372,7 @@ func (m *ScopeLogs) LogRecordsRemoveIf(f func(*LogRecord) bool) {
 }
 
 // SchemaUrl returns the value of the schemaUrl.
-func (m *ScopeLogs) SchemaUrl() string {
+func (m *ScopeLogs) SchemaUrl() (r string) {
 	return m.schemaUrl
 }
 
@@ -1701,7 +1737,7 @@ type flags_InstrumentationScope uint8
 const flags_InstrumentationScope_Attributes_Decoded flags_InstrumentationScope = 0x1
 
 // Name returns the value of the name.
-func (m *InstrumentationScope) Name() string {
+func (m *InstrumentationScope) Name() (r string) {
 	return m.name
 }
 
@@ -1714,7 +1750,7 @@ func (m *InstrumentationScope) SetName(v string) {
 }
 
 // Version returns the value of the version.
-func (m *InstrumentationScope) Version() string {
+func (m *InstrumentationScope) Version() (r string) {
 	return m.version
 }
 
@@ -1727,16 +1763,22 @@ func (m *InstrumentationScope) SetVersion(v string) {
 }
 
 // Attributes returns the value of the attributes.
-func (m *InstrumentationScope) Attributes() []*KeyValue {
+func (m *InstrumentationScope) Attributes() (r []*KeyValue) {
 	if m._flags&flags_InstrumentationScope_Attributes_Decoded == 0 {
-		// Decode nested message(s).
-		for i := range m.attributes {
-			// TODO: decide how to handle decoding errors.
-			_ = m.attributes[i].decode()
-		}
-		m._flags |= flags_InstrumentationScope_Attributes_Decoded
+		m.decodeAttributes()
 	}
 	return m.attributes
+}
+
+// This is noinline, so that Attributes() is inlined instead.
+//go:noinline
+func (m *InstrumentationScope) decodeAttributes() {
+	// Decode nested message(s).
+	for i := range m.attributes {
+		// TODO: decide how to handle decoding errors.
+		_ = m.attributes[i].decode()
+	}
+	m._flags |= flags_InstrumentationScope_Attributes_Decoded
 }
 
 // SetAttributes sets the value of the attributes.
@@ -1781,7 +1823,7 @@ func (m *InstrumentationScope) AttributesRemoveIf(f func(*KeyValue) bool) {
 }
 
 // DroppedAttributesCount returns the value of the droppedAttributesCount.
-func (m *InstrumentationScope) DroppedAttributesCount() uint32 {
+func (m *InstrumentationScope) DroppedAttributesCount() (r uint32) {
 	return m.droppedAttributesCount
 }
 
@@ -2150,7 +2192,7 @@ type flags_LogRecord uint8
 const flags_LogRecord_Attributes_Decoded flags_LogRecord = 0x1
 
 // TimeUnixNano returns the value of the timeUnixNano.
-func (m *LogRecord) TimeUnixNano() uint64 {
+func (m *LogRecord) TimeUnixNano() (r uint64) {
 	return m.timeUnixNano
 }
 
@@ -2163,7 +2205,7 @@ func (m *LogRecord) SetTimeUnixNano(v uint64) {
 }
 
 // ObservedTimeUnixNano returns the value of the observedTimeUnixNano.
-func (m *LogRecord) ObservedTimeUnixNano() uint64 {
+func (m *LogRecord) ObservedTimeUnixNano() (r uint64) {
 	return m.observedTimeUnixNano
 }
 
@@ -2176,7 +2218,7 @@ func (m *LogRecord) SetObservedTimeUnixNano(v uint64) {
 }
 
 // SeverityNumber returns the value of the severityNumber.
-func (m *LogRecord) SeverityNumber() SeverityNumber {
+func (m *LogRecord) SeverityNumber() (r SeverityNumber) {
 	return m.severityNumber
 }
 
@@ -2189,7 +2231,7 @@ func (m *LogRecord) SetSeverityNumber(v SeverityNumber) {
 }
 
 // SeverityText returns the value of the severityText.
-func (m *LogRecord) SeverityText() string {
+func (m *LogRecord) SeverityText() (r string) {
 	return m.severityText
 }
 
@@ -2202,16 +2244,22 @@ func (m *LogRecord) SetSeverityText(v string) {
 }
 
 // Attributes returns the value of the attributes.
-func (m *LogRecord) Attributes() []*KeyValue {
+func (m *LogRecord) Attributes() (r []*KeyValue) {
 	if m._flags&flags_LogRecord_Attributes_Decoded == 0 {
-		// Decode nested message(s).
-		for i := range m.attributes {
-			// TODO: decide how to handle decoding errors.
-			_ = m.attributes[i].decode()
-		}
-		m._flags |= flags_LogRecord_Attributes_Decoded
+		m.decodeAttributes()
 	}
 	return m.attributes
+}
+
+// This is noinline, so that Attributes() is inlined instead.
+//go:noinline
+func (m *LogRecord) decodeAttributes() {
+	// Decode nested message(s).
+	for i := range m.attributes {
+		// TODO: decide how to handle decoding errors.
+		_ = m.attributes[i].decode()
+	}
+	m._flags |= flags_LogRecord_Attributes_Decoded
 }
 
 // SetAttributes sets the value of the attributes.
@@ -2256,7 +2304,7 @@ func (m *LogRecord) AttributesRemoveIf(f func(*KeyValue) bool) {
 }
 
 // DroppedAttributesCount returns the value of the droppedAttributesCount.
-func (m *LogRecord) DroppedAttributesCount() uint32 {
+func (m *LogRecord) DroppedAttributesCount() (r uint32) {
 	return m.droppedAttributesCount
 }
 
@@ -2269,7 +2317,7 @@ func (m *LogRecord) SetDroppedAttributesCount(v uint32) {
 }
 
 // Flags returns the value of the flags.
-func (m *LogRecord) Flags() uint32 {
+func (m *LogRecord) Flags() (r uint32) {
 	return m.flags
 }
 
@@ -2282,7 +2330,7 @@ func (m *LogRecord) SetFlags(v uint32) {
 }
 
 // TraceId returns the value of the traceId.
-func (m *LogRecord) TraceId() []byte {
+func (m *LogRecord) TraceId() (r []byte) {
 	return m.traceId
 }
 
@@ -2295,7 +2343,7 @@ func (m *LogRecord) SetTraceId(v []byte) {
 }
 
 // SpanId returns the value of the spanId.
-func (m *LogRecord) SpanId() []byte {
+func (m *LogRecord) SpanId() (r []byte) {
 	return m.spanId
 }
 
@@ -2763,7 +2811,7 @@ type flags_KeyValue uint8
 const flags_KeyValue_Value_Decoded flags_KeyValue = 0x1
 
 // Key returns the value of the key.
-func (m *KeyValue) Key() string {
+func (m *KeyValue) Key() (r string) {
 	return m.key
 }
 
@@ -2776,17 +2824,23 @@ func (m *KeyValue) SetKey(v string) {
 }
 
 // Value returns the value of the value.
-func (m *KeyValue) Value() *AnyValue {
+func (m *KeyValue) Value() (r *AnyValue) {
 	if m._flags&flags_KeyValue_Value_Decoded == 0 {
-		// Decode nested message(s).
-		value := m.value
-		if value != nil {
-			// TODO: decide how to handle decoding errors.
-			_ = value.decode()
-		}
-		m._flags |= flags_KeyValue_Value_Decoded
+		m.decodeValue()
 	}
 	return m.value
+}
+
+// This is noinline, so that Value() is inlined instead.
+//go:noinline
+func (m *KeyValue) decodeValue() {
+	// Decode nested message(s).
+	value := m.value
+	if value != nil {
+		// TODO: decide how to handle decoding errors.
+		_ = value.decode()
+	}
+	m._flags |= flags_KeyValue_Value_Decoded
 }
 
 // SetValue sets the value of the value.
@@ -3094,8 +3148,11 @@ const flags_AnyValue_KvlistValue_Decoded flags_AnyValue = 0x2
 
 // StringValue returns the value of the stringValue.
 // If the field "value" is not set to "stringValue" then the returned value is undefined.
-func (m *AnyValue) StringValue() string {
-	return m.value.StringVal()
+func (m *AnyValue) StringValue() (r string) {
+	if m.value.FieldIndex() == int(AnyValueStringValue) {
+		return m.value.StringVal()
+	}
+	return
 }
 
 // SetStringValue sets the value of the stringValue.
@@ -3109,8 +3166,11 @@ func (m *AnyValue) SetStringValue(v string) {
 
 // BoolValue returns the value of the boolValue.
 // If the field "value" is not set to "boolValue" then the returned value is undefined.
-func (m *AnyValue) BoolValue() bool {
-	return m.value.BoolVal()
+func (m *AnyValue) BoolValue() (r bool) {
+	if m.value.FieldIndex() == int(AnyValueBoolValue) {
+		return m.value.BoolVal()
+	}
+	return
 }
 
 // SetBoolValue sets the value of the boolValue.
@@ -3124,8 +3184,11 @@ func (m *AnyValue) SetBoolValue(v bool) {
 
 // IntValue returns the value of the intValue.
 // If the field "value" is not set to "intValue" then the returned value is undefined.
-func (m *AnyValue) IntValue() int64 {
-	return m.value.Int64Val()
+func (m *AnyValue) IntValue() (r int64) {
+	if m.value.FieldIndex() == int(AnyValueIntValue) {
+		return m.value.Int64Val()
+	}
+	return
 }
 
 // SetIntValue sets the value of the intValue.
@@ -3139,8 +3202,11 @@ func (m *AnyValue) SetIntValue(v int64) {
 
 // DoubleValue returns the value of the doubleValue.
 // If the field "value" is not set to "doubleValue" then the returned value is undefined.
-func (m *AnyValue) DoubleValue() float64 {
-	return m.value.DoubleVal()
+func (m *AnyValue) DoubleValue() (r float64) {
+	if m.value.FieldIndex() == int(AnyValueDoubleValue) {
+		return m.value.DoubleVal()
+	}
+	return
 }
 
 // SetDoubleValue sets the value of the doubleValue.
@@ -3154,19 +3220,28 @@ func (m *AnyValue) SetDoubleValue(v float64) {
 
 // ArrayValue returns the value of the arrayValue.
 // If the field "value" is not set to "arrayValue" then the returned value is undefined.
-func (m *AnyValue) ArrayValue() *ArrayValue {
+func (m *AnyValue) ArrayValue() (r *ArrayValue) {
 	if m._flags&flags_AnyValue_ArrayValue_Decoded == 0 {
-		// Decode nested message(s).
-		if m.value.FieldIndex() == int(AnyValueArrayValue) {
-			arrayValue := (*ArrayValue)(m.value.PtrVal())
-			if arrayValue != nil {
-				// TODO: decide how to handle decoding errors.
-				_ = arrayValue.decode()
-			}
-		}
-		m._flags |= flags_AnyValue_ArrayValue_Decoded
+		m.decodeArrayValue()
 	}
-	return (*ArrayValue)(m.value.PtrVal())
+	if m.value.FieldIndex() == int(AnyValueArrayValue) {
+		return (*ArrayValue)(m.value.PtrVal())
+	}
+	return nil
+}
+
+// This is noinline, so that ArrayValue() is inlined instead.
+//go:noinline
+func (m *AnyValue) decodeArrayValue() {
+	// Decode nested message(s).
+	if m.value.FieldIndex() == int(AnyValueArrayValue) {
+		arrayValue := (*ArrayValue)(m.value.PtrVal())
+		if arrayValue != nil {
+			// TODO: decide how to handle decoding errors.
+			_ = arrayValue.decode()
+		}
+	}
+	m._flags |= flags_AnyValue_ArrayValue_Decoded
 }
 
 // SetArrayValue sets the value of the arrayValue.
@@ -3183,19 +3258,28 @@ func (m *AnyValue) SetArrayValue(v *ArrayValue) {
 
 // KvlistValue returns the value of the kvlistValue.
 // If the field "value" is not set to "kvlistValue" then the returned value is undefined.
-func (m *AnyValue) KvlistValue() *KeyValueList {
+func (m *AnyValue) KvlistValue() (r *KeyValueList) {
 	if m._flags&flags_AnyValue_KvlistValue_Decoded == 0 {
-		// Decode nested message(s).
-		if m.value.FieldIndex() == int(AnyValueKvlistValue) {
-			kvlistValue := (*KeyValueList)(m.value.PtrVal())
-			if kvlistValue != nil {
-				// TODO: decide how to handle decoding errors.
-				_ = kvlistValue.decode()
-			}
-		}
-		m._flags |= flags_AnyValue_KvlistValue_Decoded
+		m.decodeKvlistValue()
 	}
-	return (*KeyValueList)(m.value.PtrVal())
+	if m.value.FieldIndex() == int(AnyValueKvlistValue) {
+		return (*KeyValueList)(m.value.PtrVal())
+	}
+	return nil
+}
+
+// This is noinline, so that KvlistValue() is inlined instead.
+//go:noinline
+func (m *AnyValue) decodeKvlistValue() {
+	// Decode nested message(s).
+	if m.value.FieldIndex() == int(AnyValueKvlistValue) {
+		kvlistValue := (*KeyValueList)(m.value.PtrVal())
+		if kvlistValue != nil {
+			// TODO: decide how to handle decoding errors.
+			_ = kvlistValue.decode()
+		}
+	}
+	m._flags |= flags_AnyValue_KvlistValue_Decoded
 }
 
 // SetKvlistValue sets the value of the kvlistValue.
@@ -3212,8 +3296,11 @@ func (m *AnyValue) SetKvlistValue(v *KeyValueList) {
 
 // BytesValue returns the value of the bytesValue.
 // If the field "value" is not set to "bytesValue" then the returned value is undefined.
-func (m *AnyValue) BytesValue() []byte {
-	return m.value.BytesVal()
+func (m *AnyValue) BytesValue() (r []byte) {
+	if m.value.FieldIndex() == int(AnyValueBytesValue) {
+		return m.value.BytesVal()
+	}
+	return
 }
 
 // SetBytesValue sets the value of the bytesValue.
@@ -3607,16 +3694,22 @@ type flags_ArrayValue uint8
 const flags_ArrayValue_Values_Decoded flags_ArrayValue = 0x1
 
 // Values returns the value of the values.
-func (m *ArrayValue) Values() []*AnyValue {
+func (m *ArrayValue) Values() (r []*AnyValue) {
 	if m._flags&flags_ArrayValue_Values_Decoded == 0 {
-		// Decode nested message(s).
-		for i := range m.values {
-			// TODO: decide how to handle decoding errors.
-			_ = m.values[i].decode()
-		}
-		m._flags |= flags_ArrayValue_Values_Decoded
+		m.decodeValues()
 	}
 	return m.values
+}
+
+// This is noinline, so that Values() is inlined instead.
+//go:noinline
+func (m *ArrayValue) decodeValues() {
+	// Decode nested message(s).
+	for i := range m.values {
+		// TODO: decide how to handle decoding errors.
+		_ = m.values[i].decode()
+	}
+	m._flags |= flags_ArrayValue_Values_Decoded
 }
 
 // SetValues sets the value of the values.
@@ -3946,16 +4039,22 @@ type flags_KeyValueList uint8
 const flags_KeyValueList_Values_Decoded flags_KeyValueList = 0x1
 
 // Values returns the value of the values.
-func (m *KeyValueList) Values() []*KeyValue {
+func (m *KeyValueList) Values() (r []*KeyValue) {
 	if m._flags&flags_KeyValueList_Values_Decoded == 0 {
-		// Decode nested message(s).
-		for i := range m.values {
-			// TODO: decide how to handle decoding errors.
-			_ = m.values[i].decode()
-		}
-		m._flags |= flags_KeyValueList_Values_Decoded
+		m.decodeValues()
 	}
 	return m.values
+}
+
+// This is noinline, so that Values() is inlined instead.
+//go:noinline
+func (m *KeyValueList) decodeValues() {
+	// Decode nested message(s).
+	for i := range m.values {
+		// TODO: decide how to handle decoding errors.
+		_ = m.values[i].decode()
+	}
+	m._flags |= flags_KeyValueList_Values_Decoded
 }
 
 // SetValues sets the value of the values.
@@ -4279,7 +4378,7 @@ func (m *PlainMessage) Free() {
 }
 
 // Key returns the value of the key.
-func (m *PlainMessage) Key() string {
+func (m *PlainMessage) Key() (r string) {
 	return m.key
 }
 
@@ -4292,7 +4391,7 @@ func (m *PlainMessage) SetKey(v string) {
 }
 
 // Value returns the value of the value.
-func (m *PlainMessage) Value() string {
+func (m *PlainMessage) Value() (r string) {
 	return m.value
 }
 

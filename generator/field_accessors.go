@@ -34,6 +34,50 @@ func (g *generator) oFieldsAccessors() error {
 	return nil
 }
 
+func (g *generator) oFieldDecodeMethod() {
+	g.o("// This is noinline, so that $FieldName() is inlined instead.")
+	g.o(`//go:noinline`)
+	g.o(`func (m *$MessageName) decode$FieldName() {`)
+	g.i(1)
+
+	g.o(`// Decode nested message(s).`)
+	if g.field.IsRepeated() {
+		g.o(`for i := range m.$fieldName {`)
+		g.o(`	// TODO: decide how to handle decoding errors.`)
+		g.o(`	_ = m.$fieldName[i].decode()`)
+		g.o(`}`)
+	} else {
+		if g.field.GetOneOf() != nil {
+			choiceName := composeOneOfChoiceName(g.msg, g.field)
+			g.o(
+				"if m.%s.FieldIndex() == int(%s) {", g.field.GetOneOf().GetName(),
+				choiceName,
+			)
+			g.i(1)
+			g.o(
+				"$fieldName := (*$FieldMessageTypeName)(m.%s.PtrVal())",
+				g.field.GetOneOf().GetName(),
+			)
+		} else {
+			g.o(`$fieldName := m.$fieldName`)
+		}
+
+		g.o(`if $fieldName != nil {`)
+		g.o(`	// TODO: decide how to handle decoding errors.`)
+		g.o(`	_ = $fieldName.decode()`)
+		g.o(`}`)
+
+		if g.field.GetOneOf() != nil {
+			g.i(-1)
+			g.o(`}`)
+		}
+	}
+
+	g.o(`m._flags |= %s`, g.msg.DecodedFlagName[g.field])
+	g.i(-1)
+	g.o(`}`)
+}
+
 func (g *generator) oFieldGetter() error {
 	g.o(`// $FieldName returns the value of the $fieldName.`)
 
@@ -46,52 +90,46 @@ func (g *generator) oFieldGetter() error {
 
 	goType := g.convertTypeToGo(g.field)
 
-	g.o(`func (m *$MessageName) $FieldName() %s {`, goType)
+	g.o(`func (m *$MessageName) $FieldName() (r %s) {`, goType)
 
 	g.i(1)
+
 	if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		g.o(`if m._flags&%s == 0 {`, g.msg.DecodedFlagName[g.field])
-		g.i(1)
-		g.o(`// Decode nested message(s).`)
-		if g.field.IsRepeated() {
-			g.o(`for i := range m.$fieldName {`)
-			g.o(`	// TODO: decide how to handle decoding errors.`)
-			g.o(`	_ = m.$fieldName[i].decode()`)
-			g.o(`}`)
+		g.o("	m.decode$FieldName()")
+		g.o("}")
+		if g.field.GetOneOf() != nil {
+			choiceName := composeOneOfChoiceName(g.msg, g.field)
+			g.o(
+				"if m.%s.FieldIndex() == int(%s) {", g.field.GetOneOf().GetName(),
+				choiceName,
+			)
+			g.i(1)
+			g.o(
+				"return (*$FieldMessageTypeName)(m.%s.PtrVal())",
+				g.field.GetOneOf().GetName(),
+			)
+			g.i(-1)
+			g.o("}")
+			g.o("return nil")
 		} else {
-			if g.field.GetOneOf() != nil {
-				choiceName := composeOneOfChoiceName(g.msg, g.field)
-				g.o(
-					"if m.%s.FieldIndex() == int(%s) {", g.field.GetOneOf().GetName(),
-					choiceName,
-				)
-				g.i(1)
-				g.o(
-					"$fieldName := (*$FieldMessageTypeName)(m.%s.PtrVal())",
-					g.field.GetOneOf().GetName(),
-				)
-			} else {
-				g.o(`$fieldName := m.$fieldName`)
-			}
-
-			g.o(`if $fieldName != nil {`)
-			g.o(`	// TODO: decide how to handle decoding errors.`)
-			g.o(`	_ = $fieldName.decode()`)
-			g.o(`}`)
-
-			if g.field.GetOneOf() != nil {
-				g.i(-1)
-				g.o(`}`)
-			}
+			g.o("return m.$fieldName")
 		}
-
-		g.o(`m._flags |= %s`, g.msg.DecodedFlagName[g.field])
-
 		g.i(-1)
-		g.o(`}`)
+		g.o("}")
+		g.o("")
+		g.oFieldDecodeMethod()
+		return g.lastErr
 	}
 
 	if g.field.GetOneOf() != nil {
+		choiceName := composeOneOfChoiceName(g.msg, g.field)
+		g.o(
+			"if m.%s.FieldIndex() == int(%s) {", g.field.GetOneOf().GetName(),
+			choiceName,
+		)
+		g.i(1)
+
 		switch g.field.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
 			g.o(`return m.%s.BoolVal()`, g.field.GetOneOf().GetName())
@@ -111,6 +149,11 @@ func (g *generator) oFieldGetter() error {
 		default:
 			return fmt.Errorf("unsupported oneof field type %v", g.field.GetType())
 		}
+
+		g.i(-1)
+		g.o("}")
+		g.o("return")
+
 	} else {
 		g.o(`return m.$fieldName`)
 	}
