@@ -8,7 +8,54 @@ import (
 	_ "github.com/jhump/protoreflect/desc/protoparse"
 )
 
+func orderedByFieldNumber(in []*Field) []*Field {
+	// Order the fields by their number to ensure marshaling is done in an
+	// order that we can rely on in the tests (same order as other as Protobuf
+	// libs so that we can compare the results).
+	out := make([]*Field, len(in))
+	copy(out, in)
+	sort.Slice(
+		out, func(i, j int) bool {
+			return out[i].GetNumber() < out[j].GetNumber()
+		},
+	)
+	return out
+}
+
 func (g *generator) oMarshalMethod() error {
+	g.oPrepareMarshalFields()
+
+	// Output the Marshal() func.
+
+	g.o(``)
+	if g.useSizedMarshaler {
+		g.o(`func (m *$MessageName) Marshal(ps *sizedstream.ProtoStream) error {`)
+	} else {
+		g.o(`func (m *$MessageName) Marshal(ps *molecule.ProtoStream) error {`)
+	}
+	g.i(1)
+
+	g.o(`if m._protoMessage.IsModified() {`)
+	g.o(`// The struct is modified, marshal from the struct fields.`)
+	g.i(1)
+
+	g.oMarshalFieldsFromStruct()
+
+	g.i(-1)
+
+	g.o(`} else {`)
+	g.o(`	// We have the original bytes and the message is unchanged. Use the original bytes.`)
+	g.o(`	ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))`)
+	g.o(`}`) // else
+	g.o(`return nil`)
+
+	g.i(-1)
+	g.o(`}`) // func
+
+	return g.lastErr
+}
+
+func (g *generator) oPrepareMarshalFields() {
 	// Output "prepared" field definitions.
 	for _, field := range g.msg.Fields {
 		g.setField(field)
@@ -20,32 +67,15 @@ func (g *generator) oMarshalMethod() error {
 
 		g.oPrepareMarshalField(field)
 	}
+}
 
-	// Output the Marshal() func.
-
-	g.o(``)
-	if g.useSizedMarshaler {
-		g.o(`func (m *$MessageName) Marshal(ps *sizedstream.ProtoStream) error {`)
-	} else {
-		g.o(`func (m *$MessageName) Marshal(ps *molecule.ProtoStream) error {`)
-	}
-	g.i(1)
-	g.o(`if m._protoMessage.IsModified() {`)
-	g.i(1)
-
+func (g *generator) oMarshalFieldsFromStruct() {
 	// Order the fields by their number to ensure marshaling is done in an
 	// order that we can rely on in the tests (same order as other as Protobuf
 	// libs so that we can compare the results).
-	fields := make([]*Field, len(g.msg.Fields))
-	copy(fields, g.msg.Fields)
-	sort.Slice(
-		fields, func(i, j int) bool {
-			return fields[i].GetNumber() < fields[j].GetNumber()
-		},
-	)
+	fields := orderedByFieldNumber(g.msg.Fields)
 
 	// Marshal one field at a time.
-
 	for _, field := range fields {
 		g.setField(field)
 
@@ -59,41 +89,36 @@ func (g *generator) oMarshalMethod() error {
 				continue
 			}
 
-			g.o(`// Marshal %q.`, g.field.GetOneOf().GetName())
-
-			typeName := composeOneOfAliasTypeName(g.msg, g.field.GetOneOf())
-			g.o(`// Switch on the type of the value stored in the oneof field.`)
-			g.o(`switch %s(m.%s.FieldIndex()) {`, typeName, g.field.GetOneOf().GetName())
-
-			// Add the "none" case.
-			noneChoiceName := composeOneOfNoneChoiceName(g.msg, g.field.GetOneOf())
-			g.o(`case %s:`, noneChoiceName)
-			g.o(`	// Nothing to do, oneof is unset.`)
-
-			// Generate cases for each choice of this oneof.
-			for _, choice := range field.GetOneOf().GetChoices() {
-				oneofField := g.msg.FieldsMap[choice.GetName()]
-				g.setField(oneofField)
-				typeName := composeOneOfChoiceName(g.msg, g.field)
-				g.o(`case %s:`, typeName)
-				g.i(1)
-				g.oMarshalField()
-				g.i(-1)
-			}
-			g.o(`}`)
+			g.oMarshalOneofField()
 		} else {
 			g.oMarshalField()
 		}
 	}
-	g.i(-1)
-	g.o(`} else {`)
-	g.o(`	// We have the original bytes and the message is unchanged. Use the original bytes.`)
-	g.o(`	ps.Raw(protomessage.BytesFromBytesView(m._protoMessage.Bytes))`)
+}
+
+func (g *generator) oMarshalOneofField() {
+	g.o(`// Marshal %q.`, g.field.GetOneOf().GetName())
+
+	typeName := composeOneOfAliasTypeName(g.msg, g.field.GetOneOf())
+	g.o(`// Switch on the type of the value stored in the oneof field.`)
+	g.o(`switch %s(m.%s.FieldIndex()) {`, typeName, g.field.GetOneOf().GetName())
+
+	// Check the "none" case.
+	noneChoiceName := composeOneOfNoneChoiceName(g.msg, g.field.GetOneOf())
+	g.o(`case %s:`, noneChoiceName)
+	g.o(`	// Nothing to do, oneof is unset.`)
+
+	// Generate cases for each choice of this oneof.
+	for _, choice := range g.field.GetOneOf().GetChoices() {
+		oneofField := g.msg.FieldsMap[choice.GetName()]
+		g.setField(oneofField)
+		typeName := composeOneOfChoiceName(g.msg, g.field)
+		g.o(`case %s:`, typeName)
+		g.i(1)
+		g.oMarshalField()
+		g.i(-1)
+	}
 	g.o(`}`)
-	g.o(`return nil`)
-	g.i(-1)
-	g.o(`}`)
-	return g.lastErr
 }
 
 // Returns the name of the var which contains prepared data for the specified field.
@@ -139,9 +164,12 @@ func (g *generator) oMarshalField() {
 		return
 	}
 
+	// This is a primitive, non-repeated field.
+
 	usePresence := g.options.WithPresence && !g.isOneOfField()
 
 	if usePresence {
+		// If we have presence flags check if the field is set.
 		g.o(`if m._flags&%s != 0 {`, g.msg.PresenceFlagName[g.field])
 		g.i(1)
 	}
@@ -191,7 +219,7 @@ func (g *generator) oMarshalField() {
 
 	if usePresence {
 		g.i(-1)
-		g.o(`}`)
+		g.o(`}`) // if
 	}
 }
 

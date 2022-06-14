@@ -289,6 +289,7 @@ var prepared_LogsData_ResourceLogs = molecule.PrepareEmbeddedField(1)
 
 func (m *LogsData) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
+		// The struct is modified, marshal from the struct fields.
 		// Marshal "resourceLogs".
 		for _, elem := range m.resourceLogs {
 			token := ps.BeginEmbedded()
@@ -725,6 +726,7 @@ var prepared_ResourceLogs_SchemaUrl = molecule.PrepareStringField(3)
 
 func (m *ResourceLogs) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
+		// The struct is modified, marshal from the struct fields.
 		// Marshal "resource".
 		resource := m.resource
 		if resource != nil {
@@ -1124,6 +1126,7 @@ var prepared_Resource_DroppedAttributesCount = molecule.PrepareUint32Field(2)
 
 func (m *Resource) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
+		// The struct is modified, marshal from the struct fields.
 		// Marshal "attributes".
 		for _, elem := range m.attributes {
 			token := ps.BeginEmbedded()
@@ -1566,6 +1569,7 @@ var prepared_ScopeLogs_SchemaUrl = molecule.PrepareStringField(3)
 
 func (m *ScopeLogs) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
+		// The struct is modified, marshal from the struct fields.
 		// Marshal "scope".
 		scope := m.scope
 		if scope != nil {
@@ -2027,6 +2031,7 @@ var prepared_InstrumentationScope_DroppedAttributesCount = molecule.PrepareUint3
 
 func (m *InstrumentationScope) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
+		// The struct is modified, marshal from the struct fields.
 		// Marshal "name".
 		ps.StringPrepared(prepared_InstrumentationScope_Name, m.name)
 		// Marshal "version".
@@ -2633,6 +2638,7 @@ var prepared_LogRecord_SpanId = molecule.PrepareBytesField(10)
 
 func (m *LogRecord) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
+		// The struct is modified, marshal from the struct fields.
 		// Marshal "timeUnixNano".
 		ps.Fixed64Prepared(prepared_LogRecord_TimeUnixNano, m.timeUnixNano)
 		// Marshal "severityNumber".
@@ -2959,6 +2965,7 @@ var prepared_KeyValue_Value = molecule.PrepareEmbeddedField(2)
 
 func (m *KeyValue) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
+		// The struct is modified, marshal from the struct fields.
 		// Marshal "key".
 		ps.StringPrepared(prepared_KeyValue_Key, m.key)
 		// Marshal "value".
@@ -3496,6 +3503,7 @@ var prepared_AnyValue_BytesValue = molecule.PrepareBytesField(7)
 
 func (m *AnyValue) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
+		// The struct is modified, marshal from the struct fields.
 		// Marshal "value".
 		// Switch on the type of the value stored in the oneof field.
 		switch AnyValueValue(m.value.FieldIndex()) {
@@ -3894,6 +3902,7 @@ var prepared_ArrayValue_Values = molecule.PrepareEmbeddedField(1)
 
 func (m *ArrayValue) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
+		// The struct is modified, marshal from the struct fields.
 		// Marshal "values".
 		for _, elem := range m.values {
 			token := ps.BeginEmbedded()
@@ -4239,6 +4248,7 @@ var prepared_KeyValueList_Values = molecule.PrepareEmbeddedField(1)
 
 func (m *KeyValueList) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
+		// The struct is modified, marshal from the struct fields.
 		// Marshal "values".
 		for _, elem := range m.values {
 			token := ps.BeginEmbedded()
@@ -4498,6 +4508,7 @@ var prepared_PlainMessage_Value = molecule.PrepareStringField(2)
 
 func (m *PlainMessage) Marshal(ps *molecule.ProtoStream) error {
 	if m._protoMessage.IsModified() {
+		// The struct is modified, marshal from the struct fields.
 		// Marshal "key".
 		ps.StringPrepared(prepared_PlainMessage_Key, m.key)
 		// Marshal "value".
