@@ -11,6 +11,17 @@ import (
 func (g *generator) oUnmarshalFunc() error {
 	g.o(
 		`
+// Unmarshal$MessageName unmarshals from the Protobuf wire bytes into a struct
+// representing the message.
+// If WithValidate option is provided the wire bytes will be validated to make sure
+// the contain a valid representation of a $MessageName message.
+// If WithValidate option is not provided the validation will not be performed and
+// subsequent access of the fields of the message can return missing values if
+// the values happen to be invalid on the wire.
+// The returned message can be freed using Free() method when it is known that there
+// no remaining pointers to the message and it can be safely discarded. This places
+// the message struct into a pool from which it can be reused by future unmarshal
+// operations.
 func Unmarshal$MessageName(bytes []byte, opts lazyproto.UnmarshalOpts) (*$MessageName, error) {
 	if opts.WithValidate {
 		if err := validate$MessageName(bytes); err != nil {
@@ -47,8 +58,12 @@ func (m *$MessageName) decode() error {
 		g.o(``)
 	}
 
+	// Do a pass that only calculates the repeated field counts.
+	// This is needed to be able to allocate slices of the right length
+	// for repeated fields.
 	g.oCalcRepeatedFieldCounts()
 
+	// Now do another pass and actually decode the data into struct fields.
 	g.oMsgDecodeLoop(decodeFull)
 
 	g.i(-1)

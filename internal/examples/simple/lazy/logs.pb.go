@@ -63,6 +63,17 @@ type LogsData struct {
 	resourceLogs []*ResourceLogs
 }
 
+// UnmarshalLogsData unmarshals from the Protobuf wire bytes into a struct
+// representing the message.
+// If WithValidate option is provided the wire bytes will be validated to make sure
+// the contain a valid representation of a LogsData message.
+// If WithValidate option is not provided the validation will not be performed and
+// subsequent access of the fields of the message can return missing values if
+// the values happen to be invalid on the wire.
+// The returned message can be freed using Free() method when it is known that there
+// no remaining pointers to the message and it can be safely discarded. This places
+// the message struct into a pool from which it can be reused by future unmarshal
+// operations.
 func UnmarshalLogsData(bytes []byte, opts lazyproto.UnmarshalOpts) (*LogsData, error) {
 	if opts.WithValidate {
 		if err := validateLogsData(bytes); err != nil {
@@ -414,6 +425,17 @@ type ResourceLogs struct {
 	schemaUrl string
 }
 
+// UnmarshalResourceLogs unmarshals from the Protobuf wire bytes into a struct
+// representing the message.
+// If WithValidate option is provided the wire bytes will be validated to make sure
+// the contain a valid representation of a ResourceLogs message.
+// If WithValidate option is not provided the validation will not be performed and
+// subsequent access of the fields of the message can return missing values if
+// the values happen to be invalid on the wire.
+// The returned message can be freed using Free() method when it is known that there
+// no remaining pointers to the message and it can be safely discarded. This places
+// the message struct into a pool from which it can be reused by future unmarshal
+// operations.
 func UnmarshalResourceLogs(bytes []byte, opts lazyproto.UnmarshalOpts) (*ResourceLogs, error) {
 	if opts.WithValidate {
 		if err := validateResourceLogs(bytes); err != nil {
@@ -870,6 +892,17 @@ type Resource struct {
 	droppedAttributesCount uint32
 }
 
+// UnmarshalResource unmarshals from the Protobuf wire bytes into a struct
+// representing the message.
+// If WithValidate option is provided the wire bytes will be validated to make sure
+// the contain a valid representation of a Resource message.
+// If WithValidate option is not provided the validation will not be performed and
+// subsequent access of the fields of the message can return missing values if
+// the values happen to be invalid on the wire.
+// The returned message can be freed using Free() method when it is known that there
+// no remaining pointers to the message and it can be safely discarded. This places
+// the message struct into a pool from which it can be reused by future unmarshal
+// operations.
 func UnmarshalResource(bytes []byte, opts lazyproto.UnmarshalOpts) (*Resource, error) {
 	if opts.WithValidate {
 		if err := validateResource(bytes); err != nil {
@@ -1257,6 +1290,17 @@ type ScopeLogs struct {
 	schemaUrl string
 }
 
+// UnmarshalScopeLogs unmarshals from the Protobuf wire bytes into a struct
+// representing the message.
+// If WithValidate option is provided the wire bytes will be validated to make sure
+// the contain a valid representation of a ScopeLogs message.
+// If WithValidate option is not provided the validation will not be performed and
+// subsequent access of the fields of the message can return missing values if
+// the values happen to be invalid on the wire.
+// The returned message can be freed using Free() method when it is known that there
+// no remaining pointers to the message and it can be safely discarded. This places
+// the message struct into a pool from which it can be reused by future unmarshal
+// operations.
 func UnmarshalScopeLogs(bytes []byte, opts lazyproto.UnmarshalOpts) (*ScopeLogs, error) {
 	if opts.WithValidate {
 		if err := validateScopeLogs(bytes); err != nil {
@@ -1715,6 +1759,17 @@ type InstrumentationScope struct {
 	droppedAttributesCount uint32
 }
 
+// UnmarshalInstrumentationScope unmarshals from the Protobuf wire bytes into a struct
+// representing the message.
+// If WithValidate option is provided the wire bytes will be validated to make sure
+// the contain a valid representation of a InstrumentationScope message.
+// If WithValidate option is not provided the validation will not be performed and
+// subsequent access of the fields of the message can return missing values if
+// the values happen to be invalid on the wire.
+// The returned message can be freed using Free() method when it is known that there
+// no remaining pointers to the message and it can be safely discarded. This places
+// the message struct into a pool from which it can be reused by future unmarshal
+// operations.
 func UnmarshalInstrumentationScope(bytes []byte, opts lazyproto.UnmarshalOpts) (*InstrumentationScope, error) {
 	if opts.WithValidate {
 		if err := validateInstrumentationScope(bytes); err != nil {
@@ -2171,6 +2226,17 @@ type LogRecord struct {
 	spanId                 []byte
 }
 
+// UnmarshalLogRecord unmarshals from the Protobuf wire bytes into a struct
+// representing the message.
+// If WithValidate option is provided the wire bytes will be validated to make sure
+// the contain a valid representation of a LogRecord message.
+// If WithValidate option is not provided the validation will not be performed and
+// subsequent access of the fields of the message can return missing values if
+// the values happen to be invalid on the wire.
+// The returned message can be freed using Free() method when it is known that there
+// no remaining pointers to the message and it can be safely discarded. This places
+// the message struct into a pool from which it can be reused by future unmarshal
+// operations.
 func UnmarshalLogRecord(bytes []byte, opts lazyproto.UnmarshalOpts) (*LogRecord, error) {
 	if opts.WithValidate {
 		if err := validateLogRecord(bytes); err != nil {
@@ -2791,6 +2857,17 @@ type KeyValue struct {
 	value *AnyValue
 }
 
+// UnmarshalKeyValue unmarshals from the Protobuf wire bytes into a struct
+// representing the message.
+// If WithValidate option is provided the wire bytes will be validated to make sure
+// the contain a valid representation of a KeyValue message.
+// If WithValidate option is not provided the validation will not be performed and
+// subsequent access of the fields of the message can return missing values if
+// the values happen to be invalid on the wire.
+// The returned message can be freed using Free() method when it is known that there
+// no remaining pointers to the message and it can be safely discarded. This places
+// the message struct into a pool from which it can be reused by future unmarshal
+// operations.
 func UnmarshalKeyValue(bytes []byte, opts lazyproto.UnmarshalOpts) (*KeyValue, error) {
 	if opts.WithValidate {
 		if err := validateKeyValue(bytes); err != nil {
@@ -3094,6 +3171,17 @@ type AnyValue struct {
 	value oneof.OneOf
 }
 
+// UnmarshalAnyValue unmarshals from the Protobuf wire bytes into a struct
+// representing the message.
+// If WithValidate option is provided the wire bytes will be validated to make sure
+// the contain a valid representation of a AnyValue message.
+// If WithValidate option is not provided the validation will not be performed and
+// subsequent access of the fields of the message can return missing values if
+// the values happen to be invalid on the wire.
+// The returned message can be freed using Free() method when it is known that there
+// no remaining pointers to the message and it can be safely discarded. This places
+// the message struct into a pool from which it can be reused by future unmarshal
+// operations.
 func UnmarshalAnyValue(bytes []byte, opts lazyproto.UnmarshalOpts) (*AnyValue, error) {
 	if opts.WithValidate {
 		if err := validateAnyValue(bytes); err != nil {
@@ -3676,6 +3764,17 @@ type ArrayValue struct {
 	values []*AnyValue
 }
 
+// UnmarshalArrayValue unmarshals from the Protobuf wire bytes into a struct
+// representing the message.
+// If WithValidate option is provided the wire bytes will be validated to make sure
+// the contain a valid representation of a ArrayValue message.
+// If WithValidate option is not provided the validation will not be performed and
+// subsequent access of the fields of the message can return missing values if
+// the values happen to be invalid on the wire.
+// The returned message can be freed using Free() method when it is known that there
+// no remaining pointers to the message and it can be safely discarded. This places
+// the message struct into a pool from which it can be reused by future unmarshal
+// operations.
 func UnmarshalArrayValue(bytes []byte, opts lazyproto.UnmarshalOpts) (*ArrayValue, error) {
 	if opts.WithValidate {
 		if err := validateArrayValue(bytes); err != nil {
@@ -4022,6 +4121,17 @@ type KeyValueList struct {
 	values []*KeyValue
 }
 
+// UnmarshalKeyValueList unmarshals from the Protobuf wire bytes into a struct
+// representing the message.
+// If WithValidate option is provided the wire bytes will be validated to make sure
+// the contain a valid representation of a KeyValueList message.
+// If WithValidate option is not provided the validation will not be performed and
+// subsequent access of the fields of the message can return missing values if
+// the values happen to be invalid on the wire.
+// The returned message can be freed using Free() method when it is known that there
+// no remaining pointers to the message and it can be safely discarded. This places
+// the message struct into a pool from which it can be reused by future unmarshal
+// operations.
 func UnmarshalKeyValueList(bytes []byte, opts lazyproto.UnmarshalOpts) (*KeyValueList, error) {
 	if opts.WithValidate {
 		if err := validateKeyValueList(bytes); err != nil {
@@ -4368,6 +4478,17 @@ type PlainMessage struct {
 	value string
 }
 
+// UnmarshalPlainMessage unmarshals from the Protobuf wire bytes into a struct
+// representing the message.
+// If WithValidate option is provided the wire bytes will be validated to make sure
+// the contain a valid representation of a PlainMessage message.
+// If WithValidate option is not provided the validation will not be performed and
+// subsequent access of the fields of the message can return missing values if
+// the values happen to be invalid on the wire.
+// The returned message can be freed using Free() method when it is known that there
+// no remaining pointers to the message and it can be safely discarded. This places
+// the message struct into a pool from which it can be reused by future unmarshal
+// operations.
 func UnmarshalPlainMessage(bytes []byte, opts lazyproto.UnmarshalOpts) (*PlainMessage, error) {
 	if opts.WithValidate {
 		if err := validatePlainMessage(bytes); err != nil {
