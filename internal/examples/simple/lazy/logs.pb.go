@@ -268,6 +268,7 @@ func (m *LogsData) decode() error {
 		case 0b0_0001_010: // field number 1 (resourceLogs), wire type 2 (Bytes)
 			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
+			// Get the bytes for the embedded message.
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -707,17 +708,20 @@ func (m *ResourceLogs) decode() error {
 		case 0b0_0001_010: // field number 1 (resource), wire type 2 (Bytes)
 			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
+			// Get the bytes for the embedded message.
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
 			}
 
+			// Get a struct for the embedded message from the pool.
 			m.resource = resourcePool.Get()
 			m.resource._protoMessage.Parent = &m._protoMessage
 			m.resource._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 		case 0b0_0010_010: // field number 2 (scopeLogs), wire type 2 (Bytes)
 			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
+			// Get the bytes for the embedded message.
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -1139,6 +1143,7 @@ func (m *Resource) decode() error {
 		case 0b0_0001_010: // field number 1 (attributes), wire type 2 (Bytes)
 			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
+			// Get the bytes for the embedded message.
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -1593,17 +1598,20 @@ func (m *ScopeLogs) decode() error {
 		case 0b0_0001_010: // field number 1 (scope), wire type 2 (Bytes)
 			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
+			// Get the bytes for the embedded message.
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
 			}
 
+			// Get a struct for the embedded message from the pool.
 			m.scope = instrumentationScopePool.Get()
 			m.scope._protoMessage.Parent = &m._protoMessage
 			m.scope._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 		case 0b0_0010_010: // field number 2 (logRecords), wire type 2 (Bytes)
 			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
+			// Get the bytes for the embedded message.
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -2091,6 +2099,7 @@ func (m *InstrumentationScope) decode() error {
 		case 0b0_0011_010: // field number 3 (attributes), wire type 2 (Bytes)
 			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
+			// Get the bytes for the embedded message.
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -2710,6 +2719,7 @@ func (m *LogRecord) decode() error {
 		case 0b0_0110_010: // field number 6 (attributes), wire type 2 (Bytes)
 			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
+			// Get the bytes for the embedded message.
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -3095,11 +3105,13 @@ func (m *KeyValue) decode() error {
 		case 0b0_0010_010: // field number 2 (value), wire type 2 (Bytes)
 			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
+			// Get the bytes for the embedded message.
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
 			}
 
+			// Get a struct for the embedded message from the pool.
 			m.value = anyValuePool.Get()
 			m.value._protoMessage.Parent = &m._protoMessage
 			m.value._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
@@ -3634,11 +3646,13 @@ func (m *AnyValue) decode() error {
 		case 0b0_0101_010: // field number 5 (arrayValue), wire type 2 (Bytes)
 			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
+			// Get the bytes for the embedded message.
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
 			}
 
+			// Get a struct for the embedded message from the pool.
 			elem := arrayValuePool.Get()
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
@@ -3646,11 +3660,13 @@ func (m *AnyValue) decode() error {
 		case 0b0_0110_010: // field number 6 (kvlistValue), wire type 2 (Bytes)
 			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
+			// Get the bytes for the embedded message.
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
 			}
 
+			// Get a struct for the embedded message from the pool.
 			elem := keyValueListPool.Get()
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
@@ -4075,6 +4091,7 @@ func (m *ArrayValue) decode() error {
 		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
 			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
+			// Get the bytes for the embedded message.
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err
@@ -4438,6 +4455,7 @@ func (m *KeyValueList) decode() error {
 		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
 			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
+			// Get the bytes for the embedded message.
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
 				return err

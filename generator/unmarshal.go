@@ -294,6 +294,7 @@ if wireType != codec.Wire%s {
 	}
 
 	if mode == decodeValidate {
+		// When validating skip the data of the appropriate type.
 		switch g.field.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_STRING,
 			descriptor.FieldDescriptorProto_TYPE_BYTES:
@@ -301,6 +302,7 @@ if wireType != codec.Wire%s {
 		default:
 			g.o(`_, err := buf.As%s()`, task.asProtoType)
 		}
+		// Make sure to check for errors when skipping.
 		g.o(
 			`
 if err != nil {
@@ -308,23 +310,29 @@ if err != nil {
 }`,
 		)
 		return
-	} else {
-		g.o(
-			`
+	}
+
+	// This is not a validate mode. Decode and get the value instead of skipping.
+
+	g.o(
+		`
 v, err := buf.As%s()
 if err != nil {
 	return err
 }`, task.asProtoType,
-		)
-	}
+	)
+
+	// Store the value in the field where it belongs.
 
 	if g.field.GetOneOf() != nil {
+		// It is a oneof field. Store the correct choice.
 		choiceName := composeOneOfChoiceName(g.msg, g.field)
 		g.o(
 			"m.%s = oneof.New%s(v, int(%s))", g.field.GetOneOf().GetName(),
 			task.oneOfType, choiceName,
 		)
 	} else if g.field.IsRepeated() {
+		// Repeated field. Store at the right index of the slice.
 		counterName := g.field.GetName() + "Count"
 		g.o(
 			`
@@ -333,6 +341,7 @@ m.$fieldName[%[1]s] = v
 %[1]s++`, counterName,
 		)
 	} else {
+		// Regular, non-repeated, non-oneof field.
 		g.o(`m.$fieldName = v`)
 		if g.options.WithPresence {
 			g.o(`m._flags |= %s`, g.msg.PresenceFlagName[g.field])
@@ -343,7 +352,6 @@ m.$fieldName[%[1]s] = v
 func (g *generator) oDecodeFieldEnum(
 	enumTypeName string, mode decodeMode, checkWireType bool,
 ) {
-
 	if checkWireType {
 		g.o(
 			`
@@ -449,7 +457,6 @@ var primitiveTypeDecode = map[descriptor.FieldDescriptorProto_Type]decodePrimiti
 }
 
 func (g *generator) oDecodeFieldEmbeddedMessage(mode decodeMode, checkWireType bool) {
-
 	if checkWireType {
 		g.o(
 			`
@@ -460,6 +467,7 @@ if wireType != codec.WireBytes {
 	}
 
 	if mode == decodeValidate {
+		// Validate recursively the embedded message.
 		g.o(
 			`
 v, err := buf.DecodeRawBytes()
@@ -472,9 +480,9 @@ if err != nil {
 }`,
 		)
 	} else {
-
 		g.o(
 			`
+// Get the bytes for the embedded message.
 v, err := buf.AsBytesUnsafe()
 if err != nil {
 	return err
@@ -496,6 +504,7 @@ elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)`, counterName,
 			choiceName := composeOneOfChoiceName(g.msg, g.field)
 			g.o(
 				`
+// Get a struct for the embedded message from the pool.
 elem := $fieldTypeMessagePool.Get()
 elem._protoMessage.Parent = &m._protoMessage
 elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
@@ -505,6 +514,7 @@ m.%s = oneof.NewPtr(unsafe.Pointer(elem), int(%s))`,
 		} else {
 			g.o(
 				`
+// Get a struct for the embedded message from the pool.
 m.$fieldName = $fieldTypeMessagePool.Get()
 m.$fieldName._protoMessage.Parent = &m._protoMessage
 m.$fieldName._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)`,
