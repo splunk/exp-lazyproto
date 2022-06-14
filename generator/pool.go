@@ -12,7 +12,15 @@ func unexportedName(name string) string {
 }
 
 func (g *generator) oPool() error {
-	g.o(``)
+	g.oPoolStruct()
+	g.oPoolGetFuncs()
+	g.oPoolReleaseSliceFunc()
+	g.oPoolReleaseFunc()
+
+	return g.lastErr
+}
+
+func (g *generator) oPoolStruct() {
 	g.o(
 		`
 // Pool of $MessageName structs.
@@ -21,8 +29,13 @@ type $messagePoolType struct {
 	mux  sync.Mutex
 }
 
-var $messagePool = $messagePoolType{}
+var $messagePool = $messagePoolType{}`,
+	)
+}
 
+func (g *generator) oPoolGetFuncs() {
+	g.o(
+		`
 // Get one element from the pool. Creates a new element if the pool is empty.
 func (p *$messagePoolType) Get() *$MessageName {
 	p.mux.Lock()
@@ -74,11 +87,6 @@ func (p *$messagePoolType) GetSlice(r []*$MessageName) {
 	}
 }`,
 	)
-
-	g.oPoolReleaseFuncs()
-	g.oPoolRelease()
-
-	return g.lastErr
 }
 
 func getPoolName(msgName string) string {
@@ -90,59 +98,51 @@ func (g *generator) oPoolReleaseElem() {
 		g.setField(field)
 
 		if field.GetOneOf() != nil {
+			// A oneof field.
 			fieldIndex := g.calcOneOfFieldIndex()
-			if fieldIndex != 0 {
+			if fieldIndex == 0 {
 				// We generate all oneof cases when we see the first field. Skip for the rest.
-				continue
+				g.oPoolReleaseOneofField()
 			}
-
-			typeName := composeOneOfAliasTypeName(g.msg, field.GetOneOf())
-			g.o(`switch %s(elem.%s.FieldIndex()) {`, typeName, field.GetOneOf().GetName())
-			for _, choice := range field.GetOneOf().GetChoices() {
-				choiceField := g.msg.FieldsMap[choice.GetName()]
-				g.setField(choiceField)
-				if choiceField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-					choiceName := composeOneOfChoiceName(g.msg, choiceField)
-					g.o(`case %s:`, choiceName)
-					g.i(1)
-					g.o(
-						"ptr := (*$FieldMessageTypeName)(elem.%s.PtrVal())",
-						field.GetOneOf().GetName(),
-					)
-					g.o(`if ptr != nil {`)
-					g.o(`	$fieldTypeMessagePool.Release(ptr)`)
-					g.o(`}`)
-					g.i(-1)
-				}
+		} else if field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			// Embedded message that is not a oneof field.
+			g.o(`// Release nested $fieldName recursively to their pool.`)
+			if field.IsRepeated() {
+				g.o(`$fieldTypeMessagePool.ReleaseSlice(elem.$fieldName)`)
+			} else {
+				g.o(`if elem.$fieldName != nil {`)
+				g.o(`	$fieldTypeMessagePool.Release(elem.$fieldName)`)
+				g.o(`}`)
 			}
-			g.o(`}`)
-			continue
-		}
-
-		if field.GetType() != descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			// Only embedded messages need to be freed.
-			continue
-		}
-
-		// Not a oneof field.
-		g.o(`// Release nested $fieldName recursively to their pool.`)
-		if field.IsRepeated() {
-			g.o(`$fieldTypeMessagePool.ReleaseSlice(elem.$fieldName)`)
-		} else {
-			g.o(`if elem.$fieldName != nil {`)
-			g.o(`	$fieldTypeMessagePool.Release(elem.$fieldName)`)
-			g.o(`}`)
 		}
 	}
 
 	g.o(``)
-	//	g.o(
-	//		`
-	//// Zero-initialize the released element.
-	//*elem = $MessageName{}`,
-	//	)
 
 	g.oResetElem()
+}
+
+func (g *generator) oPoolReleaseOneofField() {
+	typeName := composeOneOfAliasTypeName(g.msg, g.field.GetOneOf())
+	g.o(`switch %s(elem.%s.FieldIndex()) {`, typeName, g.field.GetOneOf().GetName())
+	for _, choice := range g.field.GetOneOf().GetChoices() {
+		choiceField := g.msg.FieldsMap[choice.GetName()]
+		g.setField(choiceField)
+		if choiceField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			choiceName := composeOneOfChoiceName(g.msg, choiceField)
+			g.o(`case %s:`, choiceName)
+			g.i(1)
+			g.o(
+				"ptr := (*$FieldMessageTypeName)(elem.%s.PtrVal())",
+				g.field.GetOneOf().GetName(),
+			)
+			g.o(`if ptr != nil {`)
+			g.o(`	$fieldTypeMessagePool.Release(ptr)`)
+			g.o(`}`)
+			g.i(-1)
+		}
+	}
+	g.o(`}`)
 }
 
 func (g *generator) oResetElem() {
@@ -156,49 +156,47 @@ func (g *generator) oResetElem() {
 
 		if field.IsRepeated() {
 			g.o(`elem.$fieldName = elem.$fieldName[:0]`)
-			continue
-		}
-		if field.GetOneOf() != nil {
+		} else if field.GetOneOf() != nil {
 			idx := g.calcOneOfFieldIndex()
 			if idx == 0 {
 				g.o(`elem.%s = oneof.NewNone()`, field.GetOneOf().GetName())
 			}
-			continue
+		} else {
+			// Not a repeated field and not a oneof. Need to assign a zero value.
+			var zeroVal string
+			switch field.GetType() {
+			case descriptor.FieldDescriptorProto_TYPE_BOOL:
+				zeroVal = "false"
+
+			case descriptor.FieldDescriptorProto_TYPE_FIXED64,
+				descriptor.FieldDescriptorProto_TYPE_SFIXED64,
+				descriptor.FieldDescriptorProto_TYPE_UINT64,
+				descriptor.FieldDescriptorProto_TYPE_INT64,
+				descriptor.FieldDescriptorProto_TYPE_FIXED32,
+				descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+				descriptor.FieldDescriptorProto_TYPE_SINT32,
+				descriptor.FieldDescriptorProto_TYPE_UINT32,
+				descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+				zeroVal = "0"
+
+			case descriptor.FieldDescriptorProto_TYPE_STRING:
+				zeroVal = `""`
+			case descriptor.FieldDescriptorProto_TYPE_BYTES:
+				zeroVal = "nil"
+			case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+				zeroVal = "nil"
+			case descriptor.FieldDescriptorProto_TYPE_ENUM:
+				zeroVal = g.enumDescrToEnum[field.GetEnumType()].GetName() + "(0)"
+			default:
+				g.lastErr = fmt.Errorf("unsupported field type %v", field.GetType())
+			}
+
+			g.o(`elem.$fieldName = %s`, zeroVal)
 		}
-
-		var zeroVal string
-		switch field.GetType() {
-		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			zeroVal += "false"
-
-		case descriptor.FieldDescriptorProto_TYPE_FIXED64,
-			descriptor.FieldDescriptorProto_TYPE_SFIXED64,
-			descriptor.FieldDescriptorProto_TYPE_UINT64,
-			descriptor.FieldDescriptorProto_TYPE_INT64,
-			descriptor.FieldDescriptorProto_TYPE_FIXED32,
-			descriptor.FieldDescriptorProto_TYPE_SFIXED32,
-			descriptor.FieldDescriptorProto_TYPE_SINT32,
-			descriptor.FieldDescriptorProto_TYPE_UINT32,
-			descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-			zeroVal += "0"
-
-		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			zeroVal += `""`
-		case descriptor.FieldDescriptorProto_TYPE_BYTES:
-			zeroVal += "nil"
-		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-			zeroVal += "nil"
-		case descriptor.FieldDescriptorProto_TYPE_ENUM:
-			zeroVal += g.enumDescrToEnum[field.GetEnumType()].GetName() + "(0)"
-		default:
-			g.lastErr = fmt.Errorf("unsupported field type %v", field.GetType())
-		}
-
-		g.o(`elem.$fieldName = %s`, zeroVal)
 	}
 }
 
-func (g *generator) oPoolReleaseFuncs() {
+func (g *generator) oPoolReleaseSliceFunc() {
 	g.o(``)
 	g.o(
 		`
@@ -223,7 +221,7 @@ func (p *$messagePoolType) ReleaseSlice(slice []*$MessageName) {
 	)
 }
 
-func (g *generator) oPoolRelease() {
+func (g *generator) oPoolReleaseFunc() {
 	g.o(``)
 	g.o(
 		`

@@ -51,6 +51,7 @@ func (g *generator) oMarshalMethod() error {
 
 	g.i(-1)
 	g.o(`}`) // func
+	g.o(``)
 
 	return g.lastErr
 }
