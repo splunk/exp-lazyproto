@@ -169,6 +169,7 @@ func validateLogsData(b []byte) error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (resourceLogs), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
@@ -179,7 +180,8 @@ func validateLogsData(b []byte) error {
 				return err
 			}
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -216,11 +218,13 @@ func (m *LogsData) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (resourceLogs), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			resourceLogsCount++
 			buf.SkipRawBytes()
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -262,6 +266,7 @@ func (m *LogsData) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (resourceLogs), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -274,7 +279,8 @@ func (m *LogsData) decode() error {
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -576,6 +582,7 @@ func validateResourceLogs(b []byte) error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (resource), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
@@ -586,6 +593,7 @@ func validateResourceLogs(b []byte) error {
 				return err
 			}
 		case 0b0_0010_010: // field number 2 (scopeLogs), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
@@ -596,13 +604,15 @@ func validateResourceLogs(b []byte) error {
 				return err
 			}
 		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -639,17 +649,21 @@ func (m *ResourceLogs) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (resource), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipRawBytes()
 		case 0b0_0010_010: // field number 2 (scopeLogs), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			scopeLogsCount++
 			buf.SkipRawBytes()
 		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipRawBytes()
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -691,6 +705,7 @@ func (m *ResourceLogs) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (resource), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -701,6 +716,7 @@ func (m *ResourceLogs) decode() error {
 			m.resource._protoMessage.Parent = &m._protoMessage
 			m.resource._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 		case 0b0_0010_010: // field number 2 (scopeLogs), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -713,6 +729,7 @@ func (m *ResourceLogs) decode() error {
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
@@ -720,7 +737,8 @@ func (m *ResourceLogs) decode() error {
 			}
 			m.schemaUrl = v
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -1011,6 +1029,7 @@ func validateResource(b []byte) error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (attributes), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
@@ -1021,13 +1040,15 @@ func validateResource(b []byte) error {
 				return err
 			}
 		case 0b0_0010_000: // field number 2 (droppedAttributesCount), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			_, err := buf.AsUint32()
 			if err != nil {
 				return err
 			}
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -1064,14 +1085,17 @@ func (m *Resource) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (attributes), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			attributesCount++
 			buf.SkipRawBytes()
 		case 0b0_0010_000: // field number 2 (droppedAttributesCount), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipVarint()
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -1113,6 +1137,7 @@ func (m *Resource) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (attributes), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -1125,6 +1150,7 @@ func (m *Resource) decode() error {
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 		case 0b0_0010_000: // field number 2 (droppedAttributesCount), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsUint32()
 			if err != nil {
@@ -1132,7 +1158,8 @@ func (m *Resource) decode() error {
 			}
 			m.droppedAttributesCount = v
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -1441,6 +1468,7 @@ func validateScopeLogs(b []byte) error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (scope), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
@@ -1451,6 +1479,7 @@ func validateScopeLogs(b []byte) error {
 				return err
 			}
 		case 0b0_0010_010: // field number 2 (logRecords), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
@@ -1461,13 +1490,15 @@ func validateScopeLogs(b []byte) error {
 				return err
 			}
 		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -1504,17 +1535,21 @@ func (m *ScopeLogs) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (scope), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipRawBytes()
 		case 0b0_0010_010: // field number 2 (logRecords), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			logRecordsCount++
 			buf.SkipRawBytes()
 		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipRawBytes()
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -1556,6 +1591,7 @@ func (m *ScopeLogs) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (scope), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -1566,6 +1602,7 @@ func (m *ScopeLogs) decode() error {
 			m.scope._protoMessage.Parent = &m._protoMessage
 			m.scope._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 		case 0b0_0010_010: // field number 2 (logRecords), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -1578,6 +1615,7 @@ func (m *ScopeLogs) decode() error {
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 		case 0b0_0011_010: // field number 3 (schemaUrl), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
@@ -1585,7 +1623,8 @@ func (m *ScopeLogs) decode() error {
 			}
 			m.schemaUrl = v
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -1904,18 +1943,21 @@ func validateInstrumentationScope(b []byte) error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (name), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
 		case 0b0_0010_010: // field number 2 (version), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
 		case 0b0_0011_010: // field number 3 (attributes), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
@@ -1926,13 +1968,15 @@ func validateInstrumentationScope(b []byte) error {
 				return err
 			}
 		case 0b0_0100_000: // field number 4 (droppedAttributesCount), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			_, err := buf.AsUint32()
 			if err != nil {
 				return err
 			}
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -1969,20 +2013,25 @@ func (m *InstrumentationScope) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (name), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipRawBytes()
 		case 0b0_0010_010: // field number 2 (version), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipRawBytes()
 		case 0b0_0011_010: // field number 3 (attributes), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			attributesCount++
 			buf.SkipRawBytes()
 		case 0b0_0100_000: // field number 4 (droppedAttributesCount), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipVarint()
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -2024,6 +2073,7 @@ func (m *InstrumentationScope) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (name), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
@@ -2031,6 +2081,7 @@ func (m *InstrumentationScope) decode() error {
 			}
 			m.name = v
 		case 0b0_0010_010: // field number 2 (version), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
@@ -2038,6 +2089,7 @@ func (m *InstrumentationScope) decode() error {
 			}
 			m.version = v
 		case 0b0_0011_010: // field number 3 (attributes), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -2050,6 +2102,7 @@ func (m *InstrumentationScope) decode() error {
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 		case 0b0_0100_000: // field number 4 (droppedAttributesCount), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsUint32()
 			if err != nil {
@@ -2057,7 +2110,8 @@ func (m *InstrumentationScope) decode() error {
 			}
 			m.droppedAttributesCount = v
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -2436,18 +2490,21 @@ func validateLogRecord(b []byte) error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_001: // field number 1 (timeUnixNano), wire type 1 (Fixed64)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			_, err := buf.AsFixed64()
 			if err != nil {
 				return err
 			}
 		case 0b0_1011_001: // field number 11 (observedTimeUnixNano), wire type 1 (Fixed64)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			_, err := buf.AsFixed64()
 			if err != nil {
 				return err
 			}
 		case 0b0_0010_000: // field number 2 (severityNumber), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsUint32()
 			if err != nil {
@@ -2455,12 +2512,14 @@ func validateLogRecord(b []byte) error {
 			}
 			_ = v
 		case 0b0_0011_010: // field number 3 (severityText), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
 		case 0b0_0110_010: // field number 6 (attributes), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
@@ -2471,31 +2530,36 @@ func validateLogRecord(b []byte) error {
 				return err
 			}
 		case 0b0_0111_000: // field number 7 (droppedAttributesCount), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			_, err := buf.AsUint32()
 			if err != nil {
 				return err
 			}
 		case 0b0_1000_101: // field number 8 (flags), wire type 5 (Fixed32)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			_, err := buf.AsFixed32()
 			if err != nil {
 				return err
 			}
 		case 0b0_1001_010: // field number 9 (traceId), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
 		case 0b0_1010_010: // field number 10 (spanId), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -2532,35 +2596,45 @@ func (m *LogRecord) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_001: // field number 1 (timeUnixNano), wire type 1 (Fixed64)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipFixed64()
 		case 0b0_1011_001: // field number 11 (observedTimeUnixNano), wire type 1 (Fixed64)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipFixed64()
 		case 0b0_0010_000: // field number 2 (severityNumber), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipVarint()
 		case 0b0_0011_010: // field number 3 (severityText), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipRawBytes()
 		case 0b0_0110_010: // field number 6 (attributes), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			attributesCount++
 			buf.SkipRawBytes()
 		case 0b0_0111_000: // field number 7 (droppedAttributesCount), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipVarint()
 		case 0b0_1000_101: // field number 8 (flags), wire type 5 (Fixed32)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipFixed32()
 		case 0b0_1001_010: // field number 9 (traceId), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipRawBytes()
 		case 0b0_1010_010: // field number 10 (spanId), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			buf.SkipRawBytes()
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -2602,6 +2676,7 @@ func (m *LogRecord) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_001: // field number 1 (timeUnixNano), wire type 1 (Fixed64)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsFixed64()
 			if err != nil {
@@ -2609,6 +2684,7 @@ func (m *LogRecord) decode() error {
 			}
 			m.timeUnixNano = v
 		case 0b0_1011_001: // field number 11 (observedTimeUnixNano), wire type 1 (Fixed64)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsFixed64()
 			if err != nil {
@@ -2616,6 +2692,7 @@ func (m *LogRecord) decode() error {
 			}
 			m.observedTimeUnixNano = v
 		case 0b0_0010_000: // field number 2 (severityNumber), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsUint32()
 			if err != nil {
@@ -2623,6 +2700,7 @@ func (m *LogRecord) decode() error {
 			}
 			m.severityNumber = SeverityNumber(v)
 		case 0b0_0011_010: // field number 3 (severityText), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
@@ -2630,6 +2708,7 @@ func (m *LogRecord) decode() error {
 			}
 			m.severityText = v
 		case 0b0_0110_010: // field number 6 (attributes), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -2642,6 +2721,7 @@ func (m *LogRecord) decode() error {
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 		case 0b0_0111_000: // field number 7 (droppedAttributesCount), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsUint32()
 			if err != nil {
@@ -2649,6 +2729,7 @@ func (m *LogRecord) decode() error {
 			}
 			m.droppedAttributesCount = v
 		case 0b0_1000_101: // field number 8 (flags), wire type 5 (Fixed32)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsFixed32()
 			if err != nil {
@@ -2656,6 +2737,7 @@ func (m *LogRecord) decode() error {
 			}
 			m.flags = v
 		case 0b0_1001_010: // field number 9 (traceId), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -2663,6 +2745,7 @@ func (m *LogRecord) decode() error {
 			}
 			m.traceId = v
 		case 0b0_1010_010: // field number 10 (spanId), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -2670,7 +2753,8 @@ func (m *LogRecord) decode() error {
 			}
 			m.spanId = v
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -2947,12 +3031,14 @@ func validateKeyValue(b []byte) error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (key), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
 		case 0b0_0010_010: // field number 2 (value), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
@@ -2963,7 +3049,8 @@ func validateKeyValue(b []byte) error {
 				return err
 			}
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -2998,6 +3085,7 @@ func (m *KeyValue) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (key), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
@@ -3005,6 +3093,7 @@ func (m *KeyValue) decode() error {
 			}
 			m.key = v
 		case 0b0_0010_010: // field number 2 (value), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -3015,7 +3104,8 @@ func (m *KeyValue) decode() error {
 			m.value._protoMessage.Parent = &m._protoMessage
 			m.value._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -3417,30 +3507,35 @@ func validateAnyValue(b []byte) error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (stringValue), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
 		case 0b0_0010_000: // field number 2 (boolValue), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			_, err := buf.AsBool()
 			if err != nil {
 				return err
 			}
 		case 0b0_0011_000: // field number 3 (intValue), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			_, err := buf.AsInt64()
 			if err != nil {
 				return err
 			}
 		case 0b0_0100_001: // field number 4 (doubleValue), wire type 1 (Fixed64)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			_, err := buf.AsDouble()
 			if err != nil {
 				return err
 			}
 		case 0b0_0101_010: // field number 5 (arrayValue), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
@@ -3451,6 +3546,7 @@ func validateAnyValue(b []byte) error {
 				return err
 			}
 		case 0b0_0110_010: // field number 6 (kvlistValue), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
@@ -3461,13 +3557,15 @@ func validateAnyValue(b []byte) error {
 				return err
 			}
 		case 0b0_0111_010: // field number 7 (bytesValue), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -3502,6 +3600,7 @@ func (m *AnyValue) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (stringValue), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
@@ -3509,6 +3608,7 @@ func (m *AnyValue) decode() error {
 			}
 			m.value = oneof.NewString(v, int(AnyValueStringValue))
 		case 0b0_0010_000: // field number 2 (boolValue), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBool()
 			if err != nil {
@@ -3516,6 +3616,7 @@ func (m *AnyValue) decode() error {
 			}
 			m.value = oneof.NewBool(v, int(AnyValueBoolValue))
 		case 0b0_0011_000: // field number 3 (intValue), wire type 0 (Varint)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsInt64()
 			if err != nil {
@@ -3523,6 +3624,7 @@ func (m *AnyValue) decode() error {
 			}
 			m.value = oneof.NewInt64(v, int(AnyValueIntValue))
 		case 0b0_0100_001: // field number 4 (doubleValue), wire type 1 (Fixed64)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsDouble()
 			if err != nil {
@@ -3530,6 +3632,7 @@ func (m *AnyValue) decode() error {
 			}
 			m.value = oneof.NewDouble(v, int(AnyValueDoubleValue))
 		case 0b0_0101_010: // field number 5 (arrayValue), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -3541,6 +3644,7 @@ func (m *AnyValue) decode() error {
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 			m.value = oneof.NewPtr(unsafe.Pointer(elem), int(AnyValueArrayValue))
 		case 0b0_0110_010: // field number 6 (kvlistValue), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -3552,6 +3656,7 @@ func (m *AnyValue) decode() error {
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 			m.value = oneof.NewPtr(unsafe.Pointer(elem), int(AnyValueKvlistValue))
 		case 0b0_0111_010: // field number 7 (bytesValue), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -3559,7 +3664,8 @@ func (m *AnyValue) decode() error {
 			}
 			m.value = oneof.NewBytes(v, int(AnyValueBytesValue))
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -3870,6 +3976,7 @@ func validateArrayValue(b []byte) error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
@@ -3880,7 +3987,8 @@ func validateArrayValue(b []byte) error {
 				return err
 			}
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -3917,11 +4025,13 @@ func (m *ArrayValue) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			valuesCount++
 			buf.SkipRawBytes()
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -3963,6 +4073,7 @@ func (m *ArrayValue) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -3975,7 +4086,8 @@ func (m *ArrayValue) decode() error {
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -4227,6 +4339,7 @@ func validateKeyValueList(b []byte) error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.DecodeRawBytes()
 			if err != nil {
@@ -4237,7 +4350,8 @@ func validateKeyValueList(b []byte) error {
 				return err
 			}
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -4274,11 +4388,13 @@ func (m *KeyValueList) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			valuesCount++
 			buf.SkipRawBytes()
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -4320,6 +4436,7 @@ func (m *KeyValueList) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (values), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsBytesUnsafe()
 			if err != nil {
@@ -4332,7 +4449,8 @@ func (m *KeyValueList) decode() error {
 			elem._protoMessage.Parent = &m._protoMessage
 			elem._protoMessage.Bytes = protomessage.BytesViewFromBytes(v)
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -4544,19 +4662,22 @@ func validatePlainMessage(b []byte) error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (key), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
 		case 0b0_0010_010: // field number 2 (value), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			err := buf.SkipRawBytes()
 			if err != nil {
 				return err
 			}
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err
@@ -4588,6 +4709,7 @@ func (m *PlainMessage) decode() error {
 		b := buf.PeekByteUnsafe()
 		switch b {
 		case 0b0_0001_010: // field number 1 (key), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
@@ -4595,6 +4717,7 @@ func (m *PlainMessage) decode() error {
 			}
 			m.key = v
 		case 0b0_0010_010: // field number 2 (value), wire type 2 (Bytes)
+			// Skip the one-byte varint.
 			buf.SkipByteUnsafe()
 			v, err := buf.AsStringUnsafe()
 			if err != nil {
@@ -4602,7 +4725,8 @@ func (m *PlainMessage) decode() error {
 			}
 			m.value = v
 		default:
-			// Our speculation was wrong. Do the full (slow) decoding.
+			// Our speculation was wrong, the varint is more than one byte long.
+			// Do the full slow decoding.
 			v, err := buf.DecodeVarint()
 			if err != nil {
 				return err

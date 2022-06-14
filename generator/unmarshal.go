@@ -133,17 +133,47 @@ for !buf.EOF() {
 	)
 
 	g.i(1)
-	var slowFields []*Field
+
+	// Generate cases for fast decoding.
+	slowFields := g.oDecodeFastFields(mode)
+
+	// The rest of the fields need the slow decoding.
+	g.o(
+		`
+default:
+	// Our speculation was wrong, the varint is more than one byte long.
+	// Do the full slow decoding.`,
+	)
+	g.i(1)
+	g.oDecodeSlowFields(mode, slowFields)
+	g.i(-1)
+
+	g.o(`}`) // switch b
+
+	g.i(-1)
+
+	g.o(`}`) // for
+
+	return g.lastErr
+}
+
+// oDecodeFastFields generates code for decoding fields that can use the
+// fast decoding technique. Returns the remaining list of fields that need to use
+// the slow decoding technique.
+func (g *generator) oDecodeFastFields(mode decodeMode) (slowFields []*Field) {
 	for _, field := range g.msg.Fields {
 		if field.GetNumber() <= 15 {
 			wireType, ok := protoTypeToWireType[field.GetType()]
 			if ok {
+				// Produce a case for the switch on the first byte of varint.
+				// For fields with number <=15 the varint fits into that byte.
 				g.o(
 					"case 0b0_%04b_%03b: // field number %d (%s), wire type %d (%s)",
 					field.GetNumber(), wireType,
 					field.GetNumber(), field.GetName(), wireType,
 					wireTypeToString[wireType],
 				)
+				g.o(`	// Skip the one-byte varint.`)
 				g.o(`	buf.SkipByteUnsafe()`)
 				g.setField(field)
 				g.oDecodeField(mode, false)
@@ -152,14 +182,10 @@ for !buf.EOF() {
 		}
 		slowFields = append(slowFields, field)
 	}
+	return slowFields
+}
 
-	g.o(
-		`
-default:
-	// Our speculation was wrong. Do the full (slow) decoding.`,
-	)
-	g.i(1)
-
+func (g *generator) oDecodeSlowFields(mode decodeMode, slowFields []*Field) {
 	g.o(
 		`
 v, err := buf.DecodeVarint()
@@ -188,39 +214,25 @@ if err != nil {
 	g.o(`		return err`)
 	g.o(`	}`)
 
-	g.o(`}`) // switch
-
-	g.i(-1)
-
-	g.o(`}`) // switch
-
-	g.i(-1)
-
-	g.o(`}`) // func
-
-	return g.lastErr
+	g.o(`}`) // switch fieldNum
 }
 
 func (g *generator) oDecodeField(mode decodeMode, checkWireType bool) {
 	switch mode {
-	case decodeValidate:
-		fallthrough
-	case decodeFull:
+	case decodeValidate, decodeFull:
 		g.oDecodeFieldValidateOrFull(mode, checkWireType)
 	case decodeCountRepeat:
-		g.oRepeatFieldCount()
+		g.oCalcRepeatFieldCount()
 	}
 }
 
 func (g *generator) oDecodeFieldValidateOrFull(mode decodeMode, checkWireType bool) {
 	decode, ok := primitiveTypeDecode[g.field.GetType()]
 	if ok {
-		decode.mode = mode
-		g.oDecodeFieldPrimitive(decode, checkWireType)
+		g.oDecodeFieldPrimitive(decode, mode, checkWireType)
 	} else if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
-		g.oDecodeFieldEnum(
-			g.enumDescrToEnum[g.field.GetEnumType()].GetName(), mode, checkWireType,
-		)
+		enumTypeName := g.enumDescrToEnum[g.field.GetEnumType()].GetName()
+		g.oDecodeFieldEnum(enumTypeName, mode, checkWireType)
 	} else if g.field.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		g.oDecodeFieldEmbeddedMessage(mode, checkWireType)
 	} else {
@@ -228,12 +240,13 @@ func (g *generator) oDecodeFieldValidateOrFull(mode decodeMode, checkWireType bo
 	}
 }
 
-func (g *generator) oRepeatFieldCount() {
+func (g *generator) oCalcRepeatFieldCount() {
 	if g.field.IsRepeated() {
 		counterName := g.field.GetName() + "Count"
 		g.o(`	%s++`, counterName)
 		g.o(`	buf.SkipRawBytes()`)
 	} else {
+		// We are only interested in repeat fields. Skip any other fields.
 		g.oSkipFieldByWireType()
 	}
 }
@@ -256,9 +269,9 @@ type decodePrimitive struct {
 	asProtoType      string
 	oneOfType        string
 	expectedWireType codec.WireType
-	mode             decodeMode
 }
 
+// Human-readable wire type strings.
 var wireTypeToString = map[codec.WireType]string{
 	codec.WireVarint:     "Varint",
 	codec.WireFixed64:    "Fixed64",
@@ -268,7 +281,9 @@ var wireTypeToString = map[codec.WireType]string{
 	codec.WireFixed32:    "Fixed32",
 }
 
-func (g *generator) oDecodeFieldPrimitive(task decodePrimitive, checkWireType bool) {
+func (g *generator) oDecodeFieldPrimitive(
+	task decodePrimitive, mode decodeMode, checkWireType bool,
+) {
 	if checkWireType {
 		g.o(
 			`
@@ -278,11 +293,10 @@ if wireType != codec.Wire%s {
 		)
 	}
 
-	if task.mode == decodeValidate {
+	if mode == decodeValidate {
 		switch g.field.GetType() {
-		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			fallthrough
-		case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		case descriptor.FieldDescriptorProto_TYPE_STRING,
+			descriptor.FieldDescriptorProto_TYPE_BYTES:
 			g.o(`err := buf.SkipRawBytes()`)
 		default:
 			g.o(`_, err := buf.As%s()`, task.asProtoType)
