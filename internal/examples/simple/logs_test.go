@@ -1454,3 +1454,24 @@ func BenchmarkLazy_CountAttrs(b *testing.B) {
 		countAttrsLazy(lazy)
 	}
 }
+
+func TestLazy_Slice(t *testing.T) {
+	src := createLogsData(scaleCount, 1)
+
+	goldenWireBytes, err := gogolib.Marshal(src)
+	require.NoError(t, err)
+	require.NotNil(t, goldenWireBytes)
+
+	lazy, err := lazymsg.UnmarshalLogsData(goldenWireBytes, unmarshalOpts())
+	require.NoError(t, err)
+
+	rls := lazy.ResourceLogsSlice()
+	rl := rls.At(0)
+	rl.SchemaUrl()
+
+	rls.Range(
+		func(e *lazymsg.ResourceLogs) bool {
+			return true
+		},
+	)
+}
