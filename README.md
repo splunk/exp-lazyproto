@@ -313,3 +313,14 @@ marshalling operations. The underlying buffer will be reused without any new all
 (unless a larger buffer is needed). Obviously to do this you must guarantee that you
 are done using the buffer returned from the previous `BufferBytes()` method, since
 the next marshaling will overwrite the buffer content.
+
+## Concurrency
+
+Any concurrent access to the unmarshalled messages is prohibited, including calling
+only getters concurrently. This is due to the nature of lazy decoding, where calling a
+getter may trigger an operation that need to modify the internal data structures.
+
+If you need to access the same unmarshalled message the message must be cloned first
+so that each goroutine gets its own copy. Fortunately, cloning can be done lazily as
+well (the clone operation is not yet implemented), significantly reducing any potential
+performance overhead.
