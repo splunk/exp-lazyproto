@@ -292,3 +292,24 @@ which cannot be decoded.
 All benchmarks we posted at the top of this document are performed twice: once with
 full pre-validation and once without it.
 
+### Buffer and Memory Reuse
+
+We avoid copying memory as much as possible. All decoding operations will reference
+the original bytes in the wire representation byte slice. This includes `string` and
+`[]byte` fields.
+
+You must guarantee that the `[]byte` slice that you pass to the `Unmarshal()` call
+remains unchanged during the lifetime of the fields and any values derived from the
+fields. If you cannot guarantee this then make a copy of the source data and pass the
+copy to the `Unmarshal()` function, essentially handing over the ownership of the copy
+to the LazyProto library.
+
+The `Marshal()` method takes a `ProtoStream` struct to marshal into. Once the marshaling
+is done the wire representation bytes can be fetched without copying from the
+`ProtoStream` using `BufferBytes()` method.
+
+We highly recommend re-using the `ProtoStream` instances for subsequent
+marshalling operations. The underlying buffer will be reused without any new allocations
+(unless a larger buffer is needed). Obviously to do this you must guarantee that you
+are done using the buffer returned from the previous `BufferBytes()` method, since
+the next marshaling will overwrite the buffer content.
