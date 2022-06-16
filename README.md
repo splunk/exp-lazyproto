@@ -26,4 +26,14 @@ rough explanation of each benchmark:
 | Benchmark | Description                                           |
 |--|------------------------------------------------------------------------------------------------------------------------------------------|
 | Unmarshal | A call to Unmarshal() function that accepts a []byte slice and returns a message structure that allows the message fields to be accessed. |
-| Unmarshal_AndReadAll | A call to Unmarshal(), followed by accessing every attribute of every message and embedded message. This forces LazyProto to decode every message, essentially negating any benefits of lazy decoding. |
+| Unmarshal_AndReadAll | A call to Unmarshal(), followed by accessing every attribute of every message and embedded message. This forces LazyProto to decode every message and every field, essentially negating any benefits of lazy decoding. |
+| Marshal_Unchanged | A call to Marshal(), assuming none of the fields of the message or of embedded messages where changed. |
+| Marshal_ModifyAll | A call to Marshal(), assuming all the fields of the message and of all embedded messages where changed before the Marshal() call. The time to change the fields is not included in the benchmark. |
+| Pass_NoReadNoModify | A call to Unmarshal(), immediately followed by a call to Marshal(). This is a passthrough scenario. None of the message data is read or changed. |
+| Pass_ReadAllNoModify | A call to Unmarshal(), then reading all messages and nested messages, without changing any fields, followed by a call to Marshal(). This an "inspect all and passthrough" scenario. |
+| Pass_ModifyAll | A call to Unmarshal(), then reading and changing all messages and nested messages (without introducing new messages or deleting existing messages). This an "inspect all, update and passthrough" scenario. |
+| Inspect_ScopeAttr | A call to Unmarshal(), then read the Scope attributes to see if a specific attribute is found, followed by Marshal() call. This is a "inspect the Scopes and passthrough" scenario. |
+| Inspect_LogAttr | A call to Unmarshal(), then read the LogRecord attributes to see if a specific attribute is found, followed by Marshal() call. This is a "inspect the LogRecords and passthrough" scenario. |
+| Filter_ScopeAttr | A call to Unmarshal(), then read the Scope attributes and if a specific attribute is found drop that particular Scope and the embedded messages, followed by Marshal() call on the remaining data. This is a "filter based on the Scope attribute" scenario. |
+| Batch | A call to Unmarshal() for a number of messages, then stitching the messages together into one message, followed by Marshal() called of the resulting message. |
+
