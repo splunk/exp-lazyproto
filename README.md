@@ -255,3 +255,40 @@ TODO: need comparison benchmark to show this. The early benchmarks were done bef
 the pointer slice reuse was implemented and the gains currently may no longer be
 significant and we may be able to drop the two-pass processing.
 
+### Validation
+
+With lazy decoding we do not decode from the wire representation into in-memory
+structs when the `Unmarshal()` function is called. Instead, we place a reference to the
+wire representation bytes and later, lazily decode the fields when they are accessed.
+However, it is possible that the referenced wire representation is invalid and the
+decoding operation may fail.
+
+To address this LazyProto performs a full validation pass over the wire representation
+when `Unmarshal()` is called. The validation performs exactly the same operations as
+the full decoding would do, except the resulting extracted fields are discarded.
+The validation pass is optimized for this decode-and-discard operation and is much
+faster than the full decoding. One of the reasons validation is fast is that it
+does not perform any allocations and typically has a very reasonable cache-locality.
+
+The validation ensures that the wire representation is valid and any future lazy
+decoding operations cannot fail.
+
+In some use-cases this validation is unnecessary. It may be acceptable to perform
+lazy decoding and if the particular portion of the wire representation is invalid
+silently ignore it.
+
+The no-validation mode of operation is implemented as an option of the `Unmarshal()`
+call. With this option `Unamrshal()` does not do any validation making it extremely
+fast. Future access to the fields using the getter will trigger decoding. If such
+decoding fails because the wire representation is invalid the getter will return the
+default zero-initialized value of the field. This is because we do not return errors
+from the getters so it is impossible to signal that the decoding failed.
+
+If this is an acceptable behavior for the particular use-case you have then you can
+gain more performance with the validation disabled. You should be ready that fields
+that cannot be decoded will contain zero-values and repeated fields will skip elements
+which cannot be decoded.
+
+All benchmarks we posted at the top of this document are performed twice: once with
+full pre-validation and once without it.
+
