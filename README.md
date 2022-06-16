@@ -44,14 +44,14 @@ implementations in Go. Below we describe each of these techniques.
 
 ### Lazy Decoding
 
-We utilize lazy decoding, which means that the Unmarshal() operation does not necessarily
+We utilize lazy decoding, which means that the `Unmarshal()` operation does not necessarily
 decode all data from the wire representation into distinct memory structures. Instead,
 LazyProto performs the decoding on-demand, when a particular piece of data is accessed.
 
 For every message that contains embedded messages LazyProto tracks whether the particular
 embedded message is decoded or no. Initially all embedded messages are undecoded. The
 undecoded messages are represented as byte slices that point to a subslice of the original
-slice that was passed to the Unmarshal() call. The subslice is the wire representation
+slice that was passed to the `Unmarshal()` call. The subslice is the wire representation
 of the message. When the message is accessed via a getter that needs to return the
 message as a Go struct LazyProto checks if the message is decoded. If the message is
 not yet decoded LazyProto will decode from the wire representation bytes into the
@@ -95,4 +95,103 @@ Lazy_CountAttrs-8  29.0µs ± 1%
 ```
 
 The performance penalty due to using getters is negligible in most use cases.
+
+### Lazy Encoding
+
+We utilize lazy encoding, which means that the `Marshal()` operation does not necessarily
+encode all data from the distinct memory structures into wire representation. Instead,
+LazyProto will reuse the existing wire representation bytes for the message if the
+message was previously unmarshalled from the wire representation and was not modified
+since then.
+
+For every message that LazyProto tracks whether the particular message has a
+corresponding wire representation as a byte slice. This information is set when the
+message is unmarshalled. When the message is modified the reference to the byte slice is
+reset. In the `Marshal()` call we check if the byte slice is present and simply copy
+the bytes to the output as is, otherwise we perform full encoding of the message
+struct fields into wire bytes.
+
+Lazy encoding is performed per message. This means that in the tree of messages
+that point to each other we will use lazy encoding for unmodified messages and will
+only perform full encoding for modified messages or messages that were created locally
+and where not unmarshalled.
+
+The setters of the field are implemented like this:
+
+```go
+// SetSchemaUrl sets the value of the schemaUrl.
+func (m *ResourceLogs) SetSchemaUrl(v string) {
+	m.schemaUrl = v
+
+	// Mark this message modified, if not already.
+	m._protoMessage.MarkModified()
+}
+```
+
+Here the `m._protoMessage.MarkModified()` call will reset the reference to the byte
+slice with the wire representation (if any), which will force the subsequent `Marshal()`
+call to perform full encoding of the `ResourceLogs` message.
+
+The combination of lazy decoding and lazy encoding results in very large savings
+in passthrough scenarios when we unmarshal the data, perform no or minimal amount of
+reading and modifying of the data and then marshal it. This is a common scenario
+for intermediary services such as 
+[OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector)
+
+### Struct Pooling
+
+Go Protobuf libraries allocate structs on the heap when unmarshalling. This typically
+results in a large number of short-lived heap allocations that need to be
+garbage-collected immediately after the incoming request is handled. These allocations
+and subsequent garbage collection consume a significant portion of the entire processing
+time and also result in a large number of total memory allocated until the garbage
+collection reclaims the unused structs.
+
+This is a very wasteful approach for most server use cases. There is an
+[existing proposal](https://github.com/golang/go/issues/51317) to add arenas to Go
+and one of the target use cases is the Protobuf request handling.
+
+We could implement our own arenas, however we chose not to. The reason for that is
+that arenas do not work well when the lifetime of the unmarshalled objects is not
+precisely tied to the single incoming request. For example, in
+[OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector)
+multiple incoming requests may be combined into a single batch and then processed
+and marshalled together. The typical approach where the unmarshalled data from a single
+incoming request is placed in one arena and the arena discarded immediately after the
+incoming request processing is done doesn't work well in this case. There is no clear
+moment in time where it is known that the particular arena can be safely discarded.
+
+Instead of arenas we chose to implement message struct pools. Every struct that needs
+to be allocated is picked from a pool of available structs. Every struct that is
+no longer needed is returned to the pool of available structs. In intermediary
+services like OpenTelemetry Collector we know when a particular message struct
+processing is done (typically when the message is sent out from the Collector) so
+it is easy to return the struct to the pool.
+
+To return the message struct to the pool the user must call the `Free()` method of
+the message struct:
+
+```go
+logsData.Free()
+```
+
+The `Free()` method returns the struct of the message and of all the embedded messages
+reachable from the message to the struct pools.
+
+Internally the pools implement an interface that allows to obtain one or more message
+structs and to return them to the pool when the `Free()` method is called. The pool
+interface looks like this:
+
+```go
+type Pool interface {
+    Get() *T
+	GetSlice(slice []*T)
+    Release(elem *T)
+    ReleaseSlice(slice []*T)
+}
+```
+
+The pool implementations are concurrent-safe so the `Free()` method can be called
+anytime without any additional synchronization, provided that the message, the embedded
+messages or any of the message fields are no longer referenced from elsewhere.
 
