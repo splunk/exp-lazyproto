@@ -324,3 +324,37 @@ If you need to access the same unmarshalled message the message must be cloned f
 so that each goroutine gets its own copy. Fortunately, cloning can be done lazily as
 well (the clone operation is not yet implemented), significantly reducing any potential
 performance overhead.
+
+## Future Work
+
+### Backward Marshaling
+
+Marshaling currently is done in a forward serialization manner, where bytes with
+smaller indices in the resulting wire representation are created earlier.
+We need to explore the backward serialization which processes the data in the opposite
+order. This may help eliminate some copying overhead where we need to shift previously
+written data to insert larger than anticipated size markers. A quick implementation
+of a backwards marshaller did not demonstrate significant performance benefits,
+however it is still worth exploring more a bit more carefully.
+
+### Encapsulated Slice Types
+
+The getters for repeated fields currently return slices. This is dangerous. Any
+direct modification of the slice will not be known by the library and will result in
+incorrect operation.
+
+We need to encapsulate the slices into our own data type in order to correctly
+mark the containing message as modified when the slice-modifying operations are
+called.
+
+### Cloning and Equality Operations
+
+These operations are not yet implemented. They can be done in a lazy way that does not
+perform full decoding and will be more performant than the naive implementation that
+traverses all messages and fields.
+
+### Faster Concurrent Pools
+
+There is currently one pool per message type. In highly concurrent scenarios the pools
+may become the point of contention. We need to benchmark and explore the possibility
+of having multiple pools of the same message type in order to reduce the contention.
