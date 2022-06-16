@@ -195,3 +195,63 @@ The pool implementations are concurrent-safe so the `Free()` method can be calle
 anytime without any additional synchronization, provided that the message, the embedded
 messages or any of the message fields are no longer referenced from elsewhere.
 
+TODO: more testing with concurrent access patterns is necessary to see if the pools
+need any improvement to avoid contention on locks in highly concurrent scenarios.
+
+Message methods which remove any embedded messages automatically return the messages to
+the pool. For example consider this method:
+
+```go
+func (m *Resource) AttributesRemoveIf(f func(*KeyValue) bool)
+```
+
+Any `KeyValue` for which the function `f` returns true will be automatically returned
+to the pools.
+
+Extreme care must be taken when calling the `Free()` method. If there are any remaining
+references to the message struct they will result in memory aliasing bugs when the
+struct is taken from the pool in the future.
+
+If there is no absolute certainty that there are no more remaining references to the
+struct the `Free()` method should not be called. In this case the struct will become
+a regular garbage when the remaining reference are gone and the struct will be collected
+normally by the garbage collector later. This is an acceptable usage, although it will
+reduce the overall performance of LazyProto library.
+
+TODO: we need to implement some form of pool truncation to make sure its size is not
+kept at the maximum possible size and is properly reduced after peak demands.
+
+### Reusing Allocated Slices
+
+While message structs are allocated from the pools the slices that contain
+pointers to the structs for repeated fields are allocated from the regular heap.
+In order to reduce the number of such allocations these slices are not de-allocated
+when the message struct that contain them are returned to the pools.
+
+When the struct is taken from the pool the existing slices will be reused if they
+have enough capacity to store the repeat field slice, otherwise a new slice will be
+allocated from the regular heap.
+
+### Repeated Field Pre-allocation
+
+Protobuf wire format makes it impossible to know the number of the repeated fields
+in advance. The wire representation must be fully scanned for the particular field
+number in order to know the number of the items of the particular field number.
+
+In order to benefit from chunked allocation of structs from the pools we perform an
+separate preliminary pass over the wire representation in order to calculate the number
+of the elements that we need for each repeated field. Once the counters are calculated
+we make calls to the pool to obtain the required number of embedded message structs
+in one call. We also use the same counters to allocated pointer slices for repeated
+fields (if the capacity of the existing slices is not enough).
+
+Once the allocations are performed we perform the actual decoding pass over the same
+wire representation.
+
+This two-pass processing results in significantly smaller number of total allocations
+(both from the pools and from the regular heap) and increases overall performance.
+
+TODO: need comparison benchmark to show this. The early benchmarks were done before
+the pointer slice reuse was implemented and the gains currently may no longer be
+significant and we may be able to drop the two-pass processing.
+
