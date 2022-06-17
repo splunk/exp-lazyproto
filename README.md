@@ -274,6 +274,15 @@ Go interfaces this approach results in the following benefits:
 
 The resulting oneof data type results in significant performance savings.
 
+The OneOf struct looks like this:
+
+![OneOf](internal/images/oneof1.png)
+
+When a string that is the first choice in the oneof field is stored we have the 
+following picture:
+
+![OneOf](internal/images/oneof2.png)
+
 ### Validation
 
 With lazy decoding we do not decode from the wire representation into in-memory
