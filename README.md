@@ -255,6 +255,17 @@ TODO: need comparison benchmark to show this. The early benchmarks were done bef
 the pointer slice reuse was implemented and the gains currently may no longer be
 significant and we may be able to drop the two-pass processing.
 
+### Oneof Fields
+
+Oneof fields are represented using the technique of this
+[Variant library](https://github.com/tigrannajaryan/govariant). Compared to using 
+Go interfaces this approach results in the following benefits:
+- No allocation necessary for cardinal data types (e.g. int, float, etc).
+- No allocation necessary for string or byte types. The slices point directly
+  to the wire representation when unmarshalled.
+
+The resulting oneof data type results in significant performance savings.
+
 ### Validation
 
 With lazy decoding we do not decode from the wire representation into in-memory
