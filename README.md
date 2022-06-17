@@ -11,29 +11,26 @@ Warning: not for production use. This is a research library.
 
 Here is how this implementation compares to Google's
 [Go Protobuf library](https://pkg.go.dev/google.golang.org/protobuf) and to 
-[GoGo Protobuf library](https://github.com/gogo/protobuf).
+[GoGo Protobuf library](https://github.com/gogo/protobuf) on one very specific [use
+case](internal/examples/simple/logs.proto). LazyProto is benchmarked twice: with
+and without unmarshalling validations (more on it later in this document).
 
 ![Comparison Benchmarks](internal/images/comparison.png)
 
-Above we have a comparison between Google, GoGo and LazyProto implementations. LazyProto
-is benchmarked twice: with and without unmarshalling validations (more on it later in
-this document).
-
-The bars show the time consumed when performing a specific benchmark. The benchmark
-code can be found in [this file](internal/examples/simple/logs_test.go), here is a
-rough explanation of each benchmark:
+The benchmark code can be found in [this file](internal/examples/simple/logs_test.go),
+here is a rough explanation of each benchmark:
 
 | Benchmark | Description                                           |
 |--|------------------------------------------------------------------------------------------------------------------------------------------|
-| Unmarshal | A call to Unmarshal() function that accepts a []byte slice and returns a message structure that allows the message fields to be accessed. |
-| Unmarshal_AndReadAll | A call to Unmarshal(), followed by accessing every attribute of every message and embedded message. This forces LazyProto to decode every message and every field, essentially negating any benefits of lazy decoding. |
-| Marshal_Unchanged | A call to Marshal(), assuming none of the fields of the message or of embedded messages where changed. |
-| Marshal_ModifyAll | A call to Marshal(), assuming all the fields of the message and of all embedded messages where changed before the Marshal() call. The time to change the fields is not included in the benchmark. |
+| Unmarshal | A call to Unmarshal() function that accepts a []byte slice and returns a message struct. |
+| Unmarshal_AndReadAll | A call to Unmarshal(), then access every attribute of every message and embedded message. This forces LazyProto to decode every message and every field, essentially negating any benefits of lazy decoding. |
+| Marshal_Unchanged | A call to Marshal(), assuming the struct was previously unmarshalled and none of the fields of the message or of embedded messages where changed since unmarshalling. |
+| Marshal_ModifyAll | A call to Marshal(), assuming the struct was previously unmarshalled and all the fields of the message and of all embedded messages where changed before the Marshal() call. The time to change the fields is not included in the benchmark. |
 | Pass_NoReadNoModify | A call to Unmarshal(), immediately followed by a call to Marshal(). This is a passthrough scenario. None of the message data is read or changed. |
-| Pass_ReadAllNoModify | A call to Unmarshal(), then reading all messages and nested messages, without changing any fields, followed by a call to Marshal(). This an "inspect all and passthrough" scenario. |
-| Pass_ModifyAll | A call to Unmarshal(), then reading and changing all messages and nested messages (without introducing new messages or deleting existing messages). This an "inspect all, update and passthrough" scenario. This is the worst case for LazyProto since it prevents the lazy decoding and lazy decoding capabilities from improving performance (in fact these capabilities become a performance overhead) |
-| Inspect_ScopeAttr | A call to Unmarshal(), then read the Scope attributes to see if a specific attribute is found, followed by Marshal() call. This is a "inspect the Scopes and passthrough" scenario. |
-| Inspect_LogAttr | A call to Unmarshal(), then read the LogRecord attributes to see if a specific attribute is found, followed by Marshal() call. This is a "inspect the LogRecords and passthrough" scenario. |
+| Pass_ReadAllNoModify | A call to Unmarshal(), then read all messages and nested messages, without changing any fields, followed by a call to Marshal(). This is an "inspect all and passthrough as-is" scenario. |
+| Pass_ModifyAll | A call to Unmarshal(), then read and change all messages and nested messages (without introducing new messages or deleting existing messages). This is an "inspect all, update and passthrough" scenario. This is the worst case for LazyProto. |
+| Inspect_ScopeAttr | A call to Unmarshal(), then read the Scope attributes to see if a specific attribute is found, followed by Marshal() call. This isn a "inspect the Scopes and passthrough" scenario. |
+| Inspect_LogAttr | A call to Unmarshal(), then read the LogRecord attributes to see if a specific attribute is found, followed by Marshal() call. This is an "inspect the LogRecords and passthrough" scenario. |
 | Filter_ScopeAttr | A call to Unmarshal(), then read the Scope attributes and if a specific attribute is found drop that particular Scope and the embedded messages, followed by Marshal() call on the remaining data. This is a "filter based on the Scope attribute" scenario. |
 | Batch | A call to Unmarshal() for a number of messages, then stitching the messages together into one message, followed by Marshal() called of the resulting message. |
 
@@ -44,7 +41,7 @@ implementations in Go. Below we describe each of these techniques.
 
 ### Lazy Decoding
 
-We utilize lazy decoding, which means that the `Unmarshal()` operation does not necessarily
+We utilize lazy decoding, which means that the `Unmarshal()` operation does not immediately
 decode all data from the wire representation into distinct memory structures. Instead,
 LazyProto performs the decoding on-demand, when a particular piece of data is accessed.
 
@@ -63,14 +60,25 @@ a `_flags` field in the parent message. For each field that represents an embedd
 the `_flags` field allocated one bit that indicates whether that particular embedded
 message is decoded.
 
-The getters of the field are implemented like this:
+For example when the `Resource` referenced from `ResourceLogs` message is not yet
+decoded we have the following picture:
+
+![Lazy Decoding - Before](internal/images/decode1.png)
+
+When the `resource` field accessed the decoding happens and the fields of `Resource`
+struct are populated from the wire representation and the "decoded" bit in the `_flags`
+is set:
+
+![Lazy Decoding - Before](internal/images/decode2.png)
+
+To perform this on-demand decoding the getters of the fields are implemented like this:
 
 ```go
-func (m *LogsData) ResourceLogs() (r []*ResourceLogs) {
-	if m._flags&flags_LogsData_ResourceLogs_Decoded == 0 {
-		m.decodeResourceLogs()
+func (m *ResourceLogs) Resource() *Resource {
+	if m._flags&flags_ResourceLogs_Resource_Decoded == 0 {
+		m.decodeResource()
 	}
-	return m.resourceLogs
+	return m.resource
 }
 ```
 
