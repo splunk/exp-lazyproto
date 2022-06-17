@@ -5,7 +5,7 @@ interesting techniques to achieve significantly better performance than the offi
 Google [Go Protobuf library](https://pkg.go.dev/google.golang.org/protobuf) and better
 than the [GoGo Protobuf library](https://github.com/gogo/protobuf).
 
-Warning: not for production use. This is a research library.
+**Warning: not for production use. This is a research library.**
 
 ## TLDR; Performance Comparison
 
